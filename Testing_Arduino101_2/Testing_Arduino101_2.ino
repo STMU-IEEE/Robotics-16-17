@@ -1,3 +1,6 @@
+#include <BMI160.h>
+#include <CurieIMU.h>
+
 #include <NewPing.h>
 #include <Servo.h>
 
@@ -93,8 +96,6 @@
 #define AMOTOR_BRAKE 9
 #define BMOTOR_BRAKE 8  
 
-#define BUTTON 10
-
 #define false 0
 #define true 1
 
@@ -109,6 +110,7 @@ char input;
 int servoH = 0;
 int command_enabled = 1;
 long last_time = 0;
+int control = 0; 
 
 
 
@@ -132,14 +134,14 @@ void setup() {
         pinMode(TRIGGER_PIN2, OUTPUT);
         pinMode(ECHO_PIN2, INPUT);
 
-        pinMode(BUTTON, INPUT);
-
         attachInterrupt(digitalPinToInterrupt(BUTTON), button_pressed, RISING);
                
         Serial.println(AMOTOR);
         Serial.println(BMOTOR);
         Serial.println(AMOTOR_BRAKE);
         Serial.println(BMOTOR_BRAKE);
+
+        //Arduino 101 Stuff
 }
 
 void loop() {
@@ -148,27 +150,10 @@ void loop() {
     //button_pressed();
   //}
   
-  
-  if(command_enabled){
-    commands();
-  }
-  
-
+commands();
   
        
   
-}
-
-void button_pressed(){
-  long this_time = millis();
-  if(this_time - last_time > 30){
-    last_time = this_time;
-    Serial.print("\nButton Pressed ");
-    Serial.println(last_time);
-    command_enabled = !(command_enabled);  
-  }
-  
-
 }
 
 
@@ -209,7 +194,7 @@ void commands(){
               servo_top();
               break;
             case 'b':
-              servo_buttom();
+              servo_bottom();
               break;
             case 'p':
               servoH++;
@@ -217,7 +202,9 @@ void commands(){
             case 'n':
               servoH--;
               break;
-              
+            case 'A':
+              acce_info();
+              break;              
             default:
             break;
           }
@@ -226,6 +213,7 @@ void commands(){
 }
 
 void move_foward(){
+
     digitalWrite(DIR_A, HIGH);
     digitalWrite(DIR_B, HIGH);
 
@@ -234,6 +222,8 @@ void move_foward(){
 
     digitalWrite(AMOTOR, HIGH);
     digitalWrite(BMOTOR, HIGH);
+    
+    
   
 }
 void move_reverse(){
@@ -287,7 +277,7 @@ void us_sensor(){
   Serial.print("Sensor 1: ");
   Serial.print(sonar1.ping_cm());
 
-  Serial.print(" Sensor 2: ");
+  Serial.print("Sensor 2: ");
   Serial.print(sonar2.ping_cm());
   Serial.print("\n");
   
@@ -298,7 +288,7 @@ void us_sensor(){
 void servo_info(){
   Serial.println(myservo.read());
 }
-void servo_buttom(){
+void servo_bottom(){
   myservo.write(0);
 }
 void servo_top(){

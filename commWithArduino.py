@@ -1,17 +1,5 @@
-import serial
+﻿import serial
 import Pathfinding
-
-init()
-while(true)
-    loop()
-
-end()
-
-
-
-
-
-
 
 def init():
     "This will be called at the beginning of the program to initialize everything."
@@ -19,8 +7,24 @@ def init():
     right_ard='/dev/serial/by-id/usb-Intel_ARDUINO_101_AE6642SQ60400T8-if00'
     left = serial.Serial(left_ard, 9600)
     right = serial.Serial(right_ard, 9600)
-    left.write(b"s")
-    right.write(b"s")
+    left.write(b"x")
+    right.write(b"x")
+
+
+        # map the inputs to the function blocks
+    options = {'w' : move_forward(),
+           'a' : move_left(),
+           's' : stop(),
+           'd' : move_right(),
+           'x' : end(),
+           'u' : us_sensor(),
+           't' : servo_top(),
+           'b' : servo_bottom(),
+
+           }
+
+
+
     return
 
 
@@ -33,8 +37,8 @@ def end():
     return
 
 def stop():
-    right.write(b"s")
-    left.write(b"s")
+    right.write(b"x")
+    left.write(b"x")
     return
 
 def move_left():
@@ -56,3 +60,36 @@ def move_reverse():
     left.write(b"r")
     right.write(b"r")
     return
+
+def us_sensor():
+    left.write(b"u")
+    right.write(b"u")
+    return
+
+def loop():
+    x = rawinput()
+
+    options[num]()
+
+
+
+
+
+
+init()
+
+print("Welcome to The Raspberry Pi Controller HQ")
+
+while(true):
+
+    loop()
+
+end()
+
+
+
+
+
+
+
+
