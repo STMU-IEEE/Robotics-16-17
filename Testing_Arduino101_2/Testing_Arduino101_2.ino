@@ -161,9 +161,6 @@ void commands(){
     if (Serial.available() > 0) {
           // read the incoming byte:
           input = Serial.read(); //single character
-          
-          //Serial.print("I received as a char: ");
-          //Serial.println(input);
 
           switch(input){
             
