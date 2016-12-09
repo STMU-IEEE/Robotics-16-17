@@ -1,6 +1,3 @@
-#include <BMI160.h>
-#include <CurieIMU.h>
-
 #include <NewPing.h>
 #include <Servo.h>
 
@@ -96,8 +93,6 @@
 #define AMOTOR_BRAKE 9
 #define BMOTOR_BRAKE 8  
 
-#define false 0
-#define true 1
 
 //------------------SENSORSs------------------
 NewPing sonar1(TRIGGER_PIN1, ECHO_PIN1, MAX_DISTANCE);
@@ -133,8 +128,6 @@ void setup() {
         pinMode(ECHO_PIN1, INPUT);
         pinMode(TRIGGER_PIN2, OUTPUT);
         pinMode(ECHO_PIN2, INPUT);
-
-        attachInterrupt(digitalPinToInterrupt(BUTTON), button_pressed, RISING);
                
         Serial.println(AMOTOR);
         Serial.println(BMOTOR);
@@ -196,7 +189,7 @@ void commands(){
             case 'p':
               servoH++;
               break;
-            case 'n':
+            case 'e':
               servoH--;
               break;
               
@@ -235,7 +228,7 @@ void move_reverse(){
   
 }
 
-void move_right(){
+void move_in(){
     digitalWrite(DIR_A, HIGH);
     digitalWrite(DIR_B, LOW);
 
@@ -246,7 +239,7 @@ void move_right(){
     digitalWrite(BMOTOR, HIGH);
 }
 
-void move_left(){
+void move_out(){
     digitalWrite(DIR_A, LOW);
     digitalWrite(DIR_B, HIGH);
 

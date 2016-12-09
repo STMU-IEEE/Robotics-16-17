@@ -6,7 +6,7 @@ import time
 
 """This will be called at the beginning of the program to initialize everything."""
 
-left_ard='/dev/serial/by-id/usb-Intel_ARDUINO_101_AE6642SQ60400L3-if00'
+left_ard='/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_6493833393235151C131-if00'
 right_ard='/dev/serial/by-id/usb-Intel_ARDUINO_101_AE6642SQ60400T8-if00'
 left = serial.Serial(left_ard, 9600)
 right = serial.Serial(right_ard, 9600)
