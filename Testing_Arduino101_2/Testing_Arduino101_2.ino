@@ -162,22 +162,22 @@ void commands(){
           // read the incoming byte:
           input = Serial.read(); //single character
           
-          Serial.print("I received as a char: ");
-          Serial.println(input);
+          //Serial.print("I received as a char: ");
+          //Serial.println(input);
 
           switch(input){
             
             case 'w':
               move_foward();
               break;
-            case 's':
+            case 'r':
               move_reverse();
               break;
-            case 'a':
-              move_left();
+            case 'i':
+              move_in();
               break;
-            case 'd':
-              move_right();
+            case 'o':
+              move_out();
               break;
             case 'x':
               stop_motor();
@@ -187,7 +187,7 @@ void commands(){
               us_sensor();
               interrupts();
               break;
-            case 'i':
+            case 'n':
               servo_info();
               break;
             case 't':
@@ -202,9 +202,7 @@ void commands(){
             case 'n':
               servoH--;
               break;
-            case 'A':
-              acce_info();
-              break;              
+              
             default:
             break;
           }
@@ -239,6 +237,7 @@ void move_reverse(){
     digitalWrite(BMOTOR, HIGH);
   
 }
+
 void move_right(){
     digitalWrite(DIR_A, HIGH);
     digitalWrite(DIR_B, LOW);
@@ -249,6 +248,7 @@ void move_right(){
     digitalWrite(AMOTOR, HIGH);
     digitalWrite(BMOTOR, HIGH);
 }
+
 void move_left(){
     digitalWrite(DIR_A, LOW);
     digitalWrite(DIR_B, HIGH);

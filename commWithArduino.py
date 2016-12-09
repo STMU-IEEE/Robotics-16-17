@@ -39,7 +39,7 @@ def move_right():
 	return
 ##LINE 40
 
-def move_foward():
+def move_forward():
 	right.write(b"w")
 	left.write(b"w")
 	return
@@ -66,12 +66,11 @@ def servo_bottom():
 	right.write(b"b")
 	return
 
+
 def command(x):
 
 	if x == 'w':
-		##right.write(b"w")
-		##left.write(b"w")
-		move_foward()
+		move_forward()
 	if x == 'a':
 		move_left()
 	if x == 's':
@@ -90,20 +89,7 @@ def command(x):
 	return
 
 
-def loop():
-	x = input("Enter Command: ")
-	print(x)
-	#options[str(x)]()
-	return
-
-
-"This will be called at the beginning of the program to initialize everything."
-left_ard='/dev/serial/by-id/usb-Intel_ARDUINO_101_AE6642SQ60400L3-if00'
-right_ard='/dev/serial/by-id/usb-Intel_ARDUINO_101_AE6642SQ60400T8-if00'
-left = serial.Serial(left_ard, 9600)
-right = serial.Serial(right_ard, 9600)
-left.write(b"x")
-right.write(b"x")
+init()
 
 print("Welcome to The Raspberry Pi Controller HQ")
 
@@ -116,11 +102,6 @@ while(True):
 	else:
 		command(x)
 
-
-
-
-
-end()
 
 
 
