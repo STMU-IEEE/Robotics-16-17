@@ -1,3 +1,4 @@
+#include <EnableInterrupt.h>
 #include <NewPing.h>
 #include <Servo.h>
 
@@ -100,12 +101,16 @@ NewPing sonar2(TRIGGER_PIN2, ECHO_PIN2, MAX_DISTANCE);
 Servo myservo;
 
 
+
+
 //------------------VARIABLESs----------------
 char input;
 int servoH = 0;
 int command_enabled = 1;
 long last_time = 0;
 int control = 0; 
+int stop_button = 10;
+int stop_comm = 0;
 
 
 
@@ -115,6 +120,8 @@ void setup() {
         Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
 
         myservo.attach(5);
+        
+        enableInterrupt(stop_button, stop_motor_ALL , CHANGE);
         
   
         
@@ -140,11 +147,9 @@ void setup() {
 
 void loop() {
   
-  //if(digitalRead(BUTTON) == HIGH){
-    //button_pressed();
-  //}
-  
-commands();
+  if(stop_comm == 0 ){
+    commands();
+  }
   
        
   
@@ -152,7 +157,8 @@ commands();
 
 
 void commands(){
-    if (Serial.available() > 0) {
+
+      if (Serial.available() > 0) {
           // read the incoming byte:
           input = Serial.read(); //single character
 
@@ -197,7 +203,8 @@ void commands(){
             default:
             break;
           }
-    }
+      }
+    
   
 }
 
@@ -253,6 +260,17 @@ void move_out(){
 
 void stop_motor(){
   
+  
+    digitalWrite(AMOTOR, LOW);
+    digitalWrite(BMOTOR, LOW);
+    
+    digitalWrite(AMOTOR_BRAKE, HIGH);
+    digitalWrite(BMOTOR_BRAKE, HIGH);
+  
+}
+void stop_motor_ALL(){
+  
+    //stop_comp = 1;
   
     digitalWrite(AMOTOR, LOW);
     digitalWrite(BMOTOR, LOW);
