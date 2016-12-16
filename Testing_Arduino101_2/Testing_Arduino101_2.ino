@@ -1,6 +1,4 @@
-#include <BMI160.h>
-#include <CurieIMU.h>
-
+#include <EnableInterrupt.h>
 #include <NewPing.h>
 #include <Servo.h>
 
@@ -104,13 +102,24 @@ Servo myservo;
 
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
 //------------------VARIABLESs----------------
 char input;
 int servoH = 0;
 int command_enabled = 1;
 long last_time = 0;
 int control = 0; 
+<<<<<<< HEAD
 int ARD = 1; // 1 == ARD 1 (LEFT) and 2 == ARD 2 (RIGHT)
+=======
+int stop_button = 10;
+int stop_comm = 0;
+
+
+>>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
 
 
 //------------------CODEs---------------------
@@ -118,6 +127,8 @@ void setup() {
         Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
 
         myservo.attach(5);
+        
+        enableInterrupt(stop_button, stop_motor_ALL , CHANGE);
         
   
         
@@ -143,11 +154,9 @@ void setup() {
 
 void loop() {
   
-  //if(digitalRead(BUTTON) == HIGH){
-    //button_pressed();
-  //}
-  
-commands();
+  if(stop_comm == 0 ){
+    commands();
+  }
   
        
   
@@ -155,10 +164,14 @@ commands();
 
 
 void commands(){
-    if (Serial.available() > 0) {
+
+      if (Serial.available() > 0) {
           // read the incoming byte:
           input = Serial.read(); //single character
+<<<<<<< HEAD
           
+=======
+>>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
 
           switch(input){
             
@@ -168,11 +181,19 @@ void commands(){
             case 'r':
               move_reverse();
               break;
+<<<<<<< HEAD
             case 'o':
               move_out();
               break;
             case 'i':
               move_in();
+=======
+            case 'i':
+              move_in();
+              break;
+            case 'o':
+              move_out();
+>>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
               break;
             case 'x':
               stop_motor();
@@ -182,7 +203,11 @@ void commands(){
               us_sensor();
               interrupts();
               break;
+<<<<<<< HEAD
             case 'e':
+=======
+            case 'n':
+>>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
               servo_info();
               break;
             case 't':
@@ -194,13 +219,19 @@ void commands(){
             case 'p':
               servoH++;
               break;
-            case 'n':
+            case 'e':
               servoH--;
+<<<<<<< HEAD
               break;            
+=======
+              break;
+              
+>>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
             default:
             break;
           }
-    }
+      }
+    
   
 }
 
@@ -231,6 +262,7 @@ void move_reverse(){
     digitalWrite(BMOTOR, HIGH);
   
 }
+<<<<<<< HEAD
 void move_in(){
     if(ARD == 1){
       digitalWrite(DIR_A, LOW);
@@ -241,6 +273,12 @@ void move_in(){
       digitalWrite(DIR_B, LOW);
     }
 
+=======
+
+void move_in(){
+    digitalWrite(DIR_A, HIGH);
+    digitalWrite(DIR_B, LOW);
+>>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
 
     digitalWrite(AMOTOR_BRAKE, LOW);
     digitalWrite(BMOTOR_BRAKE, LOW);
@@ -248,6 +286,7 @@ void move_in(){
     digitalWrite(AMOTOR, HIGH);
     digitalWrite(BMOTOR, HIGH);
 }
+<<<<<<< HEAD
 void move_out(){
     if(ARD == 1){
       digitalWrite(DIR_A, HIGH);
@@ -257,6 +296,12 @@ void move_out(){
       digitalWrite(DIR_A, LOW);
       digitalWrite(DIR_B, HIGH);
     }
+=======
+
+void move_out(){
+    digitalWrite(DIR_A, LOW);
+    digitalWrite(DIR_B, HIGH);
+>>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
 
     digitalWrite(AMOTOR_BRAKE, LOW);
     digitalWrite(BMOTOR_BRAKE, LOW);
@@ -267,6 +312,17 @@ void move_out(){
 
 void stop_motor(){
   
+  
+    digitalWrite(AMOTOR, LOW);
+    digitalWrite(BMOTOR, LOW);
+    
+    digitalWrite(AMOTOR_BRAKE, HIGH);
+    digitalWrite(BMOTOR_BRAKE, HIGH);
+  
+}
+void stop_motor_ALL(){
+  
+    //stop_comp = 1;
   
     digitalWrite(AMOTOR, LOW);
     digitalWrite(BMOTOR, LOW);
