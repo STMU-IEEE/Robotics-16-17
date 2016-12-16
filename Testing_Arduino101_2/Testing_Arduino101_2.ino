@@ -46,7 +46,7 @@
                 
                                     ROBOT LAYOUT LEVEL 1
                                     
-                                        FRONT
+                                        BACK
                                         Sensor 0 Ard 1
                       -------------------------------------------
                      |                                           |
@@ -55,7 +55,7 @@
                      |                                           |
                      |                                           |
                      |                                           |
-         LEFT        |                                           |    RIGHT
+         RIGHT       |                                           |    LEFT
      SENSOR 1,ARD 2  |                                           |    SENSOR 1, ARD 1
           SERVO      |                                           |    SERVO
                      |                                           |
@@ -64,7 +64,7 @@
                      |                                           |
                      |                                           |
                       -------------------------------------------
-                                        BACK
+                                        FRONT
                                         Sensor 0 Ard 2
 
 
@@ -96,13 +96,12 @@
 #define AMOTOR_BRAKE 9
 #define BMOTOR_BRAKE 8  
 
-#define false 0
-#define true 1
 
 //------------------SENSORSs------------------
 NewPing sonar1(TRIGGER_PIN1, ECHO_PIN1, MAX_DISTANCE);
 NewPing sonar2(TRIGGER_PIN2, ECHO_PIN2, MAX_DISTANCE);
 Servo myservo;
+
 
 
 //------------------VARIABLESs----------------
@@ -111,7 +110,7 @@ int servoH = 0;
 int command_enabled = 1;
 long last_time = 0;
 int control = 0; 
-
+int ARD = 1; // 1 == ARD 1 (LEFT) and 2 == ARD 2 (RIGHT)
 
 
 //------------------CODEs---------------------
@@ -133,8 +132,6 @@ void setup() {
         pinMode(ECHO_PIN1, INPUT);
         pinMode(TRIGGER_PIN2, OUTPUT);
         pinMode(ECHO_PIN2, INPUT);
-
-        attachInterrupt(digitalPinToInterrupt(BUTTON), button_pressed, RISING);
                
         Serial.println(AMOTOR);
         Serial.println(BMOTOR);
@@ -235,8 +232,15 @@ void move_reverse(){
   
 }
 void move_in(){
-    digitalWrite(DIR_A, HIGH);
-    digitalWrite(DIR_B, LOW);
+    if(ARD == 1){
+      digitalWrite(DIR_A, LOW);
+      digitalWrite(DIR_B, HIGH);
+    }
+    if(ARD == 2){
+      digitalWrite(DIR_A, HIGH);
+      digitalWrite(DIR_B, LOW);
+    }
+
 
     digitalWrite(AMOTOR_BRAKE, LOW);
     digitalWrite(BMOTOR_BRAKE, LOW);
@@ -245,8 +249,14 @@ void move_in(){
     digitalWrite(BMOTOR, HIGH);
 }
 void move_out(){
-    digitalWrite(DIR_A, LOW);
-    digitalWrite(DIR_B, HIGH);
+    if(ARD == 1){
+      digitalWrite(DIR_A, HIGH);
+      digitalWrite(DIR_B, LOW);
+    }
+    if(ARD == 2){
+      digitalWrite(DIR_A, LOW);
+      digitalWrite(DIR_B, HIGH);
+    }
 
     digitalWrite(AMOTOR_BRAKE, LOW);
     digitalWrite(BMOTOR_BRAKE, LOW);
