@@ -67,6 +67,10 @@ def servo_bottom():
 	left.write(b"b")
 	right.write(b"b")
 	return
+def restart_comm():
+	left.write(b"9")
+	right.write(b"9")
+	return
 
 
 def command(x):
@@ -87,6 +91,9 @@ def command(x):
 		servo_top()
 	if x == 'b':
 		servo_bottom()
+	if x == '9':
+		restart_comm()
+		
 
 	return
 
