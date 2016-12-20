@@ -3,7 +3,7 @@ import Pathfinding
 import sys
 import time
 import RPi.GPIO as GPIO
-GPIo.setmode(GPIO.BCM)
+GPIO.setmode(GPIO.BCM)
 
 #Setting up the Interrupt
 GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -81,7 +81,7 @@ def restart_comm():
 
 #Function that occurs when stop and/or start button are pressed
 
-def start_button_pressed():
+def start_button_pressed(channel):
 	#This is where the program to solve the "maze" would go
 	#for now it just makes the robot move foward
 	move_forward()
