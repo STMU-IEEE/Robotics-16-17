@@ -11,8 +11,12 @@ right_ard='/dev/serial/by-id/usb-Arduino_LLC__www.arduino.cc__Genuino_Uno_855313
 left = serial.Serial(left_ard, 9600)
 right = serial.Serial(right_ard, 9600)
 
+left.write(b"9")
+right.write(b"9")
+
 left.write(b"x")
 right.write(b"x")
+
 
 def end():
 	"Stops the motors and disconnects the serial comm channels."##LINE 20

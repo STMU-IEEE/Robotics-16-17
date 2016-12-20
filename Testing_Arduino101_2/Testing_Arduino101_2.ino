@@ -102,139 +102,29 @@ Servo myservo;
 
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
 //------------------VARIABLESs----------------
 char input;
 int servoH = 0;
-int command_enabled = 1;
 long last_time = 0;
 int control = 0; 
-<<<<<<< HEAD
-int ARD = 1; // 1 == ARD 1 (LEFT) and 2 == ARD 2 (RIGHT)
-=======
 int stop_button = 10;
-int stop_comm = 0;
+int command_status = 1;
 
 
->>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
-
-
-//------------------CODEs---------------------
-void setup() {
-        Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
-
-        myservo.attach(5);
-        
-        enableInterrupt(stop_button, stop_motor_ALL , CHANGE);
-        
+//-------------------FUNCTIONs----------------
+void stop_motor_ALL(){
   
-        
-        pinMode(AMOTOR, OUTPUT);
-        pinMode(BMOTOR, OUTPUT);
-        pinMode(AMOTOR_BRAKE, OUTPUT);
-        pinMode(BMOTOR_BRAKE, OUTPUT);
-        pinMode(DIR_A, OUTPUT);
-        pinMode(DIR_B, OUTPUT);
-        
-        pinMode(TRIGGER_PIN1, OUTPUT);
-        pinMode(ECHO_PIN1, INPUT);
-        pinMode(TRIGGER_PIN2, OUTPUT);
-        pinMode(ECHO_PIN2, INPUT);
-               
-        Serial.println(AMOTOR);
-        Serial.println(BMOTOR);
-        Serial.println(AMOTOR_BRAKE);
-        Serial.println(BMOTOR_BRAKE);
-
-        //Arduino 101 Stuff
-}
-
-void loop() {
+    command_status = 0;
+    digitalWrite(DIR_A, LOW);
+    digitalWrite(DIR_B, LOW);
   
-  if(stop_comm == 0 ){
-    commands();
-  }
-  
-       
-  
-}
-
-
-void commands(){
-
-      if (Serial.available() > 0) {
-          // read the incoming byte:
-          input = Serial.read(); //single character
-<<<<<<< HEAD
-          
-=======
->>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
-
-          switch(input){
-            
-            case 'w':
-              move_foward();
-              break;
-            case 'r':
-              move_reverse();
-              break;
-<<<<<<< HEAD
-            case 'o':
-              move_out();
-              break;
-            case 'i':
-              move_in();
-=======
-            case 'i':
-              move_in();
-              break;
-            case 'o':
-              move_out();
->>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
-              break;
-            case 'x':
-              stop_motor();
-              break;
-            case 'u':
-              noInterrupts();
-              us_sensor();
-              interrupts();
-              break;
-<<<<<<< HEAD
-            case 'e':
-=======
-            case 'n':
->>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
-              servo_info();
-              break;
-            case 't':
-              servo_top();
-              break;
-            case 'b':
-              servo_bottom();
-              break;
-            case 'p':
-              servoH++;
-              break;
-            case 'e':
-              servoH--;
-<<<<<<< HEAD
-              break;            
-=======
-              break;
-              
->>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
-            default:
-            break;
-          }
-      }
+    digitalWrite(AMOTOR, LOW);
+    digitalWrite(BMOTOR, LOW);
     
+    digitalWrite(AMOTOR_BRAKE, HIGH);
+    digitalWrite(BMOTOR_BRAKE, HIGH);
   
 }
-
 void move_foward(){
 
     digitalWrite(DIR_A, HIGH);
@@ -262,23 +152,12 @@ void move_reverse(){
     digitalWrite(BMOTOR, HIGH);
   
 }
-<<<<<<< HEAD
-void move_in(){
-    if(ARD == 1){
-      digitalWrite(DIR_A, LOW);
-      digitalWrite(DIR_B, HIGH);
-    }
-    if(ARD == 2){
-      digitalWrite(DIR_A, HIGH);
-      digitalWrite(DIR_B, LOW);
-    }
 
-=======
 
 void move_in(){
     digitalWrite(DIR_A, HIGH);
     digitalWrite(DIR_B, LOW);
->>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
+
 
     digitalWrite(AMOTOR_BRAKE, LOW);
     digitalWrite(BMOTOR_BRAKE, LOW);
@@ -286,22 +165,11 @@ void move_in(){
     digitalWrite(AMOTOR, HIGH);
     digitalWrite(BMOTOR, HIGH);
 }
-<<<<<<< HEAD
-void move_out(){
-    if(ARD == 1){
-      digitalWrite(DIR_A, HIGH);
-      digitalWrite(DIR_B, LOW);
-    }
-    if(ARD == 2){
-      digitalWrite(DIR_A, LOW);
-      digitalWrite(DIR_B, HIGH);
-    }
-=======
 
 void move_out(){
     digitalWrite(DIR_A, LOW);
     digitalWrite(DIR_B, HIGH);
->>>>>>> 690eafc62ccf4a68495fea3520da555d3419a1ab
+
 
     digitalWrite(AMOTOR_BRAKE, LOW);
     digitalWrite(BMOTOR_BRAKE, LOW);
@@ -311,18 +179,8 @@ void move_out(){
 }
 
 void stop_motor(){
-  
-  
-    digitalWrite(AMOTOR, LOW);
-    digitalWrite(BMOTOR, LOW);
-    
-    digitalWrite(AMOTOR_BRAKE, HIGH);
-    digitalWrite(BMOTOR_BRAKE, HIGH);
-  
-}
-void stop_motor_ALL(){
-  
-    //stop_comp = 1;
+    digitalWrite(DIR_A, LOW);
+    digitalWrite(DIR_B, LOW);
   
     digitalWrite(AMOTOR, LOW);
     digitalWrite(BMOTOR, LOW);
@@ -331,6 +189,7 @@ void stop_motor_ALL(){
     digitalWrite(BMOTOR_BRAKE, HIGH);
   
 }
+
 
 void us_sensor(){
   delay(50);
@@ -355,5 +214,127 @@ void servo_bottom(){
 void servo_top(){
   myservo.write(servoH);
 }
+
+//------------------CODEs---------------------
+void setup() {
+        Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
+
+        myservo.attach(5);
+        
+        enableInterrupt(stop_button, stop_motor_ALL , CHANGE);
+        
+  
+        
+        pinMode(AMOTOR, OUTPUT);
+        pinMode(BMOTOR, OUTPUT);
+        pinMode(AMOTOR_BRAKE, OUTPUT);
+        pinMode(BMOTOR_BRAKE, OUTPUT);
+        pinMode(DIR_A, OUTPUT);
+        pinMode(DIR_B, OUTPUT);
+        
+        pinMode(TRIGGER_PIN1, OUTPUT);
+        pinMode(ECHO_PIN1, INPUT);
+        pinMode(TRIGGER_PIN2, OUTPUT);
+        pinMode(ECHO_PIN2, INPUT);
+               
+        Serial.println(AMOTOR);
+        Serial.println(BMOTOR);
+        Serial.println(AMOTOR_BRAKE);
+        Serial.println(BMOTOR_BRAKE);
+}
+
+void loop() {      
+  command();
+}
+
+
+void command(){
+
+      if (Serial.available() > 0) {
+          // read the incoming byte:
+          input = Serial.read(); //single character
+
+          
+
+          switch(input){
+            
+            case 'w':
+              if(command_status == 1){
+                move_foward();
+              }
+              break;
+              
+            case 'r':
+              if(command_status == 1){
+                move_reverse();
+              }
+              break;
+
+            case 'o':
+              if(command_status == 1){
+                move_out();
+              }
+              break;          
+
+            case 'i':
+              if(command_status == 1){
+                move_in();
+              } 
+              break;
+              
+            case 'x':
+              if(command_status == 1){
+                stop_motor();
+              }
+              break;
+              
+            case 'u':
+              if(command_status == 1){
+                noInterrupts();
+                us_sensor();
+                interrupts();
+              }
+              break;
+              
+            case 'n':
+              if(command_status == 1){
+                servo_info();
+              }
+              break;
+              
+            case 't':
+              if(command_status == 1){
+                servo_top();
+              }
+              break;
+              
+            case 'b':
+              if(command_status == 1){
+                servo_bottom();
+              }
+              break;
+              
+            case 'p':
+              if(command_status == 1){
+                servoH++;  
+              }
+              break;
+              
+            case 'e':
+              if(command_status == 1){
+                servoH--;  
+              }
+              break;            
+            case '9':
+              command_status = 1;
+              break;
+            default:
+            break;
+          }
+      }
+    
+  
+}
+
 
  
