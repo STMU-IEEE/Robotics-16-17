@@ -133,8 +133,3 @@ GPIO.cleanup()
 
 
 
-
-
-
-
-
