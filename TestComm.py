@@ -1,9 +1,5 @@
 import serial
-from gyro import move_straight
-
-
-"""This will be called at the beginning of the program to initialize everything.
-"""
+#import gyro 
 
 """ 
 This is the id of the black arduino Uno
@@ -17,8 +13,10 @@ This is the id of the athuentic arduino uno
 This is the id of one of the arduino 101s
 '/dev/serial/by-id/usb-Intel_ARDUINO_101_AE6642SQ60400T8-if00'
 
-
 """
+
+
+
 
 left_ard = '/dev/serial/by-id/usb-Arduino_LLC__www.arduino.cc__Genuino_Uno_85531303631351112162-if00'
 right_ard  = '/dev/serial/by_id/usb-Arduino__www.arduino.cc__0043_6493833393235151C131-if00'
@@ -36,6 +34,8 @@ def end():
 	left.close()
 	right.close()
 	return
+ 
+
 
 """ Previous Code
 def light_on():
@@ -55,6 +55,7 @@ def read_state():
 		print("The LED is ON")
 	return
 """
+
 def command(x):
 
 	""" Previous Code
@@ -65,24 +66,32 @@ def command(x):
 	if x == 'p':
 		read_state()
 	"""
+	bytes = x.split()
 
+	if bytes[0] == 'w':
+		print(""" Moving_Forwards: ARD_R: A- {am1_speed} B- {bm1_speed},ARD_L: A- {am2_speed} B-{bm2_speed}""".format(am1_speed = bytes[1],
+			 bm1_speed = bytes[2], am2_speed = bytes[3], bm2_speed = bytes[4]))
+		right.write(bytes[0])
+		right.write(bytes[1])
+		right.write(bytes[2])
 
-	if x == 'w':
-		move_straight(1)
-	if x == 's':
-		move_straight(4)
-	if x == 'x':
-		stop_motor()
+		left.write(bytes[0])
+		left.write(bytes[3])
+		left.write(bytes[4])		
+	if bytes[0] == 's':
+		print("Moving_Backwards")
+	if bytes[0] == 'x':
+		print("Motor_stop")
 	return
 
 
 print("Welcome to The Raspberry Pi Controller HQ")
-
+print("Enter direction, ARD1 AMOTOR speed,ARD1 BMOTOR speed,ARD2 AMOTOR speed,ARD2 BMOTORspeed")
 while(True):
 	x = input("Enter Command: ")
 	print(x)
 	if x == 'x':
-		end()
+		#end()
 		break
 	else:
 		command(x)

@@ -1,0 +1,12 @@
+from sense_hat import SenseHat
+from time import sleep
+
+sense = SenseHat()
+inital_value  = sense.get_orientation()
+
+for i in range(400):
+ 	
+	new_value = sense.get_orientation()
+	diff = new_value["yaw"] - inital_value["yaw"]
+	print(new_value)
+	sleep(0.1)
