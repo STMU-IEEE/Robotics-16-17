@@ -1,5 +1,6 @@
 import serial
 #import gyro 
+from time import sleep
 
 """ 
 This is the id of the black arduino Uno
@@ -19,7 +20,7 @@ This is the id of one of the arduino 101s
 
 
 left_ard = '/dev/serial/by-id/usb-Arduino_LLC__www.arduino.cc__Genuino_Uno_85531303631351112162-if00'
-right_ard  = '/dev/serial/by_id/usb-Arduino__www.arduino.cc__0043_6493833393235151C131-if00'
+right_ard  = '/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_6493833393235151C131-if00'
 
 
 right = serial.Serial(right_ard, 9600)
@@ -34,7 +35,7 @@ def end():
 	left.close()
 	right.close()
 	return
- 
+
 
 
 """ Previous Code
@@ -71,17 +72,28 @@ def command(x):
 	if bytes[0] == 'w':
 		print(""" Moving_Forwards: ARD_R: A- {am1_speed} B- {bm1_speed},ARD_L: A- {am2_speed} B-{bm2_speed}""".format(am1_speed = bytes[1],
 			 bm1_speed = bytes[2], am2_speed = bytes[3], bm2_speed = bytes[4]))
-		right.write(bytes[0])
-		right.write(bytes[1])
-		right.write(bytes[2])
 
-		left.write(bytes[0])
-		left.write(bytes[3])
-		left.write(bytes[4])		
+		right.write( bytes[0].encode() )
+
+		right.write( bytes[1].encode() )
+		right.write( b"A")
+		#sleep(1.1)
+		right.write( bytes[2].encode() )
+
+		left.write( bytes[0].encode() )
+
+		left.write( bytes[3].encode() )
+		left.write( b"A")
+		#sleep(1.1)
+		left.write( bytes[4].encode() )
+		
 	if bytes[0] == 's':
 		print("Moving_Backwards")
-	if bytes[0] == 'x':
-		print("Motor_stop")
+	if x == 'x':
+		stop_motor()
+	if x == '9':
+		left.write(b"9")
+		right.write(b"9")		
 	return
 
 
@@ -90,8 +102,8 @@ print("Enter direction, ARD1 AMOTOR speed,ARD1 BMOTOR speed,ARD2 AMOTOR speed,AR
 while(True):
 	x = input("Enter Command: ")
 	print(x)
-	if x == 'x':
-		#end()
+	if x == '1':
+		end()
 		break
 	else:
 		command(x)

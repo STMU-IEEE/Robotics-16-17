@@ -1,13 +1,15 @@
 from sense_hat import SenseHat
 from time import sleep
 import serial 
-
-""" 
+"""  
 left_ard = '/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_6493833393235151C131-if00'
-right_ard = '/dev/serial/by-id/usb_Arduino_LLC__www.arduino.cc__Genuino_Uno_85531303631351112162-if00'
+right_ard = '/dev/serial/by-id/usb-Arduino_LLC__www.arduino.cc__Genuino_Uno_85531303631351112162-if00'
 
 left = serial.Serial(left_ard, 9600)
 right = serial.Serial(right_ard, 9600)
+
+left.write(b"9")
+right.write(b"9")
 """
 sense = SenseHat()
 
@@ -135,18 +137,44 @@ def change_speed(x):
 	print(' {f_L}  {f_R} '.format(f_L = str(motor_speed[FRO_LEFT]), f_R = str(motor_speed[FRO_RIGHT])  ) )
 	print(' {b_L}  {b_R} '.format(b_L = str(motor_speed[BAC_LEFT]), b_R = str(motor_speed[BAC_RIGHT])  ) ) 
 	print('\n')
+	""" 
+	left.write(b"w")
+	left.write( str ( motor_speed[FRO_LEFT] ).encode() )
+	left.write(b"A")
+	left.write( str ( motor_speed[BAC_LEFT] ).encode() )
+
+	right.write(b"w")
+	right.write( str ( motor_speed[FRO_RIGHT] ).encode() )
+	right.write(b"A")
+	right.write( str ( motor_speed[BAC_RIGHT] ).encode() )
+	""" 
 	return
+
+def displacement():
+	B = ave_gyro()
+	print(pre_value - B)	
+def rotation():
+	A = ave_gyro()
+	B = ave_gyro()
+	if B - A > 0.6:
+		print("ClockWise: {diff}".format(diff = (B-A) ) )
+	if B - A < -0.6:
+		print("CounterClockWise: {diff}".format(diff = (B-A) ) )
+	if abs( B - A ) <  0.6 :
+		print("Stationary")
 
 def move_straight(direction):
 	#Code to make the robot move straight
-	pre_value = ave_gyro()
 	post_value = ave_gyro()
 	diff = post_value - pre_value
 	change_speed(diff)	
 
 def main():
 	while(True):
-		move_straight(1)
+		#move_straight(1)
 		#print(ave_gyro() )
+		#rotation()
+		displacement() 
 
+pre_value = ave_gyro()
 main()
