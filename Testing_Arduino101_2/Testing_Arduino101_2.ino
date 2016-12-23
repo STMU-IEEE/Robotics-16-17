@@ -109,6 +109,7 @@ long last_time = 0;
 int control = 0; 
 int stop_button = 10;
 int command_status = 1;
+int motor_speed[2];
 
 
 //-------------------FUNCTIONs----------------
@@ -125,7 +126,7 @@ void stop_motor_ALL(){
     digitalWrite(BMOTOR_BRAKE, HIGH);
   
 }
-void move_foward(){
+void move_forward(){
 
     digitalWrite(DIR_A, HIGH);
     digitalWrite(DIR_B, HIGH);
@@ -135,8 +136,27 @@ void move_foward(){
 
     digitalWrite(AMOTOR, HIGH);
     digitalWrite(BMOTOR, HIGH);
+}
+void variable_forward(){
+    while(Serial.available () > 2);//wait for the motor speed info
+    motor_speed[0] = Serial.parseInt();//motor A speed
+    motor_speed[1] = Serial.parseInt();//motor B speed
+
+    if(motor_speed[0] > 255){
+      motor_speed[0] = 255;
+    }
+    if(motor_speed[1] > 255){
+      motor_speed[1] = 255;
+    }
     
-    
+    digitalWrite(DIR_A, HIGH);
+    digitalWrite(DIR_B, HIGH);
+
+    digitalWrite(AMOTOR_BRAKE, LOW);
+    digitalWrite(BMOTOR_BRAKE, LOW);
+
+    analogWrite(AMOTOR, motor_speed[0]);
+    analogWrite(BMOTOR, motor_speed[1]);
   
 }
 void move_reverse(){
@@ -259,8 +279,10 @@ void command(){
           switch(input){
             
             case 'w':
+
               if(command_status == 1){
-                move_foward();
+                //move_forward();
+                variable_forward();
               }
               break;
               
