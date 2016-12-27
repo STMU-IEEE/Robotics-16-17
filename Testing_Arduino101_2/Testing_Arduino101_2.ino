@@ -45,7 +45,7 @@
                                     ROBOT LAYOUT LEVEL 1
                                     
                                         BACK
-                                        Sensor 0 Ard 1
+                                        SENSOR 1 ARD 1
                       -------------------------------------------
                      |                                           |
                      |    BUTTON 2    BUTTON 1      ARD 1        |
@@ -54,7 +54,7 @@
                      |                                           |
                      |                                           |
          RIGHT       |                                           |    LEFT
-     SENSOR 1,ARD 2  |                                           |    SENSOR 1, ARD 1
+     SENSOR 2,ARD 2  |                                           |    SENSOR 2, ARD 1
           SERVO      |                                           |    SERVO
                      |                                           |
                      |    ARD 2                    RASPBERRY     |
@@ -63,7 +63,7 @@
                      |                                           |
                       -------------------------------------------
                                         FRONT
-                                        Sensor 0 Ard 2
+                                        SENSOR 1 ARD 2
 
 
 
@@ -110,7 +110,7 @@ int control = 0;
 int stop_button = 10;
 int command_status = 1;
 int motor_speed[2];
-
+int ultrasonic1 = 0, ultrasonic2 = 0;
 
 //-------------------FUNCTIONs----------------
 void stop_motor_ALL(){
@@ -157,7 +157,6 @@ void variable_forward(){
 
     analogWrite(AMOTOR, motor_speed[0]);
     analogWrite(BMOTOR, motor_speed[1]);
-  
 }
 void move_reverse(){
     digitalWrite(DIR_A, LOW);
@@ -213,15 +212,24 @@ void stop_motor(){
 
 void us_sensor(){
   delay(50);
-  
-  Serial.print("Sensor 1: ");
-  Serial.print(sonar1.ping_cm());
 
-  Serial.print("Sensor 2: ");
-  Serial.print(sonar2.ping_cm());
+  ultrasonic1 = sonar1.ping_cm();
+  ultrasonic2 = sonar2.ping_cm();
+
+  if(ultrasonic1 < 20){
+        Serial.print("1");
+  }
+  else
+        Serial.print("0");
+
+  Serial.print("-");
+  if(ultrasonic2 < 20){
+        Serial.print("1");
+  }
+  else
+        Serial.print("0");
+        
   Serial.print("\n");
-  
-  
   delay(50);
   
 }
@@ -238,7 +246,7 @@ void servo_top(){
 //------------------CODEs---------------------
 void setup() {
         Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
-
+        
         myservo.attach(5);
         
         enableInterrupt(stop_button, stop_motor_ALL , CHANGE);
@@ -279,7 +287,6 @@ void command(){
           switch(input){
             
             case 'w':
-
               if(command_status == 1){
                 //move_forward();
                 variable_forward();
