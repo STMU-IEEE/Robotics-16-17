@@ -67,6 +67,14 @@ def command(x):
 	if x == 'p':
 		read_state()
 	"""
+
+	if x == 'u':
+		left.write(b"u")
+		right.write(b"u")
+		ultrasonic_left = left.read()
+		ultrasonic_right = right.read()
+		print("Left Arduino Info: " + ultrasonic_left)
+		print("Right Arduino Info: " + ultrasonic_right)
 	bytes = x.split()
 
 	if bytes[0] == 'w':
