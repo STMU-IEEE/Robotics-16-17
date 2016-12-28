@@ -37,32 +37,60 @@ def stop():
 	left.write(b"x")
 	return
 
-def move_right():
+def move_right(bytes):
 	left.write(b"i")
+	left.write(bytes[1].encode() )
+	left.write(b"&")#separator char
+	left.write(bytes[2].encode() )
+
 	right.write(b"o")
+	right.write(bytes[3].encode() )
+	right.write(b"&")#separator char
+	right.write(bytes[4].encode() )
 	return
 
-def move_left():
-	right.write(b"i")
+def move_left(bytes):
 	left.write(b"o")
+	left.write(bytes[1].encode() )
+	left.write(b"&")#Separator Char
+	left.write(bytes[2].encode() )
+
+	right.write(b"i")
+	right.write(bytes[3].encode() )
+	right.write(b"&")#Separator Char
+	right.write(bytes[4].encode() )
 	return
 ##LINE 40
 
-def move_forward():
-	right.write(b"w")
-	left.write(b"w")
+def move_forward(bytes):
+	left.write(bytes[0].encode() )
+	left.write(bytes[1].encode() )
+	left.write(b"&")#Separator Char
+	left.write(bytes[2].encode() )
+
+	right.write(bytes[0].encode() )
+	right.write(bytes[3].encode() )
+	right.write(b"&")#Separator Char
+	right.write(bytes[4].encode() )
 	return
 
-def move_reverse():
+def move_reverse(bytes):
 	left.write(b"r")
+	left.write(bytes[1].encode() )
+	left.write(b"&")#Separator Char
+	left.write(bytes[2].encode() )
+
 	right.write(b"r")
+	right.write(bytes[3].encode() )
+	right.write(b"&")#Separator Char
+	right.write(bytes[4].encode() )
 	return
 
 def us_sensor():
 	left.write(b"u")
 	right.write(b"u")
-	##print("Left: " + left.read()  )
-	##print("Right: " + right.read()  )
+	print("Left: " + str(left.read() )  )
+	print("Right: " + str(right.read() )  )
 	return
 
 def servo_top():
@@ -74,6 +102,29 @@ def servo_bottom():
 	left.write(b"b")
 	right.write(b"b")
 	return
+
+def servo_change(bytes):
+	bytes[1] = servoH_top
+	bytes[2] = servoH_bottom
+	#Sending bytes to the left arduino
+	left.write(bytes[0].encode() )
+	left.write(bytes[1].encode() )
+	left.write(b"&")#Separator Char
+	left.write(bytes[2].encode() )
+	#Sending bytes to the right arduino
+	right.write(bytes[0].encode() )
+	right.write(bytes[1].encode() )
+	right.write(b"&")#Separator Char
+	right.write(bytes[2].encode() )
+	return
+
+def servo_info():
+	left.write(b"n")
+	right.write(b"n")
+	print("Left: " + str(left.read() ) )
+	print("Right: " + str(right.read() ) )
+	return	
+
 def restart_comm():
 	left.write(b"9")
 	right.write(b"9")
@@ -84,7 +135,7 @@ def restart_comm():
 def start_button_pressed(channel):
 	#This is where the program to solve the "maze" would go
 	#for now it just makes the robot move foward
-	move_forward()
+	restart_comm()
 	return
 
 #Assigned the interrupt their functions
@@ -93,23 +144,29 @@ GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bounceti
 #Switch Case that selects the commands
 def command(x):
 
-	if x == 'w':
-		move_forward()
-	if x == 'a':
-		move_left()
-	if x == 's':
-		move_reverse()
-	if x == 'd':
-		move_right()
-	if x == 'x':
+	bytes = x.split()
+
+	if bytes[0] == 'w':
+		move_forward(bytes)
+	if bytes[0] == 'a':
+		move_left(bytes)
+	if bytes[0] == 's':
+		move_reverse(bytes)
+	if bytes[0] == 'd':
+		move_right(bytes)
+	if bytes[0] == 'x':
 		stop()
-	if x == 'u':
+	if bytes[0] == 'u':
 		us_sensor()
-	if x == 't':
+	if bytes[0] == 't':
 		servo_top()
-	if x == 'b':
+	if bytes[0] == 'b':
 		servo_bottom()
-	if x == '9':
+	if bytes[0] == 'n':
+		servo_info()
+	if bytes[0] == 'c':
+		servo_change(bytes)
+	if bytes[0] == '9':
 		restart_comm()
 		
 
@@ -118,6 +175,7 @@ def command(x):
 #Here is the loop that recieves input from the user
 
 print("Welcome to The Raspberry Pi Controller HQ")
+print("When entering multiple bytes, the first bytes affect the left arduino and the motor A respectively")
 
 while(True):
 	x = input("Enter Command: ")
