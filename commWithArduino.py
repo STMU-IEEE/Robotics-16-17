@@ -3,6 +3,7 @@ import Pathfinding
 import sys
 import time
 import RPi.GPIO as GPIO
+import math 
 GPIO.setmode(GPIO.BCM)
 
 #Setting up the Interrupt
@@ -89,8 +90,26 @@ def move_reverse(bytes):
 def us_sensor():
 	left.write(b"u")
 	right.write(b"u")
-	print("Left: " + str(left.read() )  )
-	print("Right: " + str(right.read() )  )
+	left_ultra = [0,0,0]
+	left_amount = 0
+	terminating_char = '-'
+	#'-' separates values 
+	#'&' ends of transmition
+	while(True):
+		if left_amount == 2:
+			break
+
+		new_character = left.read()
+
+		if new_character == terminating_char:
+			break
+
+		new_integer = int(new_character)
+		left_ultra[left_amount] = new_integer
+		left_amount += 1
+
+	for i in range(left_amount):
+		number += left_ultra[i] * pow(10, i)
 	return
 
 def servo_top():
