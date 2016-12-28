@@ -76,11 +76,13 @@
 
       
 //------------------PINs---------------------
-#define TRIGGER_PIN1 0
-#define ECHO_PIN1 1
+#define TRIGGER_PIN1 A5
+#define ECHO_PIN1 2
 
-#define TRIGGER_PIN2 2
-#define ECHO_PIN2 4
+//DO NOT USE PIN 1, IT CAUSES CONSTANT ZEROS
+//DO NOT USE PIN 2 as an ECHO, IT WILL ALSO CAUSE CONSTANT ZEROS 
+#define TRIGGER_PIN2 4
+#define ECHO_PIN2 A4
 
 #define MAX_DISTANCE 200
 
@@ -92,7 +94,9 @@
 #define AMOTOR 3
 
 #define AMOTOR_BRAKE 9
-#define BMOTOR_BRAKE 8  
+#define BMOTOR_BRAKE 8 
+
+#define ULTRA_FREQUENCY 10
 
 
 //------------------SENSORSs------------------
@@ -104,7 +108,7 @@ Servo myservo;
 
 //------------------VARIABLESs----------------
 char input;
-int servoH = 0;
+int servoH_top = 0, servoH_bottom = 0;
 long last_time = 0;
 int control = 0; 
 int stop_button = 10;
@@ -126,6 +130,7 @@ void stop_motor_ALL(){
     digitalWrite(BMOTOR_BRAKE, HIGH);
   
 }
+/*
 void move_forward(){
 
     digitalWrite(DIR_A, HIGH);
@@ -137,6 +142,7 @@ void move_forward(){
     digitalWrite(AMOTOR, HIGH);
     digitalWrite(BMOTOR, HIGH);
 }
+*/
 void variable_forward(){
     while(Serial.available () > 2);//wait for the motor speed info
     motor_speed[0] = Serial.parseInt();//motor A speed
@@ -158,6 +164,7 @@ void variable_forward(){
     analogWrite(AMOTOR, motor_speed[0]);
     analogWrite(BMOTOR, motor_speed[1]);
 }
+/*
 void move_reverse(){
     digitalWrite(DIR_A, LOW);
     digitalWrite(DIR_B, LOW);
@@ -169,10 +176,30 @@ void move_reverse(){
 
     digitalWrite(AMOTOR, HIGH);
     digitalWrite(BMOTOR, HIGH);
-  
 }
+*/
+void variable_reverse(){
+    while(Serial.available () > 2);//wait for the motor speed info
+    motor_speed[0] = Serial.parseInt();//motor A speed
+    motor_speed[1] = Serial.parseInt();//motor B speed
 
+    if(motor_speed[0] > 255){
+      motor_speed[0] = 255;
+    }
+    if(motor_speed[1] > 255){
+      motor_speed[1] = 255;
+    }
+    
+    digitalWrite(DIR_A, LOW);
+    digitalWrite(DIR_B, LOW);
 
+    digitalWrite(AMOTOR_BRAKE, LOW);
+    digitalWrite(BMOTOR_BRAKE, LOW);
+
+    analogWrite(AMOTOR, motor_speed[0]);
+    analogWrite(BMOTOR, motor_speed[1]);
+}
+/*
 void move_in(){
     digitalWrite(DIR_A, HIGH);
     digitalWrite(DIR_B, LOW);
@@ -184,7 +211,29 @@ void move_in(){
     digitalWrite(AMOTOR, HIGH);
     digitalWrite(BMOTOR, HIGH);
 }
+*/
+void variable_in(){
+    while(Serial.available () > 2);//wait for the motor speed info
+    motor_speed[0] = Serial.parseInt();//motor A speed
+    motor_speed[1] = Serial.parseInt();//motor B speed
 
+    if(motor_speed[0] > 255){
+      motor_speed[0] = 255;
+    }
+    if(motor_speed[1] > 255){
+      motor_speed[1] = 255;
+    }
+    
+    digitalWrite(DIR_A, HIGH);
+    digitalWrite(DIR_B, LOW);
+
+    digitalWrite(AMOTOR_BRAKE, LOW);
+    digitalWrite(BMOTOR_BRAKE, LOW);
+
+    analogWrite(AMOTOR, motor_speed[0]);
+    analogWrite(BMOTOR, motor_speed[1]);
+}
+/*
 void move_out(){
     digitalWrite(DIR_A, LOW);
     digitalWrite(DIR_B, HIGH);
@@ -196,7 +245,28 @@ void move_out(){
     digitalWrite(AMOTOR, HIGH);
     digitalWrite(BMOTOR, HIGH);
 }
+*/
+void variable_out(){
+    while(Serial.available () > 2);//wait for the motor speed info
+    motor_speed[0] = Serial.parseInt();//motor A speed
+    motor_speed[1] = Serial.parseInt();//motor B speed
 
+    if(motor_speed[0] > 255){
+      motor_speed[0] = 255;
+    }
+    if(motor_speed[1] > 255){
+      motor_speed[1] = 255;
+    }
+    
+    digitalWrite(DIR_A, LOW);
+    digitalWrite(DIR_B, HIGH);
+
+    digitalWrite(AMOTOR_BRAKE, LOW);
+    digitalWrite(BMOTOR_BRAKE, LOW);
+
+    analogWrite(AMOTOR, motor_speed[0]);
+    analogWrite(BMOTOR, motor_speed[1]);
+}
 void stop_motor(){
     digitalWrite(DIR_A, LOW);
     digitalWrite(DIR_B, LOW);
@@ -211,11 +281,17 @@ void stop_motor(){
 
 
 void us_sensor(){
-  delay(50);
-
-  ultrasonic1 = sonar1.ping_cm();
-  ultrasonic2 = sonar2.ping_cm();
-
+  int i = 0, total1 = 0, total2 = 0,ave_us1 = 0, ave_us2 = 0;
+  for(i = 0; i < ULTRA_FREQUENCY; i++){
+    total1 += sonar1.ping_cm();
+    total2 += sonar2.ping_cm();
+  }
+  ave_us1 = total1 / ULTRA_FREQUENCY;
+  ave_us2 = total2 / ULTRA_FREQUENCY;
+  
+  ultrasonic1 = ave_us1;
+  ultrasonic2 = ave_us2;
+  /*
   if(ultrasonic1 < 20){
         Serial.print("1");
   }
@@ -230,28 +306,41 @@ void us_sensor(){
         Serial.print("0");
         
   Serial.print("\n");
-  delay(50);
-  
+  */
+  Serial.print(ultrasonic1);
+  Serial.print('-');
+  Serial.print(ultrasonic2);
+  Serial.print("&");
 }
+
 void servo_info(){
-  Serial.println(myservo.read());
+  Serial.print(myservo.read());
+  Serial.print("--");
+  Serial.print(servoH_top);
+  Serial.print('-');
+  Serial.print(servoH_bottom);
+  Serial.print('&');
 }
 void servo_bottom(){
-  myservo.write(0);
+  myservo.write(servoH_bottom);
 }
 void servo_top(){
-  myservo.write(servoH);
+  myservo.write(servoH_top);
 }
+void servo_change(){
+    while(Serial.available () > 2);//wait for the motor speed info
+    servoH_top = Serial.parseInt();//motor A speed
+    servoH_bottom = Serial.parseInt();//motor B speed
+}
+
 
 //------------------CODEs---------------------
 void setup() {
         Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
-        
+        //Serial.println("Welcome to the Arduino Command HQ");  
         myservo.attach(5);
         
-        enableInterrupt(stop_button, stop_motor_ALL , CHANGE);
-        
-  
+        enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
         
         pinMode(AMOTOR, OUTPUT);
         pinMode(BMOTOR, OUTPUT);
@@ -259,20 +348,27 @@ void setup() {
         pinMode(BMOTOR_BRAKE, OUTPUT);
         pinMode(DIR_A, OUTPUT);
         pinMode(DIR_B, OUTPUT);
+
         
         pinMode(TRIGGER_PIN1, OUTPUT);
         pinMode(ECHO_PIN1, INPUT);
         pinMode(TRIGGER_PIN2, OUTPUT);
         pinMode(ECHO_PIN2, INPUT);
-               
+         
+        /*
         Serial.println(AMOTOR);
         Serial.println(BMOTOR);
         Serial.println(AMOTOR_BRAKE);
         Serial.println(BMOTOR_BRAKE);
+        */
+        delay(100);
+        
 }
 
-void loop() {      
+void loop() {   
+ 
   command();
+  //us_sensor();
 }
 
 
@@ -281,7 +377,8 @@ void command(){
       if (Serial.available() > 0) {
           // read the incoming byte:
           input = Serial.read(); //single character
-
+          //Serial.print("Receieved: "); 
+          //Serial.print(input);
           
 
           switch(input){
@@ -289,75 +386,84 @@ void command(){
             case 'w':
               if(command_status == 1){
                 //move_forward();
+                //Serial.print("Hello1");
                 variable_forward();
               }
               break;
               
             case 'r':
               if(command_status == 1){
-                move_reverse();
+                //move_reverse();
+                //Serial.print("Hello2");
+                variable_reverse();
               }
               break;
 
             case 'o':
               if(command_status == 1){
-                move_out();
+                //move_out();
+                //Serial.print("Hello3");
+                variable_out();
               }
               break;          
 
             case 'i':
               if(command_status == 1){
-                move_in();
+                //move_in();
+                //Serial.print("Hello4");
+                variable_in();
               } 
               break;
               
             case 'x':
               if(command_status == 1){
+                //Serial.print("Hello5");
                 stop_motor();
               }
               break;
               
             case 'u':
               if(command_status == 1){
-                noInterrupts();
+                //Serial.println("Hello6");
+                //noInterrupts();
                 us_sensor();
-                interrupts();
+                //us_sensor();
+                //interrupts();
               }
               break;
               
             case 'n':
               if(command_status == 1){
                 servo_info();
+                //Serial.print("Hello7");
               }
               break;
               
             case 't':
               if(command_status == 1){
                 servo_top();
+                //Serial.print("Hello8");
               }
               break;
               
             case 'b':
               if(command_status == 1){
+                //Serial.print("Hello12");
                 servo_bottom();
               }
               break;
               
-            case 'p':
+            case 'c':
               if(command_status == 1){
-                servoH++;  
+                servo_change();
+                //Serial.print("Hello9");         
               }
-              break;
-              
-            case 'e':
-              if(command_status == 1){
-                servoH--;  
-              }
-              break;            
             case '9':
               command_status = 1;
+              //Serial.print("Hello10");
               break;
             default:
+              //Serial.print("Hello11");
             break;
           }
       }
