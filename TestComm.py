@@ -81,19 +81,19 @@ def command(x):
 		print(""" Moving_Forwards: ARD_R: A- {am1_speed} B- {bm1_speed},ARD_L: A- {am2_speed} B-{bm2_speed}""".format(am1_speed = bytes[1],
 			 bm1_speed = bytes[2], am2_speed = bytes[3], bm2_speed = bytes[4]))
 
-		right.write( bytes[0].encode() )
-
-		right.write( bytes[1].encode() )
-		right.write( b"A")
-		#sleep(1.1)
-		right.write( bytes[2].encode() )
-
 		left.write( bytes[0].encode() )
 
-		left.write( bytes[3].encode() )
-		left.write( b"A")
+		left.write( bytes[1].encode() )
+		left.write( b"&")
 		#sleep(1.1)
-		left.write( bytes[4].encode() )
+		left.write( bytes[2].encode() )
+
+		right.write( bytes[0].encode() )
+
+		right.write( bytes[3].encode() )
+		right.write( b"&")
+		#sleep(1.1)
+		right.write( bytes[4].encode() )
 		
 	if bytes[0] == 's':
 		print("Moving_Backwards")

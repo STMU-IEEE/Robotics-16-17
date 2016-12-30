@@ -90,26 +90,24 @@ def move_reverse(bytes):
 def us_sensor():
 	left.write(b"u")
 	right.write(b"u")
-	left_ultra = [0,0,0]
-	left_amount = 0
-	terminating_char = '-'
-	#'-' separates values 
-	#'&' ends of transmition
-	while(True):
-		if left_amount == 2:
-			break
-
-		new_character = left.read()
-
-		if new_character == terminating_char:
-			break
-
-		new_integer = int(new_character)
-		left_ultra[left_amount] = new_integer
-		left_amount += 1
-
-	for i in range(left_amount):
-		number += left_ultra[i] * pow(10, i)
+	
+	left_back = read_integer_serial('-', 1)#1 means left, 2 means right
+	left_left = read_integer_serial('&', 1)
+	
+	right_front = read_integer_serial('-', 2)
+	right_right = read_integer_serial('&', 2)
+	
+	print("		    FRONT   ")
+	print("			 {f}    ".format(f = right_front) )
+	print("		[]--------[]")
+	print("		|          |")
+	print("		|          |")
+	print("{l}	|          |   {r}".format(l = left_left, r = right_right) )
+	print("		|          |")
+	print("		|          |")
+	print("		[]--------[]")
+	print("          {b}    ".format(b = left_back) )
+	print("         BACK    ")
 	return
 
 def servo_top():
@@ -140,8 +138,20 @@ def servo_change(bytes):
 def servo_info():
 	left.write(b"n")
 	right.write(b"n")
-	print("Left: " + str(left.read() ) )
-	print("Right: " + str(right.read() ) )
+	
+	left_servo_position = read_integer_serial('-' , 1)
+	left_servo_height_top = read_integer_serial('-', 1)
+	left_servo_height_bottom = read_integer_serial('&', 1)
+	
+	right_servo_position = read_integer_serial('-', 2)
+	right_servo_height_top = read_integer_serial('-', 2)
+	right_servo_height_bottom = read_integer_serial('&' , 2)
+	
+	print("Left Servo Information:")
+	print("Position: {P} Height Top: {T} Height Bottom: {B}".format(P = left_servo_position, T = left_servo_height_top, B = left_servo_height_bottom) )
+	print("Right Servo Information:")
+	print("Position: {P} Height Top: {T} Height Bottom: {B}".format(P = right_servo_position, T = right_servo_height_top, B = right_servo_height_bottom) )
+	
 	return	
 
 def restart_comm():
@@ -156,6 +166,45 @@ def start_button_pressed(channel):
 	#for now it just makes the robot move foward
 	restart_comm()
 	return
+	
+def read_integer_serial(terminating_char, side)
+	#side if 1 means left and 2 means right
+	#'-' separates values 
+	#'&' ends of transmition
+	char_read = [-1,-1,-1]
+	if side == 1:#left
+		
+		for i in range(3):#Read the char and end if read char is the terminating_char
+			new_char = left.read()
+			if new_char == terminating_char:
+				break
+			char_read[i] = new_char
+		
+		if char_read[0] == -1:
+			return 0
+		else if char_read[1] == -1:
+			return int(char_read[0])
+		else if char_read[2] == -1:
+			return int(char_read[0] + char_read[1])
+		else:
+			return int(char_read[0] + char_read[1] + char_read[2])
+	if side == 2:#right
+		
+		for i in range(3):#Read the char and end if read char is the terminating_char
+			new_char = right.read()
+			if new_char == terminating_char:
+				break
+			char_read[i] = new_char
+		
+		if char_read[0] == -1:
+			return 0
+		else if char_read[1] == -1:
+			return int(char_read[0])
+		else if char_read[2] == -1:
+			return int(char_read[0] + char_read[1])
+		else:
+			return int(char_read[0] + char_read[1] + char_read[2])
+		
 
 #Assigned the interrupt their functions
 GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)

@@ -315,7 +315,7 @@ void us_sensor(){
 
 void servo_info(){
   Serial.print(myservo.read());
-  Serial.print("--");
+  Serial.print('-');
   Serial.print(servoH_top);
   Serial.print('-');
   Serial.print(servoH_bottom);
@@ -467,8 +467,6 @@ void command(){
             break;
           }
       }
-    
-  
 }
 
 
