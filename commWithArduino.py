@@ -16,15 +16,66 @@ right_ard='/dev/serial/by-id/usb-Arduino_LLC__www.arduino.cc__Genuino_Uno_855313
 left = serial.Serial(left_ard, 9600)
 right = serial.Serial(right_ard, 9600)
 
-#inital commands to make sure the arduino is stop and communication is open
-
-left.write(b"9")
-right.write(b"9")
-
-left.write(b"x")
-right.write(b"x")
+left.timeout = 0.1
+right.timeout = 0.1
 
 #functions that control the arduino
+
+def read_integer_serial(terminating_char, side):
+	#side if 1 means left and 2 means right
+	#'-' separates values
+	#'&' ends of transmition
+	char_read = [-1,-1,-1,-1]
+	if side == 1:#left
+		#print("left")
+		for i in range(4):#Read the char and end if read char is the terminating_char
+			new_char = left.read()
+			if len(new_char) == 0:
+				#print("Left Ultrasonic Failure")
+				return -2
+			new_char = ord(new_char) - 48 #- will return -3, & will return -8
+			#print("Read Char: {I}".format(I = new_char) )
+			if new_char == ord(terminating_char) - 48:
+				#print("Read terminating char")
+				break
+			char_read[i] = new_char
+
+		if char_read[0] == -1:
+			return 0
+		elif char_read[1] == -1:
+			return int(char_read[0])
+		elif char_read[2] == -1:
+			return int(char_read[0]) * 10 + int( char_read[1] )
+		elif char_read[3] == -1:
+			return int(char_read[0]) * 100  + int( char_read[1] ) * 10  + int( char_read[2] )
+		else:
+			return int(char_read[0]) * 1000 + int( char_read[1] ) * 100 + int( char_read[2] ) * 10 + int( char_read[3] ) 
+
+	if side == 2:#right
+		#print("right")
+		for i in range(4):#Read the char and end if read char is the terminating_char
+			new_char = right.read()
+			if len(new_char) == 0:
+				#print("Right Ultrasonic Failure")
+				return -2
+			new_char = ord(new_char) - 48
+			#print("Read Char: {I}".format(I = new_char) )
+			if new_char == ord(terminating_char) - 48:
+				#print("Read terminating Char")
+				break
+			char_read[i] = new_char
+
+		if char_read[0] == -1:
+			return 0
+		elif char_read[1] == -1:
+			return int(char_read[0])
+		elif char_read[2] == -1:
+			return int(char_read[0]) * 10  + int( char_read[1] )
+		elif char_read[3] == -1:
+			return int(char_read[0]) * 100  + int( char_read[1] ) * 10 + int( char_read[2] )
+		else:
+			return int(char_read[0]) * 1000 + int( char_read[1] ) * 100 + int( char_read[2] ) * 10 + int( char_read[3] )
+
 
 def end():
 	"Stops the motors and disconnects the serial comm channels."##LINE 20
@@ -32,6 +83,9 @@ def end():
 	right.close()
 	left.close()
 	return
+def clear_comm():
+	left.flushInput()
+	right.flushInput()
 
 def stop():
 	right.write(b"x")
@@ -88,26 +142,69 @@ def move_reverse(bytes):
 	return
 
 def us_sensor():
+	sensor_collect_fre = 5
+	clear_comm()
 	left.write(b"u")
 	right.write(b"u")
+
+	sensor_total = [0,0,0,0]#left_back, left_left, right_front, right_right
+	sensor_collect = [0,0,0,0]
+	trash_value = 0
+
+	for i in range(sensor_collect_fre):
 	
-	left_back = read_integer_serial('-', 1)#1 means left, 2 means right
-	left_left = read_integer_serial('&', 1)
-	
-	right_front = read_integer_serial('-', 2)
-	right_right = read_integer_serial('&', 2)
-	
+		sensor_collect[0] = read_integer_serial('-', 1)#1 means left, 2 means right
+		while(sensor_collect[0] == -2):
+			clear_comm()
+			left.write(b"u")
+			sensor_collect[0] = read_integer_serial('-', 1) 
+
+		sensor_collect[1] = read_integer_serial('&', 1)
+		while(sensor_collect[1] == -2):
+			clear_comm()
+			left.write(b"u")
+			trash_value = read_integer_serial('-', 1)
+			sensor_collect[1] = read_integer_serial('&',1)
+
+		sensor_collect[2] = read_integer_serial('-', 2)
+		while(sensor_collect[2] == -2):
+			clear_comm()
+			right.write(b"u")
+			sensor_collect[2] = read_integer_serial('-', 2)
+
+		sensor_collect[3] = read_integer_serial('&' , 2)
+		while(sensor_collect[3] == -2):
+			clear_comm()
+			right.write(b"u")
+			trash_value = read_integer_serial('-', 2)
+			sensor_collect[3] = read_integer_serial('&' ,2)
+
+		sensor_total[0] += sensor_collect[0]
+		sensor_total[1] += sensor_collect[1]
+		sensor_total[2] += sensor_collect[2]
+		sensor_total[3] += sensor_collect[3] 
+		
+
+	left_back_ave = sensor_total[0] / sensor_collect_fre
+	left_left_ave = sensor_total[1] / sensor_collect_fre
+
+	right_front_ave = sensor_total[2] / sensor_collect_fre
+	right_right_ave = sensor_total[3] / sensor_collect_fre
+	""" 
 	print("		    FRONT   ")
-	print("			 {f}    ".format(f = right_front) )
+	print("	             {f}    ".format(f = right_front) )
 	print("		[]--------[]")
 	print("		|          |")
 	print("		|          |")
-	print("{l}	|          |   {r}".format(l = left_left, r = right_right) )
+	print("    {L}		|          |      {R}".format(L = left_left, R = right_right) )
 	print("		|          |")
 	print("		|          |")
 	print("		[]--------[]")
-	print("          {b}    ".format(b = left_back) )
-	print("         BACK    ")
+	print("		     {b}    ".format(b = left_back) )
+	print("	            BACK    ")
+	"""
+	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}".format(B = left_back_ave,L = left_left_ave,F = right_front_ave, R = right_right_ave) ) 
+	print("\n")
 	return
 
 def servo_top():
@@ -166,46 +263,58 @@ def start_button_pressed(channel):
 	#for now it just makes the robot move foward
 	restart_comm()
 	return
-	
-def read_integer_serial(terminating_char, side)
+""" 
+def read_integer_serial(terminating_char, side):
 	#side if 1 means left and 2 means right
 	#'-' separates values 
 	#'&' ends of transmition
 	char_read = [-1,-1,-1]
 	if side == 1:#left
-		
+		#print("left")
 		for i in range(3):#Read the char and end if read char is the terminating_char
 			new_char = left.read()
-			if new_char == terminating_char:
+			if len(new_char) == 0:
+				print("Left Ultrasonic Failure")
+				return -2
+			new_char = ord(new_char) - 48 #- will return -3
+			#print("Read Char: {I}".format(I = new_char) )
+			if new_char == ord(terminating_char) - 48:
+				#print("Read terminating char")
 				break
 			char_read[i] = new_char
 		
 		if char_read[0] == -1:
 			return 0
-		else if char_read[1] == -1:
+		elif char_read[1] == -1:
 			return int(char_read[0])
-		else if char_read[2] == -1:
-			return int(char_read[0] + char_read[1])
+		elif char_read[2] == -1:
+			return int(char_read[0]) * 10 + int( char_read[1] )
 		else:
-			return int(char_read[0] + char_read[1] + char_read[2])
+			return int(char_read[0]) * 100  + int( char_read[1] ) * 10  + int( char_read[2] )
 	if side == 2:#right
-		
+		#print("right")
 		for i in range(3):#Read the char and end if read char is the terminating_char
 			new_char = right.read()
-			if new_char == terminating_char:
+			if len(new_char) == 0:
+				print("Right Ultrasonic Failure")
+				return -2
+			new_char = ord(new_char) - 48
+			#print("Read Char: {I}".format(I = new_char) )
+			if new_char == ord(terminating_char) - 48:
+				#print("Read terminating Char")
 				break
 			char_read[i] = new_char
 		
 		if char_read[0] == -1:
 			return 0
-		else if char_read[1] == -1:
+		elif char_read[1] == -1:
 			return int(char_read[0])
-		else if char_read[2] == -1:
-			return int(char_read[0] + char_read[1])
+		elif char_read[2] == -1:
+			return int(char_read[0]) * 10  + int( char_read[1] )
 		else:
-			return int(char_read[0] + char_read[1] + char_read[2])
+			return int(char_read[0]) * 100  + int( char_read[1] ) * 10 + int( char_read[2] )
 		
-
+"""
 #Assigned the interrupt their functions
 GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
 
@@ -236,16 +345,24 @@ def command(x):
 		servo_change(bytes)
 	if bytes[0] == '9':
 		restart_comm()
-		
-
+	if bytes[0] == '0':
+		clear_comm()
+	if bytes[0] == 'p':
+		servo_bottom()
+		sleep(5)
+		servo_top()
+				
 	return
 
 #Here is the loop that recieves input from the user
 
 print("Welcome to The Raspberry Pi Controller HQ")
 print("When entering multiple bytes, the first bytes affect the left arduino and the motor A respectively")
-
-while(True):
+restart_comm()
+clear_comm()
+stop()
+servo_top()
+while(True):  
 	x = input("Enter Command: ")
 	print(x)
 	if x == '1':
@@ -253,7 +370,7 @@ while(True):
 		break
 	else:
 		command(x)
-
+	
 GPIO.cleanup()
 
 
