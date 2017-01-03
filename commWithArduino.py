@@ -3,7 +3,7 @@ import Pathfinding
 import sys
 import time
 import RPi.GPIO as GPIO
-import math 
+import math
 GPIO.setmode(GPIO.BCM)
 
 #Setting up the Interrupt
@@ -86,7 +86,7 @@ def end():
 def clear_comm():
 	left.flushInput()
 	right.flushInput()
-
+	return 
 def stop():
 	right.write(b"x")
 	left.write(b"x")
@@ -351,7 +351,9 @@ def command(x):
 		servo_bottom()
 		sleep(5)
 		servo_top()
-				
+	#This is are commands with gyro 
+	if bytes[0] == 'W':
+		print("Still in progress")				
 	return
 
 #Here is the loop that recieves input from the user

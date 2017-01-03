@@ -1,11 +1,10 @@
 from sense_hat import SenseHat
 from time import sleep
 import serial
-
 import colorama 
 from colorama import Fore, Back, Style
- 
-"""  
+#"""
+    
 left_ard = '/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_6493833393235151C131-if00'
 right_ard = '/dev/serial/by-id/usb-Arduino_LLC__www.arduino.cc__Genuino_Uno_85531303631351112162-if00'
 
@@ -14,7 +13,7 @@ right = serial.Serial(right_ard, 9600)
 
 left.write(b"9")
 right.write(b"9")
-"""
+#"""
 
 sense = SenseHat()
 
@@ -22,6 +21,10 @@ FRO_LEFT = "fro_left"
 FRO_RIGHT = "fro_right"
 BAC_LEFT = "bac_left"
 BAC_RIGHT = "bac_right"
+
+direction = 1
+motor_speed = {'fro_left': 255, 'fro_right': 255, 'bac_left': 255, 'bac_right': 255}
+
 def get_gyro_reading():
 
 	motion = sense.get_orientation()
@@ -29,7 +32,7 @@ def get_gyro_reading():
 
 def ave_gyro():
 
-	fre = 200
+	fre = 75
 	inital_value  = sense.get_orientation()
 	total =  inital_value["yaw"]
 
@@ -61,14 +64,7 @@ Direction is reference with the following numbers
 		   |
 		   V
 		   4
- """
-#inital conditions
-direction = 1
-motor_speed = {'fro_left': 255, 'fro_right': 255, 'bac_left': 255, 'bac_right': 255}
-pre_value = ave_gyro()
-
-
-
+"""
 #creates the new motor speeds to correct leaning
 def change_speed(x):
 	#This is to marrk which side the robot is leaning and what color must the text be printed to resemble increase and decrease
@@ -87,10 +83,10 @@ def change_speed(x):
 		if motor_speed[BAC_RIGHT] > largest_value:
 			largest_value = motor_speed[BAC_RIGHT]
 
-		motor_speed[FRO_LEFT] = largest_value + 10
-		motor_speed[FRO_RIGHT] = largest_value + 10
-		motor_speed[BAC_LEFT] = largest_value + 10
-		motot_speed[BAC_RIGHT] = largest_value + 10
+		motor_speed[FRO_LEFT] = largest_value + 5
+		motor_speed[FRO_RIGHT] = largest_value + 5
+		motor_speed[BAC_LEFT] = largest_value + 5
+		motor_speed[BAC_RIGHT] = largest_value + 5
 
 	if direction == 1:#Moving Forward
 		print("Going Forward")		 
@@ -128,43 +124,46 @@ def change_speed(x):
 		print("Going Rightward")
 	if direction == 4:#Moving Backward
 		print("Going Backward")
-
-
+	
 	speed_constraint()
 	speed_display(LEFT_CHANGE, RIGHT_CHANGE)
-	#send_speeds()
+	send_speed()
+
 	return 
 
 def speed_constraint():
+	lowest_speed = 0
+	max_speed = 250
 	#speed Restrictions
-	if motor_speed[FRO_LEFT] > 250:
-		motor_speed[FRO_LEFT] = 250
-	if motor_speed[FRO_LEFT] < 75:
-		motor_speed[FRO_LEFT] = 75
+	if motor_speed[FRO_LEFT] > max_speed:
+		motor_speed[FRO_LEFT] = max_speed
+	if motor_speed[FRO_LEFT] < lowest_speed:
+		motor_speed[FRO_LEFT] = lowest_speed
 
-	if motor_speed[FRO_RIGHT] > 250:
-		motor_speed[FRO_RIGHT] = 250
-	if motor_speed[FRO_RIGHT] < 75:
-		motor_speed[FRO_RIGHT] = 75
+	if motor_speed[FRO_RIGHT] > max_speed:
+		motor_speed[FRO_RIGHT] = max_speed
+	if motor_speed[FRO_RIGHT] < lowest_speed:
+		motor_speed[FRO_RIGHT] = lowest_speed
 
-	if motor_speed[BAC_LEFT] > 250:
-		motor_speed[BAC_LEFT] = 250
-	if motor_speed[BAC_LEFT] < 75:
-		motor_speed[BAC_LEFT] = 75
+	if motor_speed[BAC_LEFT] > max_speed:
+		motor_speed[BAC_LEFT] = max_speed
+	if motor_speed[BAC_LEFT] < lowest_speed:
+		motor_speed[BAC_LEFT] = lowest_speed
 
-	if motor_speed[BAC_RIGHT] > 250:
-		motor_speed[BAC_RIGHT] = 250
-	if motor_speed[BAC_RIGHT] < 75:
-		motor_speed[BAC_RIGHT] = 75
+	if motor_speed[BAC_RIGHT] > max_speed:
+		motor_speed[BAC_RIGHT] = max_speed
+	if motor_speed[BAC_RIGHT] < lowest_speed:
+		motor_speed[BAC_RIGHT] = lowest_speed
 	return
 
 def speed_display(LEFT_CHANGE, RIGHT_CHANGE):
+	#1 means green, 2 means red and 0 means white
 	#printing the speeds with the corresponding color 
 	print("LEFT: {L} RIGHT: {R}".format(L = LEFT_CHANGE, R = RIGHT_CHANGE) )
 	
 	if LEFT_CHANGE == 1 and RIGHT_CHANGE == 2:#green and red 
 		print(Fore.GREEN + ' {f_L} '.format(f_L = str(motor_speed[FRO_LEFT])) + Fore.RED +     ' {f_R} '.format( f_R = str(motor_speed[FRO_RIGHT])  ) )
-		print(Fore.GREEN + ' {b_L} '.format(b_L = str(motor_speed[FRO_RIGHT])) + Fore.RED +    ' {b_R} '.format( b_R = str(motor_speed[BAC_RIGHT])  ) ) 
+		print(Fore.GREEN + ' {b_L} '.format(b_L = str(motor_speed[BAC_LEFT])) + Fore.RED +    ' {b_R} '.format( b_R = str(motor_speed[BAC_RIGHT])  ) ) 
 	
 	if LEFT_CHANGE == 2 and RIGHT_CHANGE == 1:#red and green
 		print(Fore.RED +   ' {f_L} '.format(f_L = str(motor_speed[FRO_LEFT])) +  Fore.GREEN  + ' {f_R} '.format( f_R = str(motor_speed[FRO_RIGHT])  ) )
@@ -193,15 +192,29 @@ def speed_display(LEFT_CHANGE, RIGHT_CHANGE):
 	return
 
 
-def send_speeds():
+def send_speed():
+	print("{A}, {B}, {C}, {D}".format(A = motor_speed[FRO_LEFT], B = motor_speed[BAC_LEFT], C = motor_speed[FRO_RIGHT], D = motor_speed[BAC_RIGHT]  ) ) 
+  
 	left.write(b"w")
 	left.write( str ( motor_speed[FRO_LEFT] ).encode() )
-	left.write(b"A")
+	left.write(b"&")
 	left.write( str ( motor_speed[BAC_LEFT] ).encode() )
+
 	right.write(b"w")
 	right.write( str ( motor_speed[FRO_RIGHT] ).encode() )
-	right.write(b"A")
+	right.write(b"&")
 	right.write( str ( motor_speed[BAC_RIGHT] ).encode() )
+	"""  
+	left.write(b"w")
+	left.write(b"0")
+	left.write(b"&")
+	left.write(b"0")
+
+	right.write(b"w")
+	right.write(b"100")
+	right.write(b"&")
+	right.write(b"100")
+	""" 
 	return
 
 def displacement():
@@ -219,16 +232,17 @@ def rotation():
 	if abs( B - A ) <  0.6 :
 		print("Stationary")
 
-def move_straight(direction):
-	#Code to make the robot move straight
-	change_speed( displacement() )	
+def move_stra(direction):
+	#Code to make the robot move straigh
+	pre_value = ave_gyro()
+	change_speed( displacement() )
 
-def main():
+def gyro_main():
 	while(True):
-		move_straight(1)
+		move_stra(1)
 		#print( ave_gyro() )
 		#print(get_gyro_reading() )
 		#rotation()
 		#print( displacement() )
-
-main()
+pre_value = ave_gyro()		
+gyro_main()
