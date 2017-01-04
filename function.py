@@ -1,9 +1,14 @@
-﻿import serial
+import serial
 import Pathfinding
 import sys
-import time
 import RPi.GPIO as GPIO
-import math
+import math 
+from sense_hat import SenseHat
+from time import sleep
+import colorama 
+from colorama import Fore, Back, Style
+ 
+
 GPIO.setmode(GPIO.BCM)
 
 #Setting up the Interrupt
@@ -86,7 +91,7 @@ def end():
 def clear_comm():
 	left.flushInput()
 	right.flushInput()
-	return 
+
 def stop():
 	right.write(b"x")
 	left.write(b"x")
@@ -263,67 +268,35 @@ def start_button_pressed(channel):
 	#for now it just makes the robot move foward
 	restart_comm()
 	return
-
+	
 #Assigned the interrupt their functions
 GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
 
-#Switch Case that selects the commands
-def command(x):
 
-	bytes = x.split()
-
-	if bytes[0] == 'w':
-		move_forward(bytes)
-	if bytes[0] == 'a':
-		move_left(bytes)
-	if bytes[0] == 's':
-		move_reverse(bytes)
-	if bytes[0] == 'd':
-		move_right(bytes)
-	if bytes[0] == 'x':
-		stop()
-	if bytes[0] == 'u':
-		us_sensor()
-	if bytes[0] == 't':
-		servo_top()
-	if bytes[0] == 'b':
-		servo_bottom()
-	if bytes[0] == 'n':
-		servo_info()
-	if bytes[0] == 'c':
-		servo_change(bytes)
-	if bytes[0] == '9':
-		restart_comm()
-	if bytes[0] == '0':
-		clear_comm()
-	if bytes[0] == 'p':
-		servo_bottom()
-		sleep(5)
-		servo_top()
-	#This is are commands with gyro 
-	if bytes[0] == 'W':
-		print("Still in progress")				
-	return
-
-#Here is the loop that recieves input from the user
-
-print("Welcome to The Raspberry Pi Controller HQ")
-print("When entering multiple bytes, the first bytes affect the left arduino and the motor A respectively")
-restart_comm()
-clear_comm()
-stop()
-servo_top()
-while(True):  
-	x = input("Enter Command: ")
-	print(x)
-	if x == '1':
-		end()
-		break
-	else:
-		command(x)
-	
-GPIO.cleanup()
+""" Gyro Code Ahead """
 
 
+sense = SenseHat()
 
+FRO_LEFT = "fro_left"
+FRO_RIGHT = "fro_right"
+BAC_LEFT = "bac_left"
+BAC_RIGHT = "bac_right"
+def get_gyro_reading():
+
+	motion = sense.get_orientation()
+	return motion["yaw"]
+
+def ave_gyro():
+
+	fre = 200
+	inital_value  = sense.get_orientation()
+	total =  inital_value["yaw"]
+
+	for i in range(fre):
+		new_value = get_gyro_reading()
+		total +=  new_value
+
+	ave = total / fre
+	return ave
 
