@@ -1,10 +1,28 @@
 ﻿import function
+import RPi.GPIO as GPIO
+""" 
+from function import restart_comm,clear_comm,stop,servo_top,move_forward, move_left
+from function import move_reverse, move_right, us_sensor, servo_bottom, servo_change 
+from function import move_gyro, end, redefine_pre
+from function import rotation, displacement
+import RPi.GPIO as GPIO
+"""
+#from original comm
+from function import read_integer_serial,end,clear_comm,stop,move_right,move_left
+from function import move_forward,move_reverse,us_sensor,servo_top,servo_bottom
+from function import servo_change,servo_info,restart_comm
+#from gyro
+from function import get_gyro_reading,ave_gyro,change_speed,speed_constraint
+from function import speed_display,send_speed,displacement,rotation,move_gyro,gyro_main
+from function import redefine_pre
+
+GPIO.setmode(GPIO.BCM)
 
 FRONT_C = 1
 LEFT_C = 2
 RIGHT_C = 3
 BACK_C = 4
-"""
+""" 
 import serial
 import Pathfinding
 import sys
@@ -197,8 +215,7 @@ def us_sensor():
 
 	right_front_ave = sensor_total[2] / sensor_collect_fre
 	right_right_ave = sensor_total[3] / sensor_collect_fre
-	"""
-	"""
+ 
 	print("		    FRONT   ")
 	print("	             {f}    ".format(f = right_front) )
 	print("		[]--------[]")
@@ -210,8 +227,8 @@ def us_sensor():
 	print("		[]--------[]")
 	print("		     {b}    ".format(b = left_back) )
 	print("	            BACK    ")
-	"""
-	"""
+	
+
 	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}".format(B = left_back_ave,L = left_left_ave,F = right_front_ave, R = right_right_ave) ) 
 	print("\n")
 	return
@@ -311,13 +328,24 @@ def command(x):
 		servo_top()
 	#This is are commands with gyro 
 	if bytes[0] == 'W':
-		move_stra(FRONT_C)
+		move_gyro(FRONT_C)
 	if bytes[0] == 'A':
-		move_stra(LEFT_C)
+		move_gyro(LEFT_C)
 	if bytes[0] == 'D':
-		move_stra(RIGHT_C)
+		move_gyro(RIGHT_C)
 	if bytes[0] == 'S':
-		move_stra(LEFT_C)
+		move_gyro(LEFT_C)
+	if bytes[0] == 'R':
+		for i in range(20):
+			rotation()
+	if bytes[0] == 'I':
+		for j in range(20):
+			print(displacement())
+	if bytes[0] == 'P':
+		redefine_pre()
+	if bytes[0] == 'T':#testing
+		redefine_pre()
+		gyro_main()		
 	return
 
 #Here is the loop that recieves input from the user
@@ -327,7 +355,7 @@ print("When entering multiple bytes, the first bytes affect the left arduino and
 restart_comm()
 clear_comm()
 stop()
-servo_top()
+#servo_top()
 while(True):  
 	x = input("Enter Command: ")
 	print(x)
