@@ -102,38 +102,42 @@ def stop():
 def move_right(bytes):
 	left.write(b"i")
 	left.write(bytes[1].encode() )
-	left.write(b"&")#separator char
+	left.write(b"-")#separator char
 	left.write(bytes[2].encode() )
+	left.write(b"&")
 
 	right.write(b"o")
 	right.write(bytes[3].encode() )
-	right.write(b"&")#separator char
+	right.write(b"-")#separator char
 	right.write(bytes[4].encode() )
+	right.write(b"&")
 	return
 
 def move_left(bytes):
 	left.write(b"o")
 	left.write(bytes[1].encode() )
-	left.write(b"&")#Separator Char
+	left.write(b"-")#Separator Char
 	left.write(bytes[2].encode() )
+	left.write(b"&")
 
 	right.write(b"i")
 	right.write(bytes[3].encode() )
-	right.write(b"&")#Separator Char
+	right.write(b"-")#Separator Char
 	right.write(bytes[4].encode() )
+	right.write(b"&")
 	return
 ##LINE 40
 
 def move_forward(bytes):
 	left.write(b"w")
 	left.write(bytes[1].encode() )
-	left.write(b"&")#Separator Char
+	left.write(b"-")#Separator Char
 	left.write(bytes[2].encode() )
 	right.write(b"&")
 
 	right.write(b"w")
 	right.write(bytes[3].encode() )
-	right.write(b"&")#Separator Char
+	right.write(b"-")#Separator Char
 	right.write(bytes[4].encode() )
 	right.write(b"&")
 	return
@@ -141,13 +145,15 @@ def move_forward(bytes):
 def move_reverse(bytes):
 	left.write(b"r")
 	left.write(bytes[1].encode() )
-	left.write(b"&")#Separator Char
+	left.write(b"-")#Separator Char
 	left.write(bytes[2].encode() )
+	left.write(b"&")
 
 	right.write(b"r")
 	right.write(bytes[3].encode() )
-	right.write(b"&")#Separator Char
+	right.write(b"-")#Separator Char
 	right.write(bytes[4].encode() )
+	right.write(b"&")
 	return
 
 def us_sensor():
