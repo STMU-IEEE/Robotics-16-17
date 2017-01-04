@@ -1,4 +1,11 @@
-﻿import serial
+﻿import function
+
+FRONT_C = 1
+LEFT_C = 2
+RIGHT_C = 3
+BACK_C = 4
+"""
+import serial
 import Pathfinding
 import sys
 import time
@@ -190,7 +197,8 @@ def us_sensor():
 
 	right_front_ave = sensor_total[2] / sensor_collect_fre
 	right_right_ave = sensor_total[3] / sensor_collect_fre
-	""" 
+	"""
+	"""
 	print("		    FRONT   ")
 	print("	             {f}    ".format(f = right_front) )
 	print("		[]--------[]")
@@ -202,6 +210,7 @@ def us_sensor():
 	print("		[]--------[]")
 	print("		     {b}    ".format(b = left_back) )
 	print("	            BACK    ")
+	"""
 	"""
 	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}".format(B = left_back_ave,L = left_left_ave,F = right_front_ave, R = right_right_ave) ) 
 	print("\n")
@@ -266,7 +275,7 @@ def start_button_pressed(channel):
 
 #Assigned the interrupt their functions
 GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
-
+"""
 #Switch Case that selects the commands
 def command(x):
 
@@ -302,7 +311,13 @@ def command(x):
 		servo_top()
 	#This is are commands with gyro 
 	if bytes[0] == 'W':
-		print("Still in progress")				
+		move_stra(FRONT_C)
+	if bytes[0] == 'A':
+		move_stra(LEFT_C)
+	if bytes[0] == 'D':
+		move_stra(RIGHT_C)
+	if bytes[0] == 'S':
+		move_stra(LEFT_C)
 	return
 
 #Here is the loop that recieves input from the user
