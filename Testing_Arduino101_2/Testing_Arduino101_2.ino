@@ -107,7 +107,7 @@ Servo myservo;
 
 
 //------------------VARIABLESs----------------
-char input;
+char input, trash_input;
 int servoH_top = 100, servoH_bottom = 85;
 long last_time = 0;
 int control = 0; 
@@ -128,6 +128,10 @@ void stop_motor_ALL(){
     
     digitalWrite(AMOTOR_BRAKE, HIGH);
     digitalWrite(BMOTOR_BRAKE, HIGH);
+
+    while(Serial.available() > 0){
+      trash_input = Serial.read();
+    }
   
 }
 /*
@@ -144,7 +148,7 @@ void move_forward(){
 }
 */
 void variable_forward(){
-    while(Serial.available () > 2);//wait for the motor speed info
+    while(Serial.available () < 2);//wait for the motor speed info
     motor_speed[0] = Serial.parseInt();//motor A speed
     motor_speed[1] = Serial.parseInt();//motor B speed
 
@@ -179,7 +183,7 @@ void move_reverse(){
 }
 */
 void variable_reverse(){
-    while(Serial.available () > 2);//wait for the motor speed info
+    while(Serial.available () < 2);//wait for the motor speed info
     motor_speed[0] = Serial.parseInt();//motor A speed
     motor_speed[1] = Serial.parseInt();//motor B speed
 
@@ -213,7 +217,7 @@ void move_in(){
 }
 */
 void variable_in(){
-    while(Serial.available () > 2);//wait for the motor speed info
+    while(Serial.available () < 2);//wait for the motor speed info
     motor_speed[0] = Serial.parseInt();//motor A speed
     motor_speed[1] = Serial.parseInt();//motor B speed
 
@@ -247,7 +251,7 @@ void move_out(){
 }
 */
 void variable_out(){
-    while(Serial.available () > 2);//wait for the motor speed info
+    while(Serial.available () < 2);//wait for the motor speed info
     motor_speed[0] = Serial.parseInt();//motor A speed
     motor_speed[1] = Serial.parseInt();//motor B speed
 
@@ -335,10 +339,24 @@ void servo_top(){
   myservo.write(servoH_top);
 }
 void servo_change(){
-    while(Serial.available () > 2);//wait for the motor speed info
+    while(Serial.available () < 2);//wait for the motor speed info
     servoH_top = Serial.parseInt();//motor A speed
     servoH_bottom = Serial.parseInt();//motor B speed
 }
+/*
+void test(){
+  int A = 0;
+  int B = 0;
+  while(Serial.available () < 2);//wait for the motor speed info
+  A = Serial.parseInt();//motor A speed
+  B = Serial.parseInt();//motor B speed
+  Serial.print("\n");
+  Serial.print(A);
+  Serial.print("\n");
+  Serial.print(B);
+  Serial.print("\n");
+}
+*/
 
 
 //------------------CODEs---------------------
@@ -381,7 +399,6 @@ void loop() {
 
 
 void command(){
-
       if (Serial.available() > 0) {
           // read the incoming byte:
           input = Serial.read(); //single character
@@ -466,11 +483,11 @@ void command(){
                 servo_change();
                 //Serial.print("Hello9");         
               }
-            case '5':
+            case 'e':
               if(command_status == 1){
                 silence_servo();
               }
-            case '9':
+            case 'R':
               command_status = 1;
               //Serial.print("Hello10");
               break;
