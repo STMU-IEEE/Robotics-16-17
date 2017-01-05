@@ -332,6 +332,7 @@ direction = 0
 motor_speed = {'front_left': 255, 'front_right': 255, 'back_left': 255, 'back_right': 255}
 motor_change = [0,0,0,0]
 max_speed = 250
+sensativity = 0
 
 def get_gyro_reading():
 
@@ -380,9 +381,11 @@ def change_speed(x):
 	#This is to marrk which side the robot is leaning and what color must the text be printed to resemble increase and decrease
 	largest_value = 0
 	factor = 1
+	
 	global motor_speed
 	 
-	if abs(x) < 2:#Robot is going straight
+	if abs(x) < sensativity:#Robot is going straight
+		print("Going straight")
 		if motor_speed[FRONT_LEFT] > largest_value:
 			largest_value = motor_speed[FRONT_LEFT]
 		if motor_speed[BACK_LEFT] > largest_value:
@@ -405,7 +408,7 @@ def change_speed(x):
 
 	if direction == FRONT:#Moving Forward
 		print("Going Forward")		 
-		if x  < -2:#counter-clockwise rotation, decrease right and increase left
+		if x  < (sensativity * -1):#counter-clockwise rotation, decrease right and increase left
 			print("Counter-ClockWise with difference of {diff}".format(diff = str(x)))
 
 			if motor_speed[FRONT_LEFT] + abs(x) < max_speed and motor_speed[BACK_LEFT] + abs(x) < max_speed:
@@ -427,7 +430,7 @@ def change_speed(x):
 				motor_change[1] = 0
 				#print("RIGHT_CHANGE is 2")
 
-		if x > 2:#clockwise rotation, decrease left and increase right
+		if x > sensativity:#clockwise rotation, decrease left and increase right
 			print("ClockWise with difference 0f {diff}".format(diff = str(x) ) )
 
 			if motor_speed[FRONT_RIGHT] + abs(x) < max_speed and motor_speed[BACK_LEFT] + abs(x) < max_speed:
@@ -561,8 +564,12 @@ def rotation():
 	if abs( B - A ) <  0.6 :
 		print("Stationary")
 
-def move_gyro(direct, starting_speed):
+def move_gyro(direct, starting_speed, sense_gryo):
 	#Code to make the robot move straigh
+	global sensativity
+	
+	sensativity = int(sense_gyro)
+	
 	global motor_speed
 
 	motor_speed[FRONT_LEFT] = int(starting_speed)
