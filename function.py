@@ -25,6 +25,11 @@ right = serial.Serial(right_ard, 9600)
 left.timeout = 0.1
 right.timeout = 0.1
 
+FRONT = 1
+LEFT = 2
+RIGHT = 3
+BACK = 4
+
 #functions that control the arduino
 def int_speed(bytes):
 	bytes_integer = [0,0,0,0,0]
@@ -235,14 +240,28 @@ def us_sensor():
 	print("\n")
 	return
 
-def servo_top():
-	left.write(b"t")
-	right.write(b"t")
+""" 
+The servos will be distinished with one being FRONT which is from the right arduino 
+while the BACK servo is realted to the left arduino
+"""
+
+
+def servo_top(servo_location):
+	servo_location = int(servo_location)
+
+	if servo_location == FRONT:
+		right.write(b"t")
+	if servo_location == BACK:
+		left.write(b"t")
 	return
 
-def servo_bottom():
-	left.write(b"b")
-	right.write(b"b")
+def servo_bottom(servo_location):
+	servo_location = int(servo_location)
+
+	if servo_location == FRONT:
+		right.write(b"b")
+	if servo_location == BACK:
+		left.write(b"b")
 	return
 
 def servo_change(bytes):
@@ -307,11 +326,6 @@ FRONT_LEFT = "front_left"
 FRONT_RIGHT = "front_right"
 BACK_LEFT = "back_left"
 BACK_RIGHT = "back_right"
-
-FRONT = 1
-LEFT = 2
-RIGHT = 3
-BACK = 4
 
 pre_value = 0
 direction = 0

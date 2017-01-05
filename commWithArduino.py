@@ -312,9 +312,9 @@ def command(x):
 	if bytes[0] == 'u':
 		us_sensor()
 	if bytes[0] == 't':
-		servo_top()
+		servo_top(bytes[1])
 	if bytes[0] == 'b':
-		servo_bottom()
+		servo_bottom(bytes[1])
 	if bytes[0] == 'n':
 		servo_info()
 	if bytes[0] == 'c':
@@ -353,6 +353,8 @@ def command(x):
 
 print("Welcome to The Raspberry Pi Controller HQ")
 print("When entering multiple bytes, the first bytes affect the left arduino and the motor A respectively")
+print("Servo: FRONT = 1 BACK = 4")
+
 restart_comm()
 clear_comm()
 stop()
