@@ -108,7 +108,7 @@ Servo myservo;
 
 //------------------VARIABLESs----------------
 char input, trash_input;
-int servoH_top = 100, servoH_bottom = 85;
+int servoH_top = 170, servoH_bottom = 0;
 long last_time = 0;
 int control = 0; 
 int stop_button = 10;
@@ -316,13 +316,6 @@ void us_sensor(){
   Serial.print(ultrasonic2);
   Serial.print("&");
 }
-void silence_servo(){
-  servo_top();
-  delay(500);
-  servo_bottom();
-  delay(2000);
-  myservo.write(87);
-}
 
 void servo_info(){
   Serial.print(myservo.read());
@@ -364,7 +357,7 @@ void setup() {
         Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
         //Serial.println("Welcome to the Arduino Command HQ");  
         myservo.attach(5);
-        myservo.write(87);
+        myservo.write(servoH_top);
         
         enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
         
@@ -482,10 +475,6 @@ void command(){
               if(command_status == 1){
                 servo_change();
                 //Serial.print("Hello9");         
-              }
-            case 'e':
-              if(command_status == 1){
-                silence_servo();
               }
             case 'R':
               command_status = 1;
