@@ -26,6 +26,15 @@ left.timeout = 0.1
 right.timeout = 0.1
 
 #functions that control the arduino
+def int_speed(bytes):
+	bytes_integer = [0,0,0,0,0]
+	for i in range(4):
+		if i == 0:
+			continue
+		bytes_integer[i] = eval(bytes[i])
+		bytes_integer[i] = int(bytes_integer[i])
+		bytes[i] = str( bytes_integer[i] )
+	return bytes
 
 def read_integer_serial(terminating_char, side):
 	#side if 1 means left and 2 means right
@@ -100,58 +109,62 @@ def stop():
 	return
 
 def move_right(bytes):
+	bytes = int_speed(bytes)
 	left.write(b"i")
 	left.write(bytes[1].encode() )
-	left.write(b"-")#separator char
+	left.write(b"&")#separator char
 	left.write(bytes[2].encode() )
 	left.write(b"&")
 
 	right.write(b"o")
 	right.write(bytes[3].encode() )
-	right.write(b"-")#separator char
+	right.write(b"&")#separator char
 	right.write(bytes[4].encode() )
 	right.write(b"&")
 	return
 
 def move_left(bytes):
+	bytes = int_speed(bytes)
 	left.write(b"o")
 	left.write(bytes[1].encode() )
-	left.write(b"-")#Separator Char
+	left.write(b"&")#Separator Char
 	left.write(bytes[2].encode() )
 	left.write(b"&")
 
 	right.write(b"i")
 	right.write(bytes[3].encode() )
-	right.write(b"-")#Separator Char
+	right.write(b"&")#Separator Char
 	right.write(bytes[4].encode() )
 	right.write(b"&")
 	return
 ##LINE 40
 
 def move_forward(bytes):
+	bytes = int_speed(bytes)
 	left.write(b"w")
 	left.write(bytes[1].encode() )
-	left.write(b"-")#Separator Char
+	left.write(b"&")#Separator Char
 	left.write(bytes[2].encode() )
-	right.write(b"&")
-
+	left.write(b"&")
+	#sleep(1)
 	right.write(b"w")
 	right.write(bytes[3].encode() )
-	right.write(b"-")#Separator Char
+	right.write(b"&")#Separator Char
 	right.write(bytes[4].encode() )
 	right.write(b"&")
 	return
 
 def move_reverse(bytes):
+	bytes = int_speed(bytes)
 	left.write(b"r")
 	left.write(bytes[1].encode() )
-	left.write(b"-")#Separator Char
+	left.write(b"&")#Separator Char
 	left.write(bytes[2].encode() )
 	left.write(b"&")
 
 	right.write(b"r")
 	right.write(bytes[3].encode() )
-	right.write(b"-")#Separator Char
+	right.write(b"&")#Separator Char
 	right.write(bytes[4].encode() )
 	right.write(b"&")
 	return
@@ -240,11 +253,13 @@ def servo_change(bytes):
 	left.write(bytes[1].encode() )
 	left.write(b"&")#Separator Char
 	left.write(bytes[2].encode() )
+	left.write(b"&")
 	#Sending bytes to the right arduino
 	right.write(bytes[0].encode() )
 	right.write(bytes[1].encode() )
 	right.write(b"&")#Separator Char
 	right.write(bytes[2].encode() )
+	right.write(b"&")
 	return
 
 def servo_info():
@@ -267,8 +282,8 @@ def servo_info():
 	return	
 
 def restart_comm():
-	left.write(b"9")
-	right.write(b"9")
+	left.write(b"R")
+	right.write(b"R")
 	return
 
 #Function that occurs when stop and/or start button are pressed
@@ -302,6 +317,7 @@ pre_value = 0
 direction = 0
 motor_speed = {'front_left': 255, 'front_right': 255, 'back_left': 255, 'back_right': 255}
 motor_change = [0,0,0,0]
+max_speed = 250
 
 def get_gyro_reading():
 
@@ -310,7 +326,7 @@ def get_gyro_reading():
 
 def ave_gyro():
 
-	fre = 300
+	fre = 200
 	inital_value  = get_gyro_reading()
 	total =  inital_value
 
@@ -349,10 +365,10 @@ Direction is reference with the following numbers
 def change_speed(x):
 	#This is to marrk which side the robot is leaning and what color must the text be printed to resemble increase and decrease
 	largest_value = 0
-	factor = 5
+	factor = 1
 	global motor_speed
 	 
-	if abs(x) < 1:#Robot is going straight
+	if abs(x) < 2:#Robot is going straight
 		if motor_speed[FRONT_LEFT] > largest_value:
 			largest_value = motor_speed[FRONT_LEFT]
 		if motor_speed[BACK_LEFT] > largest_value:
@@ -375,10 +391,10 @@ def change_speed(x):
 
 	if direction == FRONT:#Moving Forward
 		print("Going Forward")		 
-		if x < -1:#counter-clockwise rotation, decrease right and increase left
+		if x  < -2:#counter-clockwise rotation, decrease right and increase left
 			print("Counter-ClockWise with difference of {diff}".format(diff = str(x)))
 
-			if motor_speed[FRONT_LEFT] + abs(x) < 250 and motor_speed[BACK_LEFT] + abs(x) < 250:
+			if motor_speed[FRONT_LEFT] + abs(x) < max_speed and motor_speed[BACK_LEFT] + abs(x) < max_speed:
 				motor_speed[FRONT_LEFT] += abs(x) * factor
 				motor_speed[BACK_LEFT] += abs(x) * factor
 				
@@ -397,10 +413,10 @@ def change_speed(x):
 				motor_change[1] = 0
 				#print("RIGHT_CHANGE is 2")
 
-		if x > 1:#clockwise rotation, decrease left and increase right
+		if x > 2:#clockwise rotation, decrease left and increase right
 			print("ClockWise with difference 0f {diff}".format(diff = str(x) ) )
 
-			if motor_speed[FRONT_RIGHT] + abs(x) < 250 and motor_speed[BACK_LEFT] + abs(x) < 250:
+			if motor_speed[FRONT_RIGHT] + abs(x) < max_speed and motor_speed[BACK_LEFT] + abs(x) < max_speed:
 				motor_speed[FRONT_RIGHT] += abs(x) * factor
 				motor_speed[BACK_RIGHT] += abs(x) * factor
 				
@@ -430,9 +446,10 @@ def change_speed(x):
 
 def speed_constraint():
 	lowest_speed = 0
-	max_speed = 250
+	fix_bias = 15
 	global motor_speed
 	#speed Restrictions
+
 	if motor_speed[FRONT_LEFT] > max_speed:
 		motor_speed[FRONT_LEFT] = max_speed
 	if motor_speed[FRONT_LEFT] < lowest_speed:
@@ -443,10 +460,10 @@ def speed_constraint():
 	if motor_speed[FRONT_RIGHT] < lowest_speed:
 		motor_speed[FRONT_RIGHT] = lowest_speed
 
-	if motor_speed[BACK_LEFT] > max_speed:
-		motor_speed[BACK_LEFT] = max_speed
-	if motor_speed[BACK_LEFT] < lowest_speed:
-		motor_speed[BACK_LEFT] = lowest_speed
+	if motor_speed[BACK_LEFT] > max_speed - 15:
+		motor_speed[BACK_LEFT] = max_speed - 15
+	if motor_speed[BACK_LEFT] < lowest_speed + 15 :
+		motor_speed[BACK_LEFT] = lowest_speed + 15
 
 	if motor_speed[BACK_RIGHT] > max_speed:
 		motor_speed[BACK_RIGHT] = max_speed
@@ -494,12 +511,10 @@ def speed_display():
 
 def send_speed():
 	bytes = ['@','@', '@', '@', '@']
-	fix_bias = 0#15
-	print("L- A:{AL} B:{BL} R- A:{AR} B:{BR}".format(AL = motor_speed[FRONT_LEFT], BL = motor_speed[BACK_LEFT], AR = motor_speed[FRONT_RIGHT], BR = motor_speed[BACK_RIGHT] ) )
-	bytes[1] = str( motor_speed[FRONT_LEFT] )
-	bytes[2] = str( motor_speed[BACK_LEFT] - fix_bias )
-	bytes[3] = str( motor_speed[FRONT_RIGHT] )
-	bytes[4] = str( motor_speed[BACK_RIGHT] )
+	bytes[1] = str( int( motor_speed[FRONT_LEFT] ) )
+	bytes[2] = str( int( motor_speed[BACK_LEFT] - 15 ) )
+	bytes[3] = str( int( motor_speed[FRONT_RIGHT] ) )
+	bytes[4] = str( int( motor_speed[BACK_RIGHT] ) )
 
 	print(bytes)	
 	
@@ -532,8 +547,19 @@ def rotation():
 	if abs( B - A ) <  0.6 :
 		print("Stationary")
 
-def move_gyro(direct):
+def move_gyro(direct, starting_speed):
 	#Code to make the robot move straigh
+	global motor_speed
+
+	motor_speed[FRONT_LEFT] = int(starting_speed)
+	motor_speed[BACK_LEFT] = int(starting_speed)
+	motor_speed[FRONT_RIGHT] = int(starting_speed)
+	motor_speed[BACK_RIGHT] = int(starting_speed) 
+
+	global max_speed
+	
+	max_speed = int(starting_speed)
+
 	global direction
 	direction = direct#making a local variable a global variable
 	redefine_pre()
@@ -550,16 +576,8 @@ def gyro_main():
 		#print( ave_gyro() )
 		#print(get_gyro_reading() )
 		#rotation()
-		#print( displacement() )
-		bytes = ['@', '@', '@', '@', '@' ]
 		for i in range(20):
-			bytes[1] = str(250 - i * 10)
-			bytes[2] = bytes[1]
-			bytes[3] = bytes[1] 
-			bytes[4] = bytes[1]
-			sleep(2)
-			print(250 - i * 10) 
-			move_forward(bytes)
+			print( displacement() )
 		return 
 
 def redefine_pre():

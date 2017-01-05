@@ -22,6 +22,7 @@ FRONT_C = 1
 LEFT_C = 2
 RIGHT_C = 3
 BACK_C = 4
+
 """ 
 import serial
 import Pathfinding
@@ -318,9 +319,9 @@ def command(x):
 		servo_info()
 	if bytes[0] == 'c':
 		servo_change(bytes)
-	if bytes[0] == '9':
+	if bytes[0] == 'R':
 		restart_comm()
-	if bytes[0] == '0':
+	if bytes[0] == 'C':
 		clear_comm()
 	if bytes[0] == 'p':
 		servo_bottom()
@@ -328,13 +329,13 @@ def command(x):
 		servo_top()
 	#This is are commands with gyro 
 	if bytes[0] == 'W':
-		move_gyro(FRONT_C)
+		move_gyro(FRONT_C, bytes[1])
 	if bytes[0] == 'A':
-		move_gyro(LEFT_C)
+		move_gyro(LEFT_C, bytes[1])
 	if bytes[0] == 'D':
-		move_gyro(RIGHT_C)
+		move_gyro(RIGHT_C, bytes[1])
 	if bytes[0] == 'S':
-		move_gyro(LEFT_C)
+		move_gyro(LEFT_C, bytes[1])
 	if bytes[0] == 'R':
 		for i in range(20):
 			rotation()
