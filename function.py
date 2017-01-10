@@ -175,6 +175,38 @@ def move_reverse(bytes):
 	right.write(b"&")
 	return
 
+def rotate_counter(bytes):
+	#counter clockwise --> left reverse, right forward
+	bytes = int_speed(bytes)
+	left.write(b"r")
+	left.write(bytes[1].encode() )
+	left.write(b"&")
+	left.write(bytes[1].encode() )
+	left.write(b"&")
+	
+	right.write(b"w")
+	right.write(bytes[1].encode() )
+	right.write(b"&")
+	right.write(bytes[1].encode() )
+	right.write(b"&")
+	return
+	
+def rotate_clockwise(bytes):
+	#counter clockwise --> left forward, right reverse
+	bytes = int_speed(bytes)
+	left.write(b"w")
+	left.write(bytes[1].encode() )
+	left.write(b"&")
+	left.write(bytes[1].encode() )
+	left.write(b"&")
+	
+	right.write(b"r")
+	right.write(bytes[1].encode() )
+	right.write(b"&")
+	right.write(bytes[1].encode() )
+	right.write(b"&")
+	
+	return
 def us_sensor():
 	sensor_collect_fre = 5
 	clear_comm()
@@ -313,18 +345,22 @@ BACK_LEFT = "back_left"
 BACK_RIGHT = "back_right"
 
 pre_value = 0
-direction = 0
+new_value = 0
+
+
 motor_speed = {'front_left': 255, 'front_right': 255, 'back_left': 255, 'back_right': 255}
 motor_change = [0,0,0,0]
+
+direction = 0
 max_speed = 250
-sensativity = 0
+sensativity = 1
 fre = 200
 
 
 def get_gyro_reading():
 
 	motion = sense.get_gyroscope()
-	return motion["yaw"]
+	return (motion["yaw"] - 180) #change gyro reading system from 0 - 360 to -180 - 180
 
 
 def ave_gyro():
@@ -333,8 +369,8 @@ def ave_gyro():
 	total =  inital_value
 
 	for i in range(fre):
-		new_value = get_gyro_reading()
-		total = total + new_value
+		new_value_raw = get_gyro_reading()
+		total = total + new_value_raw
 
 	ave = total / (fre + 1)
 	return ave
@@ -366,14 +402,18 @@ Direction is reference with the following numbers
 """
 
 #creates the new motor speeds to correct leaning
-def change_speed(x):
+def change_speed(diff):
 	#This is to marrk which side the robot is leaning and what color must the text be printed to resemble increase and decrease
 	largest_value = 0
 	factor = 1
 	
 	global motor_speed
-	 
-	if abs(x) < sensativity:#Robot is going straight
+	
+	if abs(diff) > 182:#If the gyro value passes the 180 -180 border
+		global diff 
+		diff = 360 - (abs(pre_value) + abs(new_value) )
+	
+	if abs(diff) < sensativity:
 		print("Going straight")
 		if motor_speed[FRONT_LEFT] > largest_value:
 			largest_value = motor_speed[FRONT_LEFT]
@@ -394,12 +434,12 @@ def change_speed(x):
 		motor_change[2] = 0
 		motor_change[3] = 0
 	
-
-	if direction == FRONT:#Moving Forward
-		print("Going Forward")		 
-		if x  > (sensativity):#clockwise rotation, decrease left and increase right
-			print("ClockWise with difference of {diff}".format(diff = str(x)))
-
+	if diff > sensativity and diff < 45:
+		print("Clockwise and go")
+		print("Difference of {diffe}".format(diffe = str(diff)))
+		
+		if direction == FRONT:
+			
 			if motor_speed[FRONT_RIGHT] + abs(x) < max_speed and motor_speed[FRONT_RIGHT] + abs(x) < max_speed:
 				motor_speed[FRONT_RIGHT] += abs(x) * factor
 				motor_speed[BACK_RIGHT] += abs(x) * factor
@@ -408,7 +448,7 @@ def change_speed(x):
 				motor_change[1] = 0
 				motor_change[2] = 1
 				motor_change[3] = 1
-				#print("LEFT_CHANGE is 1")
+
 			else:
 				motor_speed[FRONT_LEFT] -= abs(x) * factor
 				motor_speed[BACK_LEFT] -= abs(x) * factor
@@ -417,11 +457,36 @@ def change_speed(x):
 				motor_change[3] = 0
 				motor_change[0] = 2
 				motor_change[1] = 2
-				#print("RIGHT_CHANGE is 2")
-
-		if x < (sensativity * -1):#counter-clockwise rotation, decrease right and increase left
-			print("Counter-ClockWise with difference 0f {diff}".format(diff = str(x) ) )
-
+		if direction == RIGHT:
+			print("HelloR")
+		if direction == LEFT:
+			print("HelloL")
+		if direction == BACK:
+			print("HelloB")
+		
+	if diff > sensativity and diff > 45:
+		print("Clockwise and stop")
+		while(diff > sensativity):
+			update_diff()
+			rotation_speed = 70 + diff
+			rotation_speed = round(rotation_speed)
+			rotation_comm = ['@','@']
+			rotation_comm[1] = str(rotation_speed)
+			rotate_counter(rotation_comm)
+			
+			motor_change[2] = 3
+			motor_change[3] = 3
+			motor_change[0] = 3
+			motor_change[1] = 3
+				
+		stop()
+		
+	if diff < (sensativity * -1) and diff > -45:
+		print("Counter-ClockWise and go")
+		print("Difference of {diffe}".format(diffe = str(diff) ) )
+		
+		if direction == FRONT:
+			
 			if motor_speed[FRONT_LEFT] + abs(x) < max_speed and motor_speed[BACK_LEFT] + abs(x) < max_speed:
 				motor_speed[FRONT_LEFT] += abs(x) * factor
 				motor_speed[BACK_LEFT] += abs(x) * factor
@@ -430,7 +495,7 @@ def change_speed(x):
 				motor_change[3] = 0
 				motor_change[0] = 1
 				motor_change[1] = 1
-				#print("RIGHT_CHANGE is 1")
+				
 			else:
 				motor_speed[FRONT_RIGHT] -= abs(x) * factor
 				motor_speed[BACK_RIGHT] -= abs(x) * factor
@@ -439,15 +504,30 @@ def change_speed(x):
 				motor_change[1] = 0
 				motor_change[2] = 2
 				motor_change[3] = 2
-				#print("LEFT_CHANGE is 2")
-				
-	if direction == LEFT:#Moving Leftward
-		print("Going Leftward")
-	if direction == RIGHT:#Moving Rightward
-		print("Going Rightward")
-	if direction == BACK:#Moving Backward
-		print("Going Backward")
-
+		if direction == RIGHT:
+			print("HelloR")
+		if direction == LEFT:
+			print("HelloL")
+		if direction == BACK:
+			print("HelloB")
+			
+	if diff < (sensativity * -1) and diff < -45:
+		print("Counter-ClockWise and stop")
+		while(diff < (sensativity * -1)):
+			update_diff()
+			rotation_speed = 70 + diff
+			rotation_speed = round(rotation_speed)
+			rotation_comm = ['@','@']
+			rotation_comm[1] = str(rotation_speed)
+			rotate_clockwise(rotation_comm)
+			
+			motor_change[2] = 3
+			motor_change[3] = 3
+			motor_change[0] = 3
+			motor_change[1] = 3
+			
+		stop()
+	
 	return 
 
 def speed_constraint():
@@ -486,6 +566,8 @@ def speed_display():
 		print(Fore.RED + ' {f_L} '.format(f_L = str(motor_speed[FRONT_LEFT])), end = "" )
 	if motor_change[0] == 0: #white
 		print(Style.RESET_ALL + ' {f_L} '.format(f_L = str(motor_speed[FRONT_LEFT])), end = "" )
+	if motor_change[0] == 3: #yellow for rotation
+		print(Fore.YELLOW + ' {f_L} '.format(f_L = str(motor_speed[FRONT_LEFT])), end = "" )
 		
 	
 	if motor_change[2] == 1: #green
@@ -494,6 +576,8 @@ def speed_display():
 		print(Fore.RED + ' {f_R} '.format(f_R = str(motor_speed[FRONT_RIGHT])), end = "" )
 	if motor_change[2] == 0: #white
 		print(Style.RESET_ALL + ' {f_R} '.format(f_R = str(motor_speed[FRONT_RIGHT])), end = "" )
+	if motor_change[2] == 3: #yellow
+		print(Fore.YELLOW + ' {f_R} '.format(f_R = str(motor_speed[FRONT_RIGHT])), end = "" )
 	
 	print("\n")
 	
@@ -503,6 +587,8 @@ def speed_display():
 		print(Fore.RED + ' {b_L} '.format(b_L = str(motor_speed[BACK_LEFT])), end = "" )
 	if motor_change[1] == 0: #white
 		print(Style.RESET_ALL + ' {b_L} '.format(b_L = str(motor_speed[BACK_LEFT])), end = "" )
+	if motor_change[1] == 3: #yellow
+		print(Fore.YELLOW + ' {b_L} '.format(b_L = str(motor_speed[BACK_LEFT])), end = "" )
 		
 	if motor_change[3] == 1: #green
 		print(Fore.GREEN + ' {b_R} '.format(b_R = str(motor_speed[BACK_RIGHT])), end = "" )
@@ -510,6 +596,8 @@ def speed_display():
 		print(Fore.RED + ' {b_R} '.format(b_R = str(motor_speed[BACK_RIGHT])), end = "" )
 	if motor_change[3] == 0: #white
 		print(Style.RESET_ALL + ' {b_R} '.format(b_R = str(motor_speed[BACK_RIGHT])), end = "" )
+	if motor_change[3] == 3: #yellow
+		print(Fore.YELLOW + ' {b_R} '.format(b_R = str(motor_speed[BACK_RIGHT])), end = "" )
 		
 	print(Style.RESET_ALL + "\n")
 	return
@@ -535,9 +623,13 @@ def send_speed():
 	
 	return
 
-def displacement():
+def update_diff():
+	global new_value
+	
+	new_value = ave_gyro()
+	diff = pre_value - new_value
 	 
-	return 
+	return
 
 def rotation():
 	A = ave_gyro()
@@ -569,8 +661,10 @@ def move_gyro(direct, starting_speed, sense_gyro):
 	global direction
 	direction = direct#making a local variable a global variable
 	redefine_pre()
+	
 	while(True):
-		change_speed( displacement() )
+		update_diff()
+		change_speed()
 		speed_constraint()
 		speed_display()
 		send_speed()
@@ -579,7 +673,9 @@ def move_gyro(direct, starting_speed, sense_gyro):
 	
 def gyro_main():
 	for i in range(20):
-		print( displacement() )
+		update_diff()
+		print(diff)
+		
 	return 
  
 def redefine_pre():

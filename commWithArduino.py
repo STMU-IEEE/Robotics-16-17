@@ -7,8 +7,8 @@ from function import move_forward,move_reverse,us_sensor,servo_top,servo_bottom
 from function import servo_change,servo_info,restart_comm
 #from gyro
 from function import get_gyro_reading,ave_gyro,change_speed,speed_constraint
-from function import speed_display,send_speed,displacement,rotation,move_gyro,gyro_main
-from function import redefine_pre,redefine_fre,north,acce_main
+from function import speed_display,send_speed,update_diff,rotation,move_gyro,gyro_main
+from function import redefine_pre,redefine_fre,north,acce_main,rotate_clockwise,rotate_counter
 
 GPIO.setmode(GPIO.BCM)
 
@@ -33,6 +33,10 @@ def command(x):
 		move_right(bytes)
 	if bytes[0] == 'x':
 		stop()
+	if bytes[0] == 'q':
+		rotate_counter(bytes)
+	if bytes[0] == 'e':
+		rotate_clockwise(bytes)
 	#Sensor Commands
 	if bytes[0] == 'u':
 		us_sensor()
