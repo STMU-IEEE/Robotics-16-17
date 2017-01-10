@@ -8,7 +8,7 @@ from function import servo_change,servo_info,restart_comm
 #from gyro
 from function import get_gyro_reading,ave_gyro,change_speed,speed_constraint
 from function import speed_display,send_speed,displacement,rotation,move_gyro,gyro_main
-from function import redefine_pre
+from function import redefine_pre,redefine_fre,north,acce_main
 
 GPIO.setmode(GPIO.BCM)
 
@@ -73,7 +73,16 @@ def command(x):
 		redefine_pre()
 	if bytes[0] == 'T':#testing
 		redefine_pre()
-		gyro_main()		
+		gyro_main()
+	if bytes[0] == 'F':
+		redefine_fre(bytes[1])		
+	if bytes[0] == 'N':
+		north()
+	if bytes[0] == 'O':
+		compass_code()
+	#Accelerometer Code
+	if bytes[0] == 'M':
+		acce_main()
 	return
 
 #Here is the loop that recieves input from the user

@@ -16,7 +16,7 @@ GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 #Setting up communication between arduino and raspberry pi
 
-
+ 
 left_ard='/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_6493833393235151C131-if00'
 right_ard='/dev/serial/by-id/usb-Arduino_LLC__www.arduino.cc__Genuino_Uno_85531303631351112162-if00'
 left = serial.Serial(left_ard, 9600)
@@ -24,6 +24,7 @@ right = serial.Serial(right_ard, 9600)
 
 left.timeout = 0.1
 right.timeout = 0.1
+
 
 FRONT = 1
 LEFT = 2
@@ -223,27 +224,11 @@ def us_sensor():
 
 	right_front_ave = sensor_total[2] / sensor_collect_fre
 	right_right_ave = sensor_total[3] / sensor_collect_fre
-	""" 
-	print("		    FRONT   ")
-	print("	             {f}    ".format(f = right_front) )
-	print("		[]--------[]")
-	print("		|          |")
-	print("		|          |")
-	print("    {L}		|          |      {R}".format(L = left_left, R = right_right) )
-	print("		|          |")
-	print("		|          |")
-	print("		[]--------[]")
-	print("		     {b}    ".format(b = left_back) )
-	print("	            BACK    ")
-	"""
+
+
 	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}".format(B = left_back_ave,L = left_left_ave,F = right_front_ave, R = right_right_ave) ) 
 	print("\n")
 	return
-
-""" 
-The servos will be distinished with one being FRONT which is from the right arduino 
-while the BACK servo is realted to the left arduino
-"""
 
 
 def servo_top(servo_location):
@@ -265,8 +250,8 @@ def servo_bottom(servo_location):
 	return
 
 def servo_change(bytes):
-	bytes[1] = servoH_top
-	bytes[2] = servoH_bottom
+	#bytes[1] = servoH_top
+	#bytes[2] = servoH_bottom
 	#Sending bytes to the left arduino
 	left.write(bytes[0].encode() )
 	left.write(bytes[1].encode() )
@@ -317,7 +302,7 @@ def start_button_pressed(channel):
 GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
 
 
-""" Gyro Code Ahead """
+"""Gyro Code Ahead"""
 
 #Setting up gyro sensitive variables
 sense = SenseHat()
@@ -333,27 +318,30 @@ motor_speed = {'front_left': 255, 'front_right': 255, 'back_left': 255, 'back_ri
 motor_change = [0,0,0,0]
 max_speed = 250
 sensativity = 0
+fre = 200
+
 
 def get_gyro_reading():
 
-	motion = sense.get_orientation()
+	motion = sense.get_gyroscope()
 	return motion["yaw"]
+
 
 def ave_gyro():
 
-	fre = 200
 	inital_value  = get_gyro_reading()
 	total =  inital_value
 
 	for i in range(fre):
 		new_value = get_gyro_reading()
-		total +=  new_value
+		total = total + new_value
 
 	ave = total / (fre + 1)
 	return ave
 	
 
-"""Information Here
+""" 
+Information Here
 positive increase means clockwise rotation
 negative increase means counter-clockwise rotation
 
@@ -374,6 +362,7 @@ Direction is reference with the following numbers
 					|
 					V
 					4
+
 """
 
 #creates the new motor speeds to correct leaning
@@ -408,48 +397,48 @@ def change_speed(x):
 
 	if direction == FRONT:#Moving Forward
 		print("Going Forward")		 
-		if x  < (sensativity * -1):#counter-clockwise rotation, decrease right and increase left
-			print("Counter-ClockWise with difference of {diff}".format(diff = str(x)))
+		if x  > (sensativity):#clockwise rotation, decrease left and increase right
+			print("ClockWise with difference of {diff}".format(diff = str(x)))
+
+			if motor_speed[FRONT_RIGHT] + abs(x) < max_speed and motor_speed[FRONT_RIGHT] + abs(x) < max_speed:
+				motor_speed[FRONT_RIGHT] += abs(x) * factor
+				motor_speed[BACK_RIGHT] += abs(x) * factor
+				
+				motor_change[0] = 0
+				motor_change[1] = 0
+				motor_change[2] = 1
+				motor_change[3] = 1
+				#print("LEFT_CHANGE is 1")
+			else:
+				motor_speed[FRONT_LEFT] -= abs(x) * factor
+				motor_speed[BACK_LEFT] -= abs(x) * factor
+				
+				motor_change[2] = 0
+				motor_change[3] = 0
+				motor_change[0] = 2
+				motor_change[1] = 2
+				#print("RIGHT_CHANGE is 2")
+
+		if x < (sensativity * -1):#counter-clockwise rotation, decrease right and increase left
+			print("Counter-ClockWise with difference 0f {diff}".format(diff = str(x) ) )
 
 			if motor_speed[FRONT_LEFT] + abs(x) < max_speed and motor_speed[BACK_LEFT] + abs(x) < max_speed:
 				motor_speed[FRONT_LEFT] += abs(x) * factor
 				motor_speed[BACK_LEFT] += abs(x) * factor
 				
-				motor_change[0] = 1
-				motor_change[1] = 1
 				motor_change[2] = 0
 				motor_change[3] = 0
-				#print("LEFT_CHANGE is 1")
+				motor_change[0] = 1
+				motor_change[1] = 1
+				#print("RIGHT_CHANGE is 1")
 			else:
 				motor_speed[FRONT_RIGHT] -= abs(x) * factor
 				motor_speed[BACK_RIGHT] -= abs(x) * factor
 				
+				motor_change[0] = 0
+				motor_change[1] = 0
 				motor_change[2] = 2
 				motor_change[3] = 2
-				motor_change[0] = 0
-				motor_change[1] = 0
-				#print("RIGHT_CHANGE is 2")
-
-		if x > sensativity:#clockwise rotation, decrease left and increase right
-			print("ClockWise with difference 0f {diff}".format(diff = str(x) ) )
-
-			if motor_speed[FRONT_RIGHT] + abs(x) < max_speed and motor_speed[BACK_LEFT] + abs(x) < max_speed:
-				motor_speed[FRONT_RIGHT] += abs(x) * factor
-				motor_speed[BACK_RIGHT] += abs(x) * factor
-				
-				motor_change[2] = 1
-				motor_change[3] = 1
-				motor_change[0] = 0
-				motor_change[1] = 0
-				#print("RIGHT_CHANGE is 1")
-			else:
-				motor_speed[FRONT_LEFT] -= abs(x) * factor
-				motor_speed[BACK_LEFT] -= abs(x) * factor
-				
-				motor_change[0] = 2
-				motor_change[1] = 2
-				motor_change[2] = 0
-				motor_change[3] = 0
 				#print("LEFT_CHANGE is 2")
 				
 	if direction == LEFT:#Moving Leftward
@@ -525,13 +514,13 @@ def speed_display():
 	print(Style.RESET_ALL + "\n")
 	return
 
-
+ 
 def send_speed():
 	bytes = ['@','@', '@', '@', '@']
-	bytes[1] = str( int( motor_speed[FRONT_LEFT] ) )
-	bytes[2] = str( int( motor_speed[BACK_LEFT] - 15 ) )
-	bytes[3] = str( int( motor_speed[FRONT_RIGHT] ) )
-	bytes[4] = str( int( motor_speed[BACK_RIGHT] ) )
+	bytes[1] = str( round( motor_speed[FRONT_LEFT] ) )
+	bytes[2] = str( round( motor_speed[BACK_LEFT] - 15 ) )
+	bytes[3] = str( round( motor_speed[FRONT_RIGHT] ) )
+	bytes[4] = str( round( motor_speed[BACK_RIGHT] ) )
 
 	print(bytes)	
 	
@@ -547,12 +536,8 @@ def send_speed():
 	return
 
 def displacement():
-	#global pre_value
-	new_value_gyro = ave_gyro()
-	#print("pre_value: {P}".format( P = pre_value) )
-	#print("new value: {B}".format( B = new_value_gyro) )
-	diff = (pre_value - new_value_gyro) 
-	return diff
+	 
+	return 
 
 def rotation():
 	A = ave_gyro()
@@ -563,8 +548,8 @@ def rotation():
 		print("CounterClockWise: {diff}".format(diff = (B-A) ) )
 	if abs( B - A ) <  0.6 :
 		print("Stationary")
-
-def move_gyro(direct, starting_speed, sense_gryo):
+ 
+def move_gyro(direct, starting_speed, sense_gyro):
 	#Code to make the robot move straigh
 	global sensativity
 	
@@ -590,23 +575,34 @@ def move_gyro(direct, starting_speed, sense_gryo):
 		speed_display()
 		send_speed()
 	return
+
 	
 def gyro_main():
-	while(True):
-		#move_gyro(FRONT)
-		#print( ave_gyro() )
-		#print(get_gyro_reading() )
-		#rotation()
-		for i in range(20):
-			print( displacement() )
-		return 
-
+	for i in range(20):
+		print( displacement() )
+	return 
+ 
 def redefine_pre():
 	global pre_value
 	pre_value  = ave_gyro()
 	print("Now the value of Pre is {Pre}".format(Pre = pre_value) )
 	return
-""" 
-def ratio_function(diff):
-	if diff == 10:
-"""		
+		
+def redefine_fre(new_value_fre):
+	global fre
+	fre = int(new_value_fre)
+	return
+ 
+def north():
+	north = sense.get_compass()
+	print("North: %s" % north)
+	return 
+
+
+""" Accelerometer Code """ 
+
+def acce_main():
+	while(True):
+		print(sense.get_accelerometer_raw())
+		sleep(0.5)
+	return
