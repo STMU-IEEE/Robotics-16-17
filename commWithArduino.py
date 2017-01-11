@@ -9,6 +9,7 @@ from function import servo_change,servo_info,restart_comm
 from function import get_gyro_reading,ave_gyro,change_speed,speed_constraint
 from function import speed_display,send_speed,update_diff,rotation,move_gyro,gyro_main
 from function import redefine_pre,redefine_fre,north,acce_main,rotate_clockwise,rotate_counter
+from function import rotate_counter_gyro,rotate_clockwise_gyro,redefine_sensa
 
 GPIO.setmode(GPIO.BCM)
 
@@ -67,26 +68,23 @@ def command(x):
 		move_gyro(RIGHT_C, bytes[1], bytes[2])
 	if bytes[0] == 'S':
 		move_gyro(LEFT_C, bytes[1], bytes[2])
-	if bytes[0] == 'R':
-		for i in range(20):
-			rotation()
-	if bytes[0] == 'I':
-		for j in range(20):
-			print(displacement())
+	if bytes[0] = 'Q':
+		rotate_counter_gyro()
+	if bytes[0] = 'E':
+		rotate_clockwise_gyro()
 	if bytes[0] == 'P':
 		redefine_pre()
+	if bytes[0] == 'F':
+		redefine_fre(bytes[1])	
+	if bytes[0] == 'I':
+		redefine_sensa(bytes[1])
 	if bytes[0] == 'T':#testing
 		redefine_pre()
 		gyro_main()
-	if bytes[0] == 'F':
-		redefine_fre(bytes[1])		
+	#Magnetometer Commands
 	if bytes[0] == 'N':
 		north()
-	if bytes[0] == 'O':
-		compass_code()
-	#Accelerometer Code
-	if bytes[0] == 'M':
-		acce_main()
+	
 	return
 
 #Here is the loop that recieves input from the user

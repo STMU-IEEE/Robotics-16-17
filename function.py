@@ -207,6 +207,7 @@ def rotate_clockwise(bytes):
 	right.write(b"&")
 	
 	return
+	
 def us_sensor():
 	sensor_collect_fre = 5
 	clear_comm()
@@ -336,46 +337,6 @@ GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bounceti
 
 """Gyro Code Ahead"""
 
-#Setting up gyro sensitive variables
-sense = SenseHat()
-
-FRONT_LEFT = "front_left"
-FRONT_RIGHT = "front_right"
-BACK_LEFT = "back_left"
-BACK_RIGHT = "back_right"
-
-pre_value = 0
-new_value = 0
-
-
-motor_speed = {'front_left': 255, 'front_right': 255, 'back_left': 255, 'back_right': 255}
-motor_change = [0,0,0,0]
-
-direction = 0
-max_speed = 250
-sensativity = 1
-fre = 200
-
-
-def get_gyro_reading():
-
-	motion = sense.get_gyroscope()
-	return (motion["yaw"] - 180) #change gyro reading system from 0 - 360 to -180 - 180
-
-
-def ave_gyro():
-
-	inital_value  = get_gyro_reading()
-	total =  inital_value
-
-	for i in range(fre):
-		new_value_raw = get_gyro_reading()
-		total = total + new_value_raw
-
-	ave = total / (fre + 1)
-	return ave
-	
-
 """ 
 Information Here
 positive increase means clockwise rotation
@@ -401,9 +362,80 @@ Direction is reference with the following numbers
 
 """
 
+#Setting up gyro sensitive variables [defaults]
+sense = SenseHat()
+
+FRONT_LEFT = "front_left"
+FRONT_RIGHT = "front_right"
+BACK_LEFT = "back_left"
+BACK_RIGHT = "back_right"
+
+pre_value = 0
+new_value = 0
+
+
+motor_speed = {'front_left': 255, 'front_right': 255, 'back_left': 255, 'back_right': 255}
+motor_change = [0,0,0,0]
+
+direction = 0
+max_speed = 250
+sensativity = 1
+fre = 200
+diff = 0
+
+
+def get_gyro_reading():
+
+	motion = sense.get_gyroscope()
+	return (motion["yaw"] - 180) #change gyro reading system from 0 - 360 to -180 - 180
+
+
+def ave_gyro():
+
+	inital_value  = get_gyro_reading()
+	total =  inital_value
+
+	for i in range(fre):
+		new_value_raw = get_gyro_reading()
+		total = total + new_value_raw
+
+	ave = total / (fre + 1)
+	return ave
+	
+def update_diff():
+	global new_value
+	global diff
+	
+	new_value = ave_gyro()
+	diff = pre_value - new_value
+	 
+	return
+	
+def rotate_counter_gyro():
+	update_diff()
+	while(diff > sensativity):
+		update_diff()
+		rotation_speed = 70 + diff
+		rotation_speed = round(rotation_speed)
+		rotation_comm = ['@','@']
+		rotation_comm[1] = str(rotation_speed)
+		rotate_counter(rotation_comm)
+	return
+	
+def rotate_clockwise_gyro():
+	update_diff()
+	while(diff < (sensativity * -1)):
+		update_diff()
+		rotation_speed = 70 + diff
+		rotation_speed = round(rotation_speed)
+		rotation_comm = ['@','@']
+		rotation_comm[1] = str(rotation_speed)
+		rotate_clockwise(rotation_comm)
+	return	
+		
+
 #creates the new motor speeds to correct leaning
-def change_speed(diff):
-	#This is to marrk which side the robot is leaning and what color must the text be printed to resemble increase and decrease
+def change_speed():
 	largest_value = 0
 	factor = 1
 	
@@ -466,19 +498,14 @@ def change_speed(diff):
 		
 	if diff > sensativity and diff > 45:
 		print("Clockwise and stop")
-		while(diff > sensativity):
-			update_diff()
-			rotation_speed = 70 + diff
-			rotation_speed = round(rotation_speed)
-			rotation_comm = ['@','@']
-			rotation_comm[1] = str(rotation_speed)
-			rotate_counter(rotation_comm)
-			
-			motor_change[2] = 3
-			motor_change[3] = 3
-			motor_change[0] = 3
-			motor_change[1] = 3
-				
+		
+		rotate_counter_gyro()
+		
+		motor_change[2] = 3
+		motor_change[3] = 3
+		motor_change[0] = 3
+		motor_change[1] = 3	
+		
 		stop()
 		
 	if diff < (sensativity * -1) and diff > -45:
@@ -513,18 +540,13 @@ def change_speed(diff):
 			
 	if diff < (sensativity * -1) and diff < -45:
 		print("Counter-ClockWise and stop")
-		while(diff < (sensativity * -1)):
-			update_diff()
-			rotation_speed = 70 + diff
-			rotation_speed = round(rotation_speed)
-			rotation_comm = ['@','@']
-			rotation_comm[1] = str(rotation_speed)
-			rotate_clockwise(rotation_comm)
-			
-			motor_change[2] = 3
-			motor_change[3] = 3
-			motor_change[0] = 3
-			motor_change[1] = 3
+		
+		rotate_clockwise_gyro()
+		
+		motor_change[2] = 3
+		motor_change[3] = 3
+		motor_change[0] = 3
+		motor_change[1] = 3
 			
 		stop()
 	
@@ -623,14 +645,6 @@ def send_speed():
 	
 	return
 
-def update_diff():
-	global new_value
-	
-	new_value = ave_gyro()
-	diff = pre_value - new_value
-	 
-	return
-
 def rotation():
 	A = ave_gyro()
 	B = ave_gyro()
@@ -642,23 +656,21 @@ def rotation():
 		print("Stationary")
  
 def move_gyro(direct, starting_speed, sense_gyro):
-	#Code to make the robot move straigh
+	#Code to make the robot move straight
 	global sensativity
+	global motor_speed
+	global max_speed
+	global direction
 	
 	sensativity = int(sense_gyro)
-	
-	global motor_speed
 
 	motor_speed[FRONT_LEFT] = int(starting_speed)
 	motor_speed[BACK_LEFT] = int(starting_speed)
 	motor_speed[FRONT_RIGHT] = int(starting_speed)
 	motor_speed[BACK_RIGHT] = int(starting_speed) 
-
-	global max_speed
 	
 	max_speed = int(starting_speed)
 
-	global direction
 	direction = direct#making a local variable a global variable
 	redefine_pre()
 	
@@ -687,18 +699,17 @@ def redefine_pre():
 def redefine_fre(new_value_fre):
 	global fre
 	fre = int(new_value_fre)
+	print("Now the value of fre is {FRE}". format(FRE = fre) )
 	return
- 
+
+def redefine_sensa(new_value_sen):
+	global sensativity
+	sensativity = int(new_value_sen)
+	print("Now the value of sensativity is {SE}".format(SE = sensativity) )
+	return
+	
 def north():
 	north = sense.get_compass()
 	print("North: %s" % north)
 	return 
 
-
-""" Accelerometer Code """ 
-
-def acce_main():
-	while(True):
-		print(sense.get_accelerometer_raw())
-		sleep(0.5)
-	return
