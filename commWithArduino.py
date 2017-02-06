@@ -8,7 +8,7 @@ from function import servo_change,servo_info,restart_comm
 #from gyro
 from function import get_gyro_reading,ave_gyro,change_speed,speed_constraint
 from function import speed_display,send_speed,update_diff,rotation,move_gyro,gyro_main
-from function import redefine_pre,redefine_fre,north,acce_main,rotate_clockwise,rotate_counter
+from function import redefine_pre,redefine_fre,north,rotate_clockwise,rotate_counter
 from function import rotate_counter_gyro,rotate_clockwise_gyro,redefine_sensa
 
 GPIO.setmode(GPIO.BCM)
@@ -68,9 +68,9 @@ def command(x):
 		move_gyro(RIGHT_C, bytes[1], bytes[2])
 	if bytes[0] == 'S':
 		move_gyro(LEFT_C, bytes[1], bytes[2])
-	if bytes[0] = 'Q':
+	if bytes[0] == 'Q':
 		rotate_counter_gyro()
-	if bytes[0] = 'E':
+	if bytes[0] == 'E':
 		rotate_clockwise_gyro()
 	if bytes[0] == 'P':
 		redefine_pre()

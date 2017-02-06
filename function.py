@@ -34,7 +34,7 @@ BACK = 4
 #functions that control the arduino
 def int_speed(bytes):
 	bytes_integer = [0,0,0,0,0]
-	for i in range(4):
+	for i in range(len(bytes)):
 		if i == 0:
 			continue
 		bytes_integer[i] = eval(bytes[i])
@@ -147,6 +147,10 @@ def move_left(bytes):
 
 def move_forward(bytes):
 	bytes = int_speed(bytes)
+	
+	print("FORWARD_FUNCTION")
+	print(bytes)
+
 	left.write(b"w")
 	left.write(bytes[1].encode() )
 	left.write(b"&")#Separator Char
@@ -380,8 +384,11 @@ motor_change = [0,0,0,0]
 direction = 0
 max_speed = 250
 sensativity = 1
-fre = 200
+fre = 100
 diff = 0
+fix_bias = 15
+lowest_speed = 70
+
 
 
 def get_gyro_reading():
@@ -398,7 +405,7 @@ def ave_gyro():
 	for i in range(fre):
 		new_value_raw = get_gyro_reading()
 		total = total + new_value_raw
-
+		sleep(0.02)
 	ave = total / (fre + 1)
 	return ave
 	
@@ -407,46 +414,98 @@ def update_diff():
 	global diff
 	
 	new_value = ave_gyro()
-	diff = pre_value - new_value
-	 
+	diff = new_value - pre_value
+	
+	if abs(diff) > 182:#If the gyro value passes the 180 -180 border
+		diff = 360 - (abs (pre_value) + abs(new_value) )
 	return
 	
 def rotate_counter_gyro():
+	pre_fre = fre
 	update_diff()
-	while(diff > sensativity):
+	redefine_fre(20)
+
+	while(abs(diff) > sensativity + 5):
 		update_diff()
-		rotation_speed = 70 + diff
+		print(diff)
+
+		if abs(diff) > sensativity * 10:
+			rotation_speed = 150
+		if abs(diff) > sensativity * 9:
+			rotation_speed = 120
+		if abs(diff) > sensativity * 8:
+			rotation_speed = 100
+		if abs(diff) > sensativity * 7:
+			rotation_speed = 90
+		if abs(diff) > sensativity * 6:
+			rotation_speed = 80
+		if abs(diff) > sensativity * 5:
+			rotation_speed = 75
+		if abs(diff) > sensativity * 4:
+			rotation_speed = 70
+		if abs(diff) > sensativity * 3:
+			rotation_speed = 60
+		else:
+			rotation_speed = 60
+
+
 		rotation_speed = round(rotation_speed)
 		rotation_comm = ['@','@']
 		rotation_comm[1] = str(rotation_speed)
-		rotate_counter(rotation_comm)
+		#rotate_counter(rotation_comm)
+
+	redefine_fre(pre_fre)
 	return
 	
 def rotate_clockwise_gyro():
+	pre_fre = fre
 	update_diff()
-	while(diff < (sensativity * -1)):
+	redefine_fre(20)
+
+	while(abs(diff) > sensativity + 5):
 		update_diff()
-		rotation_speed = 70 + diff
+		print(diff)
+		
+		if abs(diff) > sensativity * 10:
+			rotation_speed = 150
+		if abs(diff) > sensativity * 9:
+			rotation_speed = 120
+		if abs(diff) > sensativity * 8:
+			rotation_speed = 100
+		if abs(diff) > sensativity * 7:
+			rotation_speed = 90
+		if abs(diff) > sensativity * 6:
+			rotation_speed = 80
+		if abs(diff) > sensativity * 5:
+			rotation_speed = 75
+		if abs(diff) > sensativity * 4:
+			rotation_speed = 70
+		if abs(diff) > sensativity * 3:
+			rotation_speed = 60
+		else:
+			rotation_speed = 60
+
 		rotation_speed = round(rotation_speed)
 		rotation_comm = ['@','@']
 		rotation_comm[1] = str(rotation_speed)
-		rotate_clockwise(rotation_comm)
+		#rotate_clockwise(rotation_comm)
+
+	redefine_fre(pre_fre)
 	return	
+
 		
 
 #creates the new motor speeds to correct leaning
 def change_speed():
 	largest_value = 0
 	factor = 1
-	
+ 
 	global motor_speed
 	
-	if abs(diff) > 182:#If the gyro value passes the 180 -180 border
-		global diff 
-		diff = 360 - (abs(pre_value) + abs(new_value) )
 	
 	if abs(diff) < sensativity:
 		print("Going straight")
+		print("Difference of {diffe}".format(diffe = str(diff) ) )
 		if motor_speed[FRONT_LEFT] > largest_value:
 			largest_value = motor_speed[FRONT_LEFT]
 		if motor_speed[BACK_LEFT] > largest_value:
@@ -466,15 +525,15 @@ def change_speed():
 		motor_change[2] = 0
 		motor_change[3] = 0
 	
-	if diff > sensativity and diff < 45:
+	if diff > sensativity and diff < 50:
 		print("Clockwise and go")
 		print("Difference of {diffe}".format(diffe = str(diff)))
 		
 		if direction == FRONT:
 			
-			if motor_speed[FRONT_RIGHT] + abs(x) < max_speed and motor_speed[FRONT_RIGHT] + abs(x) < max_speed:
-				motor_speed[FRONT_RIGHT] += abs(x) * factor
-				motor_speed[BACK_RIGHT] += abs(x) * factor
+			if motor_speed[FRONT_RIGHT] + abs(diff) < max_speed and motor_speed[FRONT_RIGHT] + abs(diff) < max_speed:
+				motor_speed[FRONT_RIGHT] += abs(diff) * factor
+				motor_speed[BACK_RIGHT] += abs(diff) * factor
 				
 				motor_change[0] = 0
 				motor_change[1] = 0
@@ -482,8 +541,8 @@ def change_speed():
 				motor_change[3] = 1
 
 			else:
-				motor_speed[FRONT_LEFT] -= abs(x) * factor
-				motor_speed[BACK_LEFT] -= abs(x) * factor
+				motor_speed[FRONT_LEFT] -= abs(diff) * factor
+				motor_speed[BACK_LEFT] -= abs(diff) * factor
 				
 				motor_change[2] = 0
 				motor_change[3] = 0
@@ -496,7 +555,7 @@ def change_speed():
 		if direction == BACK:
 			print("HelloB")
 		
-	if diff > sensativity and diff > 45:
+	if diff > sensativity and diff > 50:
 		print("Clockwise and stop")
 		
 		rotate_counter_gyro()
@@ -508,15 +567,15 @@ def change_speed():
 		
 		stop()
 		
-	if diff < (sensativity * -1) and diff > -45:
+	if diff < (sensativity * -1) and diff > -50:
 		print("Counter-ClockWise and go")
 		print("Difference of {diffe}".format(diffe = str(diff) ) )
 		
 		if direction == FRONT:
 			
-			if motor_speed[FRONT_LEFT] + abs(x) < max_speed and motor_speed[BACK_LEFT] + abs(x) < max_speed:
-				motor_speed[FRONT_LEFT] += abs(x) * factor
-				motor_speed[BACK_LEFT] += abs(x) * factor
+			if motor_speed[FRONT_LEFT] + abs(diff) < max_speed and motor_speed[BACK_LEFT] + abs(diff) < max_speed:
+				motor_speed[FRONT_LEFT] += abs(diff) * factor
+				motor_speed[BACK_LEFT] += abs(diff) * factor
 				
 				motor_change[2] = 0
 				motor_change[3] = 0
@@ -524,13 +583,14 @@ def change_speed():
 				motor_change[1] = 1
 				
 			else:
-				motor_speed[FRONT_RIGHT] -= abs(x) * factor
-				motor_speed[BACK_RIGHT] -= abs(x) * factor
+				motor_speed[FRONT_RIGHT] -= abs(diff) * factor
+				motor_speed[BACK_RIGHT] -= abs(diff) * factor
 				
 				motor_change[0] = 0
 				motor_change[1] = 0
 				motor_change[2] = 2
 				motor_change[3] = 2
+
 		if direction == RIGHT:
 			print("HelloR")
 		if direction == LEFT:
@@ -538,7 +598,7 @@ def change_speed():
 		if direction == BACK:
 			print("HelloB")
 			
-	if diff < (sensativity * -1) and diff < -45:
+	if diff < (sensativity * -1) and diff < -50:
 		print("Counter-ClockWise and stop")
 		
 		rotate_clockwise_gyro()
@@ -553,8 +613,6 @@ def change_speed():
 	return 
 
 def speed_constraint():
-	lowest_speed = 0
-	fix_bias = 15
 	global motor_speed
 	#speed Restrictions
 
@@ -568,10 +626,10 @@ def speed_constraint():
 	if motor_speed[FRONT_RIGHT] < lowest_speed:
 		motor_speed[FRONT_RIGHT] = lowest_speed
 
-	if motor_speed[BACK_LEFT] > max_speed - 15:
-		motor_speed[BACK_LEFT] = max_speed - 15
-	if motor_speed[BACK_LEFT] < lowest_speed + 15 :
-		motor_speed[BACK_LEFT] = lowest_speed + 15
+	if motor_speed[BACK_LEFT] > max_speed - fix_bias:
+		motor_speed[BACK_LEFT] = max_speed - fix_bias
+	if motor_speed[BACK_LEFT] < lowest_speed - fix_bias :
+		motor_speed[BACK_LEFT] = lowest_speed - fix_bias
 
 	if motor_speed[BACK_RIGHT] > max_speed:
 		motor_speed[BACK_RIGHT] = max_speed
@@ -628,7 +686,7 @@ def speed_display():
 def send_speed():
 	bytes = ['@','@', '@', '@', '@']
 	bytes[1] = str( round( motor_speed[FRONT_LEFT] ) )
-	bytes[2] = str( round( motor_speed[BACK_LEFT] - 15 ) )
+	bytes[2] = str( round( motor_speed[BACK_LEFT] - fix_bias ) )
 	bytes[3] = str( round( motor_speed[FRONT_RIGHT] ) )
 	bytes[4] = str( round( motor_speed[BACK_RIGHT] ) )
 
@@ -672,21 +730,28 @@ def move_gyro(direct, starting_speed, sense_gyro):
 	max_speed = int(starting_speed)
 
 	direction = direct#making a local variable a global variable
-	redefine_pre()
+	
+	for j in range(3):#makig sure that the sensor works
+		redefine_pre()
+	
 	
 	while(True):
 		update_diff()
 		change_speed()
 		speed_constraint()
 		speed_display()
-		send_speed()
+		#send_speed()
 	return
 
 	
 def gyro_main():
+	global direction
+	direction = 1
 	for i in range(20):
-		update_diff()
-		print(diff)
+		send_speed()
+		sleep(0.5)
+		#update_diff()
+		#print("Pre: {P} New: {N} Diff: {D}".format(P = pre_value,N = new_value, D = diff))
 		
 	return 
  
