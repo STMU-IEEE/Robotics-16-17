@@ -31,6 +31,9 @@ LEFT = 2
 RIGHT = 3
 BACK = 4
 
+cali_pres = 0
+time_distance_slope = 0
+
 #functions that control the arduino
 def int_speed(bytes):
 	bytes_integer = [0,0,0,0,0]
@@ -212,6 +215,59 @@ def rotate_clockwise(bytes):
 	
 	return
 	
+def move_x(side, speed):
+
+	bytes = ['@','@', '@', '@', '@']
+	
+	bytes[1] = str( speed )
+	bytes[2] = str( int(speed) - 15 )
+	bytes[3] = str( speed )
+	bytes[4] = str( speed )
+	
+	time_interval = time_distance_function(speed)
+	
+	before_mov = time.time()
+	
+	future_mov = before_mov + time_interval 
+	
+	if(side == LEFT):
+		move_left(bytes)
+	if(side == RIGHT):
+		move_right(bytes)
+		
+	while(time.time() != future_mov)
+		sleep.time(0.001)
+	stop()
+	
+def move_y(side, speed):
+
+	bytes = ['@','@', '@', '@', '@']
+	
+	bytes[1] = str( speed )
+	bytes[2] = str( int(speed) - 15 )
+	bytes[3] = str( speed )
+	bytes[4] = str( speed )
+	
+	time_interval = time_distance_function(speed)
+	
+	before_mov = time.time()
+	
+	future_mov = before_mov + time_interval 
+	
+	if(side == FRONT):
+		move_forward(bytes)
+	if(side == BACK):
+		move_reverse(bytes)
+		
+	while(time.time() != future_mov)
+		sleep.time(0.001)
+	stop()
+	
+		
+	
+
+	
+	
 def us_sensor():
 	sensor_collect_fre = 5
 	clear_comm()
@@ -333,7 +389,64 @@ def start_button_pressed(channel):
 	#This is where the program to solve the "maze" would go
 	#for now it just makes the robot move foward
 	restart_comm()
+	
+	if(cali_pres == 1):
+		cali_pres = 0
+	
 	return
+	
+def calibration_distance():
+	time.sleep(2)
+	
+	global cali_pres
+	global time_distance_slope
+	
+	cali_pres = 1
+	
+	bytes = ['@','@', '@', '@', '@']
+	bytes[1] = str( 250 )
+	bytes[2] = str( 250 - 15 )
+	bytes[3] = str( 250 )
+	bytes[4] = str( 250 )
+	move_forward(bytes)
+	
+	inital_time1 = time.time()
+	
+	while(cali_pres == 1):
+		time.sleep(0.001)
+	
+	after_time1 = time.time()
+	
+	
+	bytes = ['@','@', '@', '@', '@']
+	bytes[1] = str( 100 )
+	bytes[2] = str( 100 - 15 )
+	bytes[3] = str( 100 )
+	bytes[4] = str( 100 )
+	move_forward(bytes)
+	
+	inital_time2 = time.time()
+	
+	while(cali_pres == 1):
+		time.sleep(0.001)
+	
+	after_time2 = time.time()
+	
+	diff_time1 = after_time1 - inital_time1
+	diff_time2 = after_time2 - inital_time1
+	
+	
+	time_distance_slope = (diff_time2-diff_time1)/(250-100)
+	time_distance_shift = diff_time1-250(time_distance_slope)
+	
+	return
+	
+def time_distance_function(speed):
+	calculated_time = time_distance_slope*speed + time_distance_shift
+	return calculated_time
+
+	
+	
 	
 #Assigned the interrupt their functions
 GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
@@ -499,9 +612,18 @@ def rotate_clockwise_gyro():
 def change_speed():
 	largest_value = 0
 	factor = 1
+<<<<<<< HEAD
  
 	global motor_speed
 	
+=======
+	global diff 
+	global motor_speed
+	
+	if abs(diff) > 182:#If the gyro value passes the 180 -180 border
+		
+		diff = 360 - (abs(pre_value) + abs(new_value) )
+>>>>>>> b31cb160ac70309743d3b19e2127d0076c3128b4
 	
 	if abs(diff) < sensativity:
 		print("Going straight")
