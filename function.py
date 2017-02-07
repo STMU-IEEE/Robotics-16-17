@@ -4,7 +4,7 @@ import sys
 import RPi.GPIO as GPIO
 import math 
 from sense_hat import SenseHat
-from time import sleep
+from time import sleep, time
 import colorama 
 from colorama import Fore, Back, Style
  
@@ -32,7 +32,8 @@ RIGHT = 3
 BACK = 4
 
 cali_pres = 0
-time_distance_slope = 0
+time_distance_slope = {'y':-0.014,'x':-0.018418}
+time_distance_shift = {'y':7.15,'x':8.77567}
 
 #functions that control the arduino
 def int_speed(bytes):
@@ -215,7 +216,9 @@ def rotate_clockwise(bytes):
 	
 	return
 	
-def move_x(side, speed):
+def move_x(side, speed,block):
+	side = int(side)
+	block = int(block)
 
 	bytes = ['@','@', '@', '@', '@']
 	
@@ -224,22 +227,26 @@ def move_x(side, speed):
 	bytes[3] = str( speed )
 	bytes[4] = str( speed )
 	
-	time_interval = time_distance_function(speed)
+	time_interval = time_distance_function(int(speed),2) * block
 	
-	before_mov = time.time()
+	before_mov = time()
 	
 	future_mov = before_mov + time_interval 
+	print("time interval given per block: {B}".format(B = time_interval) )
 	
 	if(side == LEFT):
 		move_left(bytes)
 	if(side == RIGHT):
 		move_right(bytes)
 		
-	while(time.time() != future_mov)
-		sleep.time(0.001)
+	while(time() < future_mov):
+		sleep(0.001)
 	stop()
+	return
 	
-def move_y(side, speed):
+def move_y(side, speed,block):
+	side = int(side)
+	block = int(block)
 
 	bytes = ['@','@', '@', '@', '@']
 	
@@ -248,9 +255,10 @@ def move_y(side, speed):
 	bytes[3] = str( speed )
 	bytes[4] = str( speed )
 	
-	time_interval = time_distance_function(speed)
+	time_interval = time_distance_function(int(speed),1) * block
+	print("time interval given per block: {A}".format(A = time_interval))
 	
-	before_mov = time.time()
+	before_mov = time()
 	
 	future_mov = before_mov + time_interval 
 	
@@ -258,15 +266,10 @@ def move_y(side, speed):
 		move_forward(bytes)
 	if(side == BACK):
 		move_reverse(bytes)
-		
-	while(time.time() != future_mov)
-		sleep.time(0.001)
+	while(time() < future_mov):
+		sleep(0.001)
 	stop()
-	
-		
-	
-
-	
+	return
 	
 def us_sensor():
 	sensor_collect_fre = 5
@@ -389,17 +392,22 @@ def start_button_pressed(channel):
 	#This is where the program to solve the "maze" would go
 	#for now it just makes the robot move foward
 	restart_comm()
+	global cali_pres
 	
 	if(cali_pres == 1):
+		print("Calibration detected")
+		print("Cali_pres returned to 0")
 		cali_pres = 0
 	
 	return
 	
-def calibration_distance():
-	time.sleep(2)
+def calibration_distance(axes):
+	print("Calibration Iniciated")
+	sleep(2)
 	
 	global cali_pres
 	global time_distance_slope
+	global time_distance_shift
 	
 	cali_pres = 1
 	
@@ -408,45 +416,63 @@ def calibration_distance():
 	bytes[2] = str( 250 - 15 )
 	bytes[3] = str( 250 )
 	bytes[4] = str( 250 )
-	move_forward(bytes)
+	print("250 to all motors")
+	if(axes == 1):#Y Calibration
+		move_forward(bytes)
+	if(axes == 2):#X Calibration
+		move_right(bytes)
 	
-	inital_time1 = time.time()
-	
+	inital_time1 = time()
+	print("Stopwatch start:")
 	while(cali_pres == 1):
-		time.sleep(0.001)
+		sleep(0.001)
+	print("Stopwatch stop!")
+	stop()
+	after_time1 = time()
+	diff_time1 = after_time1 - inital_time1
+	print("Time measured: {A}".format(A=diff_time1)) 
 	
-	after_time1 = time.time()
-	
-	
+	print("Iniciating part 2")
+	sleep(5)
+	cali_pres = 1
+	print("100 to all motors")
 	bytes = ['@','@', '@', '@', '@']
 	bytes[1] = str( 100 )
 	bytes[2] = str( 100 - 15 )
 	bytes[3] = str( 100 )
 	bytes[4] = str( 100 )
-	move_forward(bytes)
-	
-	inital_time2 = time.time()
+	if(axes == 1):#Y Calibration
+		move_forward(bytes)
+	if(axes == 2):#X Calibration
+		move_right(bytes)
+	print("Stopwatch start:")
+	inital_time2 = time()
 	
 	while(cali_pres == 1):
-		time.sleep(0.001)
+		sleep(0.001)
+	print("Stopwatch stop!")
+	stop()
+	after_time2 = time()
 	
-	after_time2 = time.time()
-	
-	diff_time1 = after_time1 - inital_time1
-	diff_time2 = after_time2 - inital_time1
-	
-	
-	time_distance_slope = (diff_time2-diff_time1)/(250-100)
-	time_distance_shift = diff_time1-250(time_distance_slope)
+	diff_time2 = after_time2 - inital_time2
+	print("Time measured: {B}".format(B = diff_time2))
+	if(axes == 1):#Y Calibration
+		time_distance_slope['y'] = (diff_time1 - diff_time2)/(250-100)
+		time_distance_shift['y'] = diff_time1-250*(time_distance_slope['y'])
+		print("The slope is {A} and the shift is {B}".format(A=time_distance_slope['y'],B = time_distance_shift['y']) )
+	if(axes == 2):#X Calibration	
+		time_distance_slope['x'] = (diff_time1 - diff_time2)/(250-100)
+		time_distance_shift['x'] = diff_time1-250*(time_distance_slope['x'])
+		print("The slope is {A} and the shift is {B}".format(A=time_distance_slope['x'],B = time_distance_shift['x']) )
 	
 	return
 	
-def time_distance_function(speed):
-	calculated_time = time_distance_slope*speed + time_distance_shift
+def time_distance_function(speed,axes):
+	if(axes == 1):#Y Calculation
+		calculated_time = time_distance_slope['y']*speed + time_distance_shift['y']
+	if(axes == 2):#X Calculation
+		calculated_time = time_distance_slope['x']*speed + time_distance_shift['x']
 	return calculated_time
-
-	
-	
 	
 #Assigned the interrupt their functions
 GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
@@ -534,11 +560,17 @@ def update_diff():
 	return
 	
 def rotate_counter_gyro():
+	inital_diff = 0
 	pre_fre = fre
-	update_diff()
+	
+	for i in range(3):
+		update_diff()
+	
 	redefine_fre(20)
-
-	while(abs(diff) > sensativity + 5):
+	print(diff)
+	inital_diff = diff
+	
+	while(abs(diff) > sensativity + 1):
 		update_diff()
 		print(diff)
 
@@ -561,21 +593,31 @@ def rotate_counter_gyro():
 		else:
 			rotation_speed = 60
 
+		if(abs(diff) > abs(inital_diff) + 10):
+			stop()
+			rotate_clockwise_gyro()
+			return 
 
 		rotation_speed = round(rotation_speed)
 		rotation_comm = ['@','@']
 		rotation_comm[1] = str(rotation_speed)
-		#rotate_counter(rotation_comm)
+		rotate_counter(rotation_comm)
 
 	redefine_fre(pre_fre)
+	stop()
 	return
 	
 def rotate_clockwise_gyro():
 	pre_fre = fre
-	update_diff()
+	
+	for i in range(3):
+		update_diff()
+	
 	redefine_fre(20)
+	print(diff)
+	inital_diff = diff
 
-	while(abs(diff) > sensativity + 5):
+	while(abs(diff) > sensativity + 1):
 		update_diff()
 		print(diff)
 		
@@ -586,24 +628,30 @@ def rotate_clockwise_gyro():
 		if abs(diff) > sensativity * 8:
 			rotation_speed = 100
 		if abs(diff) > sensativity * 7:
-			rotation_speed = 90
+			rotation_speed = 97
 		if abs(diff) > sensativity * 6:
-			rotation_speed = 80
+			rotation_speed = 95
 		if abs(diff) > sensativity * 5:
-			rotation_speed = 75
+			rotation_speed = 90
 		if abs(diff) > sensativity * 4:
-			rotation_speed = 70
+			rotation_speed = 85
 		if abs(diff) > sensativity * 3:
-			rotation_speed = 60
+			rotation_speed = 80
 		else:
 			rotation_speed = 60
+
+		if(abs(diff) > abs(inital_diff) + 10):
+			stop()
+			rotate_counter_gyro()
+			return 
 
 		rotation_speed = round(rotation_speed)
 		rotation_comm = ['@','@']
 		rotation_comm[1] = str(rotation_speed)
-		#rotate_clockwise(rotation_comm)
+		rotate_clockwise(rotation_comm)
 
 	redefine_fre(pre_fre)
+	stop()
 	return	
 
 		
@@ -612,18 +660,11 @@ def rotate_clockwise_gyro():
 def change_speed():
 	largest_value = 0
 	factor = 1
-<<<<<<< HEAD
  
 	global motor_speed
-	
-=======
 	global diff 
 	global motor_speed
-	
-	if abs(diff) > 182:#If the gyro value passes the 180 -180 border
-		
-		diff = 360 - (abs(pre_value) + abs(new_value) )
->>>>>>> b31cb160ac70309743d3b19e2127d0076c3128b4
+
 	
 	if abs(diff) < sensativity:
 		print("Going straight")
@@ -898,5 +939,5 @@ def redefine_sensa(new_value_sen):
 def north():
 	north = sense.get_compass()
 	print("North: %s" % north)
-	return 
+	return
 

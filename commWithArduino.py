@@ -10,6 +10,7 @@ from function import get_gyro_reading,ave_gyro,change_speed,speed_constraint
 from function import speed_display,send_speed,update_diff,rotation,move_gyro,gyro_main
 from function import redefine_pre,redefine_fre,north,rotate_clockwise,rotate_counter
 from function import rotate_counter_gyro,rotate_clockwise_gyro,redefine_sensa
+from function import calibration_distance,time_distance_function,move_x,move_y
 
 GPIO.setmode(GPIO.BCM)
 
@@ -38,6 +39,13 @@ def command(x):
 		rotate_counter(bytes)
 	if bytes[0] == 'e':
 		rotate_clockwise(bytes)
+	#Calibration, Distance, and Time Commands
+	if bytes[0] == 'L':
+		calibration_distance(int(bytes[1]))#1 for Y and 2 for X
+	if bytes[0] == 'X':
+		move_x(bytes[1], bytes[2], bytes[3])
+	if bytes[0] == 'Y':
+		move_y(bytes[1], bytes[2], bytes[3])
 	#Sensor Commands
 	if bytes[0] == 'u':
 		us_sensor()
@@ -90,7 +98,9 @@ def command(x):
 #Here is the loop that recieves input from the user
 
 print("Welcome to The Raspberry Pi Controller HQ")
+print("FRONT: 1, LEFT: 2, RIGHT: 3, BACK: 4") 
 print("Variable Speed: [direction (wasd) and x to stop] [Left A] [Left B] [Right A] [Right B]")
+print("Move by axes and block: [direction (XY)] [positive or negative] [motor speed] [number of block] ")
 print("Servo: FRONT = 1 BACK = 4 --> [up(t) or down(b) or pick_up(p)] [servo#]")
 print("Gyro: [direction (caps motor's keys)] [max_speed] [gryo_sensativity]")
 print("Communication Commands: [command (R or C)]")
