@@ -98,6 +98,10 @@
 
 #define ULTRA_FREQUENCY 10
 
+#define IRA 7
+#define IRB 6
+
+
 
 //------------------SENSORSs------------------
 NewPing sonar1(TRIGGER_PIN1, ECHO_PIN1, MAX_DISTANCE);
@@ -115,6 +119,12 @@ int stop_button = 10;
 int command_status = 1;
 int motor_speed[2];
 int ultrasonic1 = 0, ultrasonic2 = 0;
+
+int irA_value = 0;
+int irB_value = 0; 
+
+int irA_counter = 0;
+int irB_counter = 0;
 
 //-------------------FUNCTIONs----------------
 void stop_motor_ALL(){
@@ -283,7 +293,6 @@ void stop_motor(){
   
 }
 
-
 void us_sensor(){
   int i = 0, total1 = 0, total2 = 0,ave_us1 = 0, ave_us2 = 0;
   for(i = 0; i < ULTRA_FREQUENCY; i++){
@@ -295,22 +304,7 @@ void us_sensor(){
   
   ultrasonic1 = ave_us1;
   ultrasonic2 = ave_us2;
-  /*
-  if(ultrasonic1 < 20){
-        Serial.print("1");
-  }
-  else
-        Serial.print("0");
 
-  Serial.print("-");
-  if(ultrasonic2 < 20){
-        Serial.print("1");
-  }
-  else
-        Serial.print("0");
-        
-  Serial.print("\n");
-  */
   Serial.print(ultrasonic1);
   Serial.print('-');
   Serial.print(ultrasonic2);
@@ -350,7 +344,24 @@ void test(){
   Serial.print("\n");
 }
 */
-
+void encoderA(){
+  irA_value = !irA_value;
+  irA_counter++;
+}
+void encoderB(){
+  irB_value = !irB_value;
+  irB_counter++;
+}
+void encoder_reset(){
+  irB_counter = 0;
+  irA_counter = 0;
+}
+void encoder_report(){
+  Serial.print(irA_counter);
+  Serial.print('-');
+  Serial.print(irB_counter);
+  Serial.print('&');
+}
 
 //------------------CODEs---------------------
 void setup() {
@@ -358,8 +369,14 @@ void setup() {
         //Serial.println("Welcome to the Arduino Command HQ");  
         myservo.attach(5);
         myservo.write(servoH_top);
+
+        pinMode(IRA, INPUT_PULLUP);
+        pinMode(IRB, INPUT_PULLUP);
+
         
         enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
+        enableInterrupt(IRA,encoderA,CHANGE);
+        enableInterrupt(IRB,encoderB,CHANGE);
         
         pinMode(AMOTOR, OUTPUT);
         pinMode(BMOTOR, OUTPUT);
@@ -372,7 +389,7 @@ void setup() {
         pinMode(TRIGGER_PIN1, OUTPUT);
         pinMode(ECHO_PIN1, INPUT);
         pinMode(TRIGGER_PIN2, OUTPUT);
-        pinMode(ECHO_PIN2, INPUT);
+        pinMode(ECHO_PIN2, INPUT);        
          
         /*
         Serial.println(AMOTOR);
@@ -384,8 +401,13 @@ void setup() {
         
 }
 
-void loop() {   
- 
+void loop() { 
+  /*Serial.print(irA_value);
+  Serial.print(" ");
+  Serial.println(irB_value);
+  analogWrite(AMOTOR, 80);
+  analogWrite(BMOTOR, 80);
+  */  
   command();
   //us_sensor();
 }
@@ -480,6 +502,16 @@ void command(){
               command_status = 1;
               //Serial.print("Hello10");
               break;
+            case 'k':
+              if(command_status == 1){
+                encoder_reset();
+              }
+              break;
+            case 'm':
+              if(command_status == 1){
+                encoder_report();
+              }
+            break;
             default:
               //Serial.print("Hello11");
             break;

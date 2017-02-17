@@ -143,7 +143,7 @@ def move_left(bytes):
 
 	right.write(b"i")
 	right.write(bytes[3].encode() )
-	right.write(b"&")#Separator Char
+	right.write(b"&")#Separator Char
 	right.write(bytes[4].encode() )
 	right.write(b"&")
 	return
@@ -325,8 +325,25 @@ def us_sensor():
 	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}".format(B = left_back_ave,L = left_left_ave,F = right_front_ave, R = right_right_ave) ) 
 	print("\n")
 	return
-
-
+	
+def encoder_read():
+	left.write(b"m")
+	right.write(b"m")
+	
+	left_Acounter = read_integer_serial('-',1)
+	left_Bcounter = read_integer_serial('&',1)
+	right_Acounter = read_integer_serial('-',2)
+	right_Bcounter = read_integer_serial('&',2)
+	
+	print("Left: A: {A} B: {B} Right: A: {A2} B: {B}  ".format(A = left_Acounter,B = left_Bcounter
+	A2 = right_Acounter, B2 = right_Bcounter))
+	
+	return
+def encoder_reset():
+	left.write(b"k")
+	right.write(b"k")
+	
+	
 def servo_top(servo_location):
 	servo_location = int(servo_location)
 
@@ -423,7 +440,9 @@ def calibration_distance(axes):
 		move_right(bytes)
 	
 	inital_time1 = time()
+	
 	print("Stopwatch start:")
+	
 	while(cali_pres == 1):
 		sleep(0.001)
 	print("Stopwatch stop!")
@@ -469,9 +488,9 @@ def calibration_distance(axes):
 	
 def time_distance_function(speed,axes):
 	if(axes == 1):#Y Calculation
-		calculated_time = time_distance_slope['y']*speed + time_distance_shift['y']
+		calculated_time = time_distance_slope['y']* speed + time_distance_shift['y']
 	if(axes == 2):#X Calculation
-		calculated_time = time_distance_slope['x']*speed + time_distance_shift['x']
+		calculated_time = time_distance_slope['x']* speed + time_distance_shift['x']
 	return calculated_time
 	
 #Assigned the interrupt their functions
