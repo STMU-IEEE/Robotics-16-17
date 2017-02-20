@@ -126,6 +126,9 @@ int irB_value = 0;
 int irA_counter = 0;
 int irB_counter = 0;
 
+int irA_block = 0;
+int irB_block = 0;
+
 //-------------------FUNCTIONs----------------
 void stop_motor_ALL(){
   
@@ -362,6 +365,11 @@ void encoder_report(){
   Serial.print(irB_counter);
   Serial.print('&');
 }
+void encoder_calibrate(){
+  while(Serial.available () < 2);//wait for the motor speed info
+    irA_block = Serial.parseInt();//motor A speed
+    irB_block = Serial.parseInt();//motor B speed
+}
 
 //------------------CODEs---------------------
 void setup() {
@@ -511,6 +519,11 @@ void command(){
               if(command_status == 1){
                 encoder_report();
               }
+            case 'j':
+              if(command_status == 1){
+                encoder_calibrate();
+              }
+              break;
             break;
             default:
               //Serial.print("Hello11");
