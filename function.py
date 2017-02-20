@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 import serial
 import Pathfinding
 import sys
@@ -38,8 +38,8 @@ cali_pres = 0
 time_distance_slope = {'y':-0.014,'x':-0.018418}
 time_distance_shift = {'y':7.15,'x':8.77567}
 """
-encoder_value_x = [0,0,0,0] #left A, left B, right A, right B
-encoder_value_y = [0,0,0,0]
+encoder_value = [0,0,0,0] #left A, left B, right A, right B
+
 
 encoder_constant_x = [0,0,0,0] #value of encoders to reach one block
 encoder_constant_y = [0,0,0,0]
@@ -225,35 +225,26 @@ def rotate_clockwise(bytes):
 	
 	return
 
-def encoder_update(axes):#1 for Y, 2 for X
+def encoder_update():#1 for Y, 2 for X
 	clear_comm()
 	left.write(b"u")
 	right.write(b"u")
 
-	global encoder_value_y
-	global encoder_value_x
+	global encoder_value
 	
-	if axes == 1:#Y
-		encoder_value_y[0] = read_integer_serial('-',1)
-		encoder_value_y[1] = read_integer_serial('&',1)
+	encoder_value[0] = read_integer_serial('-',1)
+	encoder_value[1] = read_integer_serial('&',1)
 
-		encoder_value_y[2] = read_integer_serial('-',2)
-		encoder_value_y[3] = read_integer_serial('&',2)
-	if axes == 2:#X
-		encoder_value_x[0] = read_integer_serial('-',1)
-		encoder_value_x[1] = read_integer_serial('&',1)
+	encoder_value[2] = read_integer_serial('-',2)
+	encoder_value[3] = read_integer_serial('&',2)
 
-		encoder_value_x[2] = read_integer_serial('-',2)
-		encoder_value_x[3] = read_integer_serial('&',2)
 	return
 
 def encoder_reset():
-	global encoder_value_y
-	global encoder_value_x
+	global encoder_value
 
 	for i in range(3):
-		encoder_value_x[i] = 0
-		encoder_value_y[i] = 0
+		encoder_value[i] = 0
 
 	return
 
@@ -261,10 +252,9 @@ def encoder_reset():
 def encoder_current_value():
 	encoder_update()
 	print("Current values of Encoders")
-	print("Encoder Values for Y Axis")
-	print("Left A: {A1} B: {B2} Right A: {A2} B: {B2}".format(A1 = encoder_value_y[0], B1 = encoder_value_y[1],A2 = encoder_value_y[2], B2 = encoder_value_y[3] ) )
-	print("Encoder Values for X axis")
-	print("Left A: {A1} B: {B2} Right A: {A2} B: {B2}".format(A1 = encoder_value_x[0], B1 = encoder_value_x[1],A2 = encoder_value_y[2], B2 = encoder_value_y[3] ) )
+	print("Encoder Values")
+	print("Left A: {A1} B: {B2} Right A: {A2} B: {B2}".format(A1 = encoder_value[0], B1 = encoder_value[1],A2 = encoder_value[2], B2 = encoder_value[3] ) )
+
 	return
 
 
@@ -277,16 +267,17 @@ def encoder_constant_value():
 	return
 
 def encoder_completion(axes):
-	int completion = 0 
+
+	completion = 0 
 
 	if(axes == 1):#Y
 		for i in range(3):
-			if(encoder_value_y(i) >= encoder_constant_y(i)):
+			if(encoder_value(i) >= encoder_constant_y(i)):
 				completion = completion + 1
 
 	if(axes == 2):#X
 		for i in range(3):
-			if(encoder_value_x(i) >= encoder_constant_y(i)):
+			if(encoder_value(i) >= encoder_constant_x(i)):
 				completion = completion + 1	
 
 	if(completion >= 2):
@@ -1111,7 +1102,6 @@ def north():
 	print("North: %s" % north)
 	return
 
-=======
 import serial
 import Pathfinding
 import sys
@@ -1257,7 +1247,8 @@ def move_left(bytes):
 
 	right.write(b"i")
 	right.write(bytes[3].encode() )
-	right.write(b"&")#Separator Char
+	right.write(b"&")#Separator Char
+
 	right.write(bytes[4].encode() )
 	right.write(b"&")
 	return
@@ -1449,8 +1440,7 @@ def encoder_read():
 	right_Acounter = read_integer_serial('-',2)
 	right_Bcounter = read_integer_serial('&',2)
 	
-	print("Left: A: {A} B: {B} Right: A: {A2} B: {B}  ".format(A = left_Acounter,B = left_Bcounter
-	A2 = right_Acounter, B2 = right_Bcounter))
+	print("Left: A: {A} B: {B} Right: A: {A2} B: {B}  ".format(A = left_Acounter,B = left_Bcounter, A2 = right_Acounter, B2 = right_Bcounter))
 	
 	return
 def encoder_reset():
@@ -1606,10 +1596,6 @@ def time_distance_function(speed,axes):
 	if(axes == 2):#X Calculation
 		calculated_time = time_distance_slope['x']* speed + time_distance_shift['x']
 	return calculated_time
-	
-#Assigned the interrupt their functions
-GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
-
 
 """Gyro Code Ahead"""
 
@@ -2074,4 +2060,3 @@ def north():
 	print("North: %s" % north)
 	return
 
->>>>>>> 776c566f85ab4fb057d70b81c93ea6508a81e0a1

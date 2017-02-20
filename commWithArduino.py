@@ -10,8 +10,9 @@ from function import get_gyro_reading,ave_gyro,change_speed,speed_constraint
 from function import speed_display,send_speed,update_diff,rotation,move_gyro,gyro_main
 from function import redefine_pre,redefine_fre,north,rotate_clockwise,rotate_counter
 from function import rotate_counter_gyro,rotate_clockwise_gyro,redefine_sensa
-from function import """calibration_distance,time_distance_function,"""move_x,move_y
-from function import encoder_update,encoder_reset,encoder_calibration
+from function import move_x,move_y
+from function import encoder_update,encoder_reset,encoder_calibration,encoder_completion
+from function import encoder_current_value,encoder_constant_value
 
 GPIO.setmode(GPIO.BCM)
 
@@ -46,11 +47,14 @@ def command(x):
 		calibration_distance(int(bytes[1]))#1 for Y and 2 for X
 	"""
 	if bytes[0] == 'L':
-		encoder_calibration(int(bytes[1]), int(bytes[2])#1 for Y and 2 for X
+		encoder_calibration(int(bytes[1]), int(bytes[2]))#1 for Y and 2 for X
 	if bytes[0] == 'M':
 		encoder_update()
 	if bytes[0] == 'K':
 		encoder_reset()
+	if bytes[0] == 'B':
+		encoder_current_value()
+		encoder_constant_value()
 	#regarding side, 1 is for positive direction, while 2 is for negative directions
 	if bytes[0] == 'X':
 		move_x(bytes[1], bytes[2])#side, speed
