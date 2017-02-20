@@ -32,8 +32,16 @@ RIGHT = 3
 BACK = 4
 
 cali_pres = 0
+
+""" Time dependent System
 time_distance_slope = {'y':-0.014,'x':-0.018418}
 time_distance_shift = {'y':7.15,'x':8.77567}
+"""
+encoder_value_x = [0,0,0,0] #left A, left B, right A, right B
+encoder_value_y = [0,0,0,0]
+
+encoder_constant_x = [0,0,0,0] #value of encoders to reach one block
+encoder_constant_y = [0,0,0,0]
 
 #functions that control the arduino
 def int_speed(bytes):
@@ -215,11 +223,125 @@ def rotate_clockwise(bytes):
 	right.write(b"&")
 	
 	return
-	
-def move_x(side, speed,block):
-	side = int(side)
-	block = int(block)
 
+def encoder_update(axes):#1 for Y, 2 for X
+	clear_comm()
+	left.write(b"u")
+	right.write(b"u")
+
+	global encoder_value_y
+	global encoder_value_x
+	
+	if axes == 1:#Y
+		encoder_value_y[0] = read_integer_serial('-',1)
+		encoder_value_y[1] = read_integer_serial('&',1)
+
+		encoder_value_y[2] = read_integer_serial('-',2)
+		encoder_value_y[3] = read_integer_serial('&',2)
+	if axes == 2:#X
+		encoder_value_x[0] = read_integer_serial('-',1)
+		encoder_value_x[1] = read_integer_serial('&',1)
+
+		encoder_value_x[2] = read_integer_serial('-',2)
+		encoder_value_x[3] = read_integer_serial('&',2)
+	return
+
+def encoder_reset():
+	global encoder_value_y
+	global encoder_value_x
+
+	for i in range(3):
+		encoder_value_x[i] = 0
+		encoder_value_y[i] = 0
+
+	return
+
+
+def encoder_current_value():
+	encoder_update()
+	print("Current values of Encoders")
+	print("Encoder Values for Y Axis")
+	print("Left A: {A1} B: {B2} Right A: {A2} B: {B2}".format(A1 = encoder_value_y[0], B1 = encoder_value_y[1],A2 = encoder_value_y[2], B2 = encoder_value_y[3] ) )
+	print("Encoder Values for X axis")
+	print("Left A: {A1} B: {B2} Right A: {A2} B: {B2}".format(A1 = encoder_value_x[0], B1 = encoder_value_x[1],A2 = encoder_value_y[2], B2 = encoder_value_y[3] ) )
+	return
+
+
+def encoder_constant_value():
+	print("Constant values of Encoders")
+	print("This values are the encoder values for the robot to travel one block")
+	print("Left A: {A1} B: {B2} Right A: {A2} B: {B2}".format(A1 = encoder_constant_y[0], B1 = encoder_constant_y[1],A2 = encoder_constant_y[2], B2 = encoder_constant_y[3] ) )
+	print("Encoder Values for X axis")
+	print("Left A: {A1} B: {B2} Right A: {A2} B: {B2}".format(A1 = encoder_constant_x[0], B1 = encoder_constant_x[1],A2 = encoder_constant_y[2], B2 = encoder_constant_y[3] ) )
+	return
+
+def encoder_completion(axes):
+	int completion = 0 
+
+	if(axes == 1):#Y
+		for i in range(3):
+			if(encoder_value_y(i) >= encoder_constant_y(i)):
+				completion = completion + 1
+
+	if(axes == 2):#X
+		for i in range(3):
+			if(encoder_value_x(i) >= encoder_constant_y(i)):
+				completion = completion + 1	
+
+	if(completion >= 2):
+		return 1
+
+	return 0
+
+def move_y(side, speed):
+	side = int(side)
+
+	encoder_reset()
+	bytes = ['@','@', '@', '@', '@']
+	
+	bytes[1] = str( speed )
+	bytes[2] = str( int(speed) - 15 )
+	bytes[3] = str( speed )
+	bytes[4] = str( speed )
+
+	if(side == 1):
+		move_forward(bytes)
+	if(side == 2):
+		move_backward(bytes)
+	else:
+		print("Wrong direction.... duh")
+		return
+
+	while(encoder_completion(1) == 0): #if the function returns 0, that means that non of the encoders have reach the desired value
+		encoder_update()
+		sleep(0.01)
+	stop()
+
+
+	
+	""" Time dependent System
+	time_interval = time_distance_function(int(speed),1) * block
+	print("time interval given per block: {A}".format(A = time_interval))
+	
+	before_mov = time()
+	
+	future_mov = before_mov + time_interval 
+	
+	if(side == FRONT):
+		move_forward(bytes)
+	if(side == BACK):
+		move_reverse(bytes)
+	while(time() < future_mov):
+		sleep(0.001)
+	stop()
+	"""
+
+	return
+	
+def move_x(side, speed):
+	side = int(side)
+
+	encoder_reset()
 	bytes = ['@','@', '@', '@', '@']
 	
 	bytes[1] = str( speed )
@@ -227,6 +349,21 @@ def move_x(side, speed,block):
 	bytes[3] = str( speed )
 	bytes[4] = str( speed )
 	
+	
+	if(side == 1):
+		move_right(bytes)
+	if(side == 2):
+		move_left(bytes)
+	else:
+		print("Wrong direction.... duh")
+		return
+	
+	while(encoder_completion(2) == 0): #if the function returns 0, that means that non of the encoders have reach the desired value
+		encoder_update()
+		sleep(0.01)
+	stop()
+
+	""" Time dependent system
 	time_interval = time_distance_function(int(speed),2) * block
 	
 	before_mov = time()
@@ -242,35 +379,12 @@ def move_x(side, speed,block):
 	while(time() < future_mov):
 		sleep(0.001)
 	stop()
-	return
-	
-def move_y(side, speed,block):
-	side = int(side)
-	block = int(block)
 
-	bytes = ['@','@', '@', '@', '@']
+	"""
 	
-	bytes[1] = str( speed )
-	bytes[2] = str( int(speed) - 15 )
-	bytes[3] = str( speed )
-	bytes[4] = str( speed )
-	
-	time_interval = time_distance_function(int(speed),1) * block
-	print("time interval given per block: {A}".format(A = time_interval))
-	
-	before_mov = time()
-	
-	future_mov = before_mov + time_interval 
-	
-	if(side == FRONT):
-		move_forward(bytes)
-	if(side == BACK):
-		move_reverse(bytes)
-	while(time() < future_mov):
-		sleep(0.001)
-	stop()
 	return
-	
+
+
 def us_sensor():
 	sensor_collect_fre = 5
 	clear_comm()
@@ -401,6 +515,10 @@ def start_button_pressed(channel):
 	
 	return
 	
+#This code is for the motor encoders
+
+""" Time dependent calibration
+
 def calibration_distance(axes):
 	print("Calibration Iniciated")
 	sleep(2)
@@ -466,7 +584,9 @@ def calibration_distance(axes):
 		print("The slope is {A} and the shift is {B}".format(A=time_distance_slope['x'],B = time_distance_shift['x']) )
 	
 	return
+"""
 	
+""" For time dependet system
 def time_distance_function(speed,axes):
 	if(axes == 1):#Y Calculation
 		calculated_time = time_distance_slope['y']*speed + time_distance_shift['y']
@@ -474,6 +594,55 @@ def time_distance_function(speed,axes):
 		calculated_time = time_distance_slope['x']*speed + time_distance_shift['x']
 	return calculated_time
 	
+"""
+
+def encoder_calibration(axes,test_quantity):
+	test_sample = [0,0,0,0]
+
+	print("Calibration Iniciated")
+	sleep(2)
+	
+	global cali_pres
+
+	for i in range(test_quantity):
+		cali_pres = 1
+	
+		bytes = ['@','@', '@', '@', '@']
+		bytes[1] = str( 250 )
+		bytes[2] = str( 250 - 15 )
+		bytes[3] = str( 250 )
+		bytes[4] = str( 250 )
+		print("250 to all motors")
+
+		if(axes == 1):#Y Calibration
+			move_forward(bytes)
+		if(axes == 2):#X Calibration
+			move_right(bytes)
+
+		while(cali_pres == 1):
+			sleep(0.001)
+		print("Stopwatch stop!")
+		stop()
+		encoder_update()
+		for i in range(3):
+			if axes == 1:#Y
+				test_sample[i] = test_sample[i] + encoder_value_y[i]
+			if axes == 2:#X
+				test_sample[i] = test_sample[i] + encoder_value_y[i]
+	
+	for i in range(3):
+			test_sample[i] = test_sample[i] / test_quantity
+
+	for i in range(3):#Transferring average to constant variable
+		if axes == 1:#Y
+			encoder_constant_y[i] = test_sample[i]
+		if axes == 2:#X
+			encoder_constant_x[i] = test_sample[i] 
+
+
+	return
+
+
 #Assigned the interrupt their functions
 GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
 
