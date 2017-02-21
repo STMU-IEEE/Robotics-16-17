@@ -506,24 +506,34 @@ void command(){
                 servo_change();
                 //Serial.print("Hello9");         
               }
+              break;
+              
             case 'R':
               command_status = 1;
               //Serial.print("Hello10");
               break;
+              
             case 'k':
               if(command_status == 1){
                 encoder_reset();
+                //Serial.print("reset");
               }
               break;
+              
             case 'm':
               if(command_status == 1){
                 encoder_report();
+                //Serial.print("report");
               }
+              break;
+              
             case 'j':
               if(command_status == 1){
                 encoder_calibrate();
+                //Serial.print("calibrate");
               }
               break;
+              
             break;
             default:
               //Serial.print("Hello11");
