@@ -41,8 +41,14 @@ time_distance_shift = {'y':7.15,'x':8.77567}
 encoder_value = [0,0,0,0] #left A, left B, right A, right B
 
 
-encoder_constant_x = [15,18,18,15] #value of encoders to reach one block
-encoder_constant_y = [15,18,18,15]
+encoder_constant_x = [15,15,15,15] #value of encoders to reach one block
+encoder_constant_y = [14,14,14,14]
+
+move_x_speed_p = [215,190,200,205]
+move_x_speed_n = [210,185,210,185]
+move_y_speed_p = [165,165,200,200]
+move_y_speed_n = [180,180,200,200]
+ 
 
 #functions that control the arduino
 def int_speed(bytes):
@@ -267,20 +273,25 @@ def encoder_constant_value():
 	print("Left A: {A1} B: {B1} Right A: {A2} B: {B2}".format(A1 = encoder_constant_x[0], B1 = encoder_constant_x[1],A2 = encoder_constant_x[2], B2 = encoder_constant_x[3] ) )
 	return
 
+def average(list):
+	total = 0
+	for i in range(len(list)):
+		total = total + list[i]
+	return round( total / len(list) )
+
 def encoder_completion(axes):
 
 	completion = 0 
-
 	if(axes == 1):#Y
 		for i in range(4):
-			if(int(encoder_value[i]) >= int(encoder_constant_y[i])):
+			if(int(encoder_value[i]) >= average(encoder_constant_y)):
 				completion = completion + 1
 
 	if(axes == 2):#X
 		for i in range(4):
-			if(int(encoder_value[i]) >= int(encoder_constant_x[i])):
+			if(int(encoder_value[i]) >= average(encoder_constant_x)):
 				completion = completion + 1	
-
+	
 	if(completion >= 3):
 		return 1
 
@@ -298,14 +309,30 @@ def move_y(side, speed):
 	bytes[3] = str( speed )
 	bytes[4] = str( speed )
 
-	if(side == 1):
+	if(int(speed) == 1):
+		if(side == 1):
+			for i in range(4):
+				bytes[i + 1] = str(move_y_speed_p[i])
+			move_forward(bytes)
+			print("Forward")
+		if(side == 2):
+			for i in range(4):
+				bytes[i + 1] = str(move_y_speed_n[i])
+			move_reverse(bytes)
+			print("Backward")
+
+	if(side == 1 and int(speed) != 1):
 		move_forward(bytes)
-	if(side == 2):
-		move_backward(bytes)
+	if(side == 2 and int(speed) != 1):
+		move_reverse(bytes)
 
-	encoder_constant_value()
-
+	#encoder_constant_value()
+	counter = 0
 	while(encoder_completion(1) == 0): #if the function returns 0, that means that non of the encoders have reach the desired value
+		if(counter >= 30):
+			print(".", end = '')
+			counter = 0
+		counter = counter + 1
 		encoder_update()
 		sleep(0.01)
 	stop()
@@ -339,19 +366,33 @@ def move_x(side, speed):
 	bytes = ['@','@', '@', '@', '@']
 	
 	bytes[1] = str( speed )
-	bytes[2] = str( int(speed))
+	bytes[2] = str( speed)
 	bytes[3] = str( speed )
 	bytes[4] = str( speed )
 	
-	
-	if(side == 1):
+	if(int(speed) == 1):
+		if(side == 1):
+			for i in range(4):
+				bytes[i + 1] = str(move_x_speed_p[i])
+			move_right(bytes)
+			print("Right")
+		if(side == 2):
+			for i in range(4):
+				bytes[i + 1] = str(move_x_speed_n[i])
+			move_left(bytes)
+			print("Left")
+	if(side == 1 and int(speed) != 1):
 		move_right(bytes)
-	if(side == 2):
+	if(side == 2 and int(speed) != 1):
 		move_left(bytes)
 
-	encoder_constant_value()
-
+	#encoder_constant_value()
+	counter = 0
 	while(encoder_completion(2) == 0): #if the function returns 0, that means that non of the encoders have reach the desired value
+		if(counter >= 30):
+			print(".", end = '')
+			counter = 0
+		counter = counter + 1
 		encoder_update()
 		sleep(0.01)
 	stop()
@@ -616,11 +657,19 @@ def encoder_calibration(axes,test_quantity):
 		bytes[2] = str( 250 )
 		bytes[3] = str( 250 )
 		bytes[4] = str( 250 )
-		print("250 to all motors")
 
+		#print("250 to all motors")
+	
+		
 		if(axes == 1):#Y Calibration
+			for i in range(4):
+				print("Motor speed changed to Y+ default")
+				bytes[i + 1] = str(move_y_speed_p[i])
 			move_forward(bytes)
 		if(axes == 2):#X Calibration
+			for i in range(4):
+				print("Motor speed changed to X+ default")
+				bytes[i + 1] = str(move_x_speed_p[i])
 			move_right(bytes)
 
 		while(cali_pres == 1):
