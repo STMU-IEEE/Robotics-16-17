@@ -1,6 +1,8 @@
 #include <EnableInterrupt.h>
 #include <NewPing.h>
 #include <Servo.h>
+#include <Wire.h>
+#include <I2CEncoder.h>
 
 //--------------ORIENTATION------------------ 
 /*
@@ -76,13 +78,13 @@
 
       
 //------------------PINs---------------------
-#define TRIGGER_PIN1 A5
+#define TRIGGER_PIN1 A2
 #define ECHO_PIN1 2
 
 //DO NOT USE PIN 1, IT CAUSES CONSTANT ZEROS
 //DO NOT USE PIN 2 as an ECHO, IT WILL ALSO CAUSE CONSTANT ZEROS 
 #define TRIGGER_PIN2 4
-#define ECHO_PIN2 A4
+#define ECHO_PIN2 A3
 
 #define MAX_DISTANCE 200
 
@@ -107,6 +109,8 @@
 NewPing sonar1(TRIGGER_PIN1, ECHO_PIN1, MAX_DISTANCE);
 NewPing sonar2(TRIGGER_PIN2, ECHO_PIN2, MAX_DISTANCE);
 Servo myservo;
+I2CEncoder encoder_B;
+I2CEncoder encoder_A;
 
 
 
@@ -119,15 +123,6 @@ int stop_button = 10;
 int command_status = 1;
 int motor_speed[2];
 int ultrasonic1 = 0, ultrasonic2 = 0;
-
-int irA_value = 0;
-int irB_value = 0; 
-
-int irA_counter = 0;
-int irB_counter = 0;
-
-int irA_block = 0;
-int irB_block = 0;
 
 //-------------------FUNCTIONs----------------
 void stop_motor_ALL(){
@@ -347,44 +342,34 @@ void test(){
   Serial.print("\n");
 }
 */
-void encoderA(){
-  irA_value = !irA_value;
-  irA_counter++;
-}
-void encoderB(){
-  irB_value = !irB_value;
-  irB_counter++;
-}
 void encoder_reset(){
-  irB_counter = 0;
-  irA_counter = 0;
+  encoder_A.zero();
+  encoder_B.zero();
 }
 void encoder_report(){
-  Serial.print(irA_counter);
+  Serial.print(abs(round(encoder_A.getPosition())));
   Serial.print('-');
-  Serial.print(irB_counter);
+  Serial.print(abs(round(encoder_B.getPosition())));
   Serial.print('&');
-}
-void encoder_calibrate(){
-  while(Serial.available () < 2);//wait for the motor speed info
-    irA_block = Serial.parseInt();//motor A speed
-    irB_block = Serial.parseInt();//motor B speed
 }
 
 //------------------CODEs---------------------
 void setup() {
+        Wire.begin();
         Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
         //Serial.println("Welcome to the Arduino Command HQ");  
         myservo.attach(5);
         myservo.write(servoH_top);
 
-        pinMode(IRA, INPUT_PULLUP);
-        pinMode(IRB, INPUT_PULLUP);
+        //pinMode(IRA, INPUT_PULLUP);
+        //pinMode(IRB, INPUT_PULLUP);
 
+        encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
+        encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
         
         enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
-        enableInterrupt(IRA,encoderA,CHANGE);
-        enableInterrupt(IRB,encoderB,CHANGE);
+        //enableInterrupt(IRA,encoderA,CHANGE);
+        //enableInterrupt(IRB,encoderB,CHANGE);
         
         pinMode(AMOTOR, OUTPUT);
         pinMode(BMOTOR, OUTPUT);
@@ -524,13 +509,6 @@ void command(){
               if(command_status == 1){
                 encoder_report();
                 //Serial.print("report");
-              }
-              break;
-              
-            case 'j':
-              if(command_status == 1){
-                encoder_calibrate();
-                //Serial.print("calibrate");
               }
               break;
               
