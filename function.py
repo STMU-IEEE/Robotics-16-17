@@ -41,8 +41,8 @@ time_distance_shift = {'y':7.15,'x':8.77567}
 encoder_value = [0,0,0,0] #left A, left B, right A, right B
 
 
-encoder_constant_x = [13,18,18,13] #value of encoders to reach one block
-encoder_constant_y = [15,16,15,13]
+encoder_constant_x = [15,18,18,15] #value of encoders to reach one block
+encoder_constant_y = [15,18,18,15]
 
 #functions that control the arduino
 def int_speed(bytes):
@@ -226,6 +226,7 @@ def rotate_clockwise(bytes):
 	return
 
 def encoder_update():#1 for Y, 2 for X
+	clear_comm()
 	left.write(b"m")
 	right.write(b"m")
 
@@ -280,7 +281,7 @@ def encoder_completion(axes):
 			if(int(encoder_value[i]) >= int(encoder_constant_x[i])):
 				completion = completion + 1	
 
-	if(completion >= 2):
+	if(completion >= 3):
 		return 1
 
 	return 0
@@ -293,7 +294,7 @@ def move_y(side, speed):
 	bytes = ['@','@', '@', '@', '@']
 	
 	bytes[1] = str( speed )
-	bytes[2] = str( int(speed) - 15 )
+	bytes[2] = str( int(speed))
 	bytes[3] = str( speed )
 	bytes[4] = str( speed )
 
@@ -338,7 +339,7 @@ def move_x(side, speed):
 	bytes = ['@','@', '@', '@', '@']
 	
 	bytes[1] = str( speed )
-	bytes[2] = str( int(speed) - 15 )
+	bytes[2] = str( int(speed))
 	bytes[3] = str( speed )
 	bytes[4] = str( speed )
 	
@@ -612,7 +613,7 @@ def encoder_calibration(axes,test_quantity):
 	
 		bytes = ['@','@', '@', '@', '@']
 		bytes[1] = str( 250 )
-		bytes[2] = str( 250 - 15 )
+		bytes[2] = str( 250 )
 		bytes[3] = str( 250 )
 		bytes[4] = str( 250 )
 		print("250 to all motors")

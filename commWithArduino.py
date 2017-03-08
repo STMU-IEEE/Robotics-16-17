@@ -53,6 +53,7 @@ def command(x):
 	if bytes[0] == 'K':
 		encoder_reset()
 	if bytes[0] == 'B':
+		encoder_update()	
 		encoder_current_value()
 	if bytes[0] == 'V':
 		encoder_constant_value()
