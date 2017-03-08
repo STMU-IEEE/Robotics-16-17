@@ -347,9 +347,9 @@ void encoder_reset(){
   encoder_B.zero();
 }
 void encoder_report(){
-  Serial.print(round(encoder_A.getPosition()));
+  Serial.print(abs(round(encoder_A.getPosition())));
   Serial.print('-');
-  Serial.print(round(encoder_B.getPosition()));
+  Serial.print(abs(round(encoder_B.getPosition())));
   Serial.print('&');
 }
 
