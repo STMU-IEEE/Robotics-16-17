@@ -1132,9 +1132,9 @@ def gyro_main():
 	global direction
 	direction = 1
 	for i in range(20):
-		send_speed()
+		#send_speed()
 		sleep(0.5)
-		#update_diff()
+		update_diff()
 		#print("Pre: {P} New: {N} Diff: {D}".format(P = pre_value,N = new_value, D = diff))
 		
 	return 
