@@ -1,4 +1,5 @@
 
+#Hello this is Nick and Eduardo 
 import serial
 import Pathfinding
 import sys
