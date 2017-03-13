@@ -51,26 +51,26 @@ world_map = np.full((7,7), 8, dtype=np.int)
 # this travel cost will be reduced to 1 when the robot explores that region.
 flow_map = []
 
-
-
-
 def follow(path, globalPath):
 
     while path:
+        if my_location == path[0]:
+            path = np.delete(path,0);
+        if(world_map[my_location[0]][my_location[1]]<1)
         world_map[my_location[0]][my_location[1]]=(1)
 
         # run sensors and \
         get_sensors()
         # update the map here
-        flow_map = flowField(world_map, )
-
-        if next_pos[0] > my_location[0]: # if we are south of the next point
+        flow_map = flowField(world_map, my_path[0])
+        travel_direction = flow_map[my_location[0],my_location[1]]
+        if travel_direction[0] > 0: # if we need to move north
             move_north()
-        elif next_pos[0] < my_location[0]: # if we are north of the next point
+        elif travel_direction[0] < 0: # if we need to move south
             move_south()
-        elif next_pos[1] > my_location[1]: #if we are east of the next point
+        elif travel_direction[1] > 0: # if we need to move west
             move_west()
-        else:
+        else:   # else move east
             move_east()
 
 def you_are_here(): #for debug purposes
