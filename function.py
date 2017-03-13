@@ -1,7 +1,7 @@
 
 #Hello this is Nick and Eduardo 
 import serial
-import Pathfinding
+#import Pathfinding
 import sys
 import RPi.GPIO as GPIO
 import math 
