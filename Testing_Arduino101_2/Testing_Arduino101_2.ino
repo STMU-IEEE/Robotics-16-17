@@ -401,15 +401,10 @@ void setup() {
         myservo.attach(5);
         myservo.write(servoH_top);
 
-        //pinMode(IRA, INPUT_PULLUP);
-        //pinMode(IRB, INPUT_PULLUP);
-
         //encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
         //encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
         
         enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
-        //enableInterrupt(IRA,encoderA,CHANGE);
-        //enableInterrupt(IRB,encoderB,CHANGE);
         
         pinMode(AMOTOR, OUTPUT);
         pinMode(BMOTOR, OUTPUT);
@@ -431,16 +426,11 @@ void setup() {
         Serial.println(BMOTOR_BRAKE);
         */
         delay(100);
-        
+        //Serial.println("End of Setup");
 }
 
-void loop() { 
-  /*Serial.print(irA_value);
-  Serial.print(" ");
-  Serial.println(irB_value);
-  analogWrite(AMOTOR, 80);
-  analogWrite(BMOTOR, 80);
-  */  
+void loop() {  
+  //Serial.println("Loop"); 
   command();
   //us_sensor();
 }
@@ -451,31 +441,29 @@ void command(){
           // read the incoming byte:
           input = Serial.read(); //single character
           //Serial.print("Receieved: "); 
-          //Serial.print(input);
+          //Serial.println(input);
           
 
           switch(input){
-            
             case 'w':
               if(command_status == 1){
                 //move_forward();
-                //Serial.print("Hello1");
                 variable_forward();
+                //Serial.print("Forward");
               }
               break;
               
             case 'r':
               if(command_status == 1){
                 //move_reverse();
-                //Serial.print("Hello2");
                 variable_reverse();
+                //Serial.print("Backward");
               }
               break;
 
             case 'o':
               if(command_status == 1){
                 //move_out();
-                //Serial.print("Hello3");
                 variable_out();
               }
               break;          
@@ -483,21 +471,18 @@ void command(){
             case 'i':
               if(command_status == 1){
                 //move_in();
-                //Serial.print("Hello4");
                 variable_in();
               } 
               break;
               
             case 'x':
               if(command_status == 1){
-                //Serial.print("Hello5");
                 stop_motor();
               }
               break;
               
             case 'u':
               if(command_status == 1){
-                //Serial.println("Hello6");
                 //noInterrupts();
                 us_sensor();
                 //us_sensor();
@@ -508,34 +493,29 @@ void command(){
             case 'n':
               if(command_status == 1){
                 servo_info();
-                //Serial.print("Hello7");
               }
               break;
               
             case 't':
               if(command_status == 1){
                 servo_top();
-                //Serial.print("Hello8");
               }
               break;
               
             case 'b':
               if(command_status == 1){
-                //Serial.print("Hello12");
                 servo_bottom();
               }
               break;
               
             case 'c':
               if(command_status == 1){
-                servo_change();
-                //Serial.print("Hello9");         
+                servo_change();    
               }
               break;
               
             case 'R':
               command_status = 1;
-              //Serial.print("Hello10");
               break;
               
             case 'k':
@@ -551,6 +531,7 @@ void command(){
                 //Serial.print("report");
               }
               break;
+             
             case 'C':
               //Serial.print("Cap");
               if(command_status == 1){
@@ -563,7 +544,7 @@ void command(){
               }
             
             default:
-              //Serial.print("Hello11");
+             // Serial.println("NULL");
             break;
           }
       }
