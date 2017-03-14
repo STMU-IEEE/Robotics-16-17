@@ -1,3 +1,4 @@
+#include <CapacitiveSensor.h>
 #include <EnableInterrupt.h>
 #include <NewPing.h>
 #include <Servo.h>
@@ -100,8 +101,8 @@
 
 #define ULTRA_FREQUENCY 10
 
-#define IRA 7
-#define IRB 6
+#define CAP_REC 7
+#define CAP_SEND 6
 
 
 
@@ -111,6 +112,7 @@ NewPing sonar2(TRIGGER_PIN2, ECHO_PIN2, MAX_DISTANCE);
 Servo myservo;
 I2CEncoder encoder_B;
 I2CEncoder encoder_A;
+CapacitiveSensor capSense = CapacitiveSensor(CAP_SEND,CAP_REC); // (send_pin, receive_pin);
 
 
 
@@ -307,6 +309,19 @@ void us_sensor(){
   Serial.print('-');
   Serial.print(ultrasonic2);
   Serial.print("&");
+}
+
+void get_cap_value() {
+  int i;
+  long cap = capSense.capacitiveSensorRaw(30);
+  long capAvg;
+
+  for (i = 0, capAvg = 0; i < 100; i++) {
+    capAvg += cap;
+  }
+  Serial.print(capAvg/100);
+  Serial.print('-');
+  //return capAvg/100;
 }
 
 void servo_info(){
@@ -511,8 +526,12 @@ void command(){
                 //Serial.print("report");
               }
               break;
-              
-            break;
+            case 'C':
+              if(command_status == 1){
+                get_cap_value();
+              }
+              break;
+            
             default:
               //Serial.print("Hello11");
             break;
