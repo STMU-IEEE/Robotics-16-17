@@ -1,3 +1,4 @@
+#include <RunningMedian.h>
 #include <CapacitiveSensor.h>
 #include <EnableInterrupt.h>
 #include <NewPing.h>
@@ -112,7 +113,7 @@ NewPing sonar2(TRIGGER_PIN2, ECHO_PIN2, MAX_DISTANCE);
 Servo myservo;
 I2CEncoder encoder_B;
 I2CEncoder encoder_A;
-CapacitiveSensor capSense = CapacitiveSensor(CAP_SEND,CAP_REC); // (send_pin, receive_pin);
+CapacitiveSensor cap_sense = CapacitiveSensor(CAP_SEND,CAP_REC); // (send_pin, receive_pin);
 
 
 
@@ -311,17 +312,41 @@ void us_sensor(){
   Serial.print("&");
 }
 
-void get_cap_value() {
-  int i;
-  long cap = capSense.capacitiveSensorRaw(30);
-  long capAvg;
+void cap_value(){
+  
+  long total = 0, cap_current = 0;
+  long low_cap = 99999999, high_cap = 0, median_cap = 0;
+  RunningMedian cap_array = RunningMedian(50);
 
-  for (i = 0, capAvg = 0; i < 100; i++) {
-    capAvg += cap;
+  for (int i = 0, capAvg = 0; i < 100; i++){
+    
+    //Taking the Median
+    cap_current = cap_sense.capacitiveSensorRaw(30);
+    cap_array.add(cap_current);
+    
+    //Taking the lowest value
+    if(low_cap > cap_current){
+      low_cap = cap_current;
+    }
+    
+    //Taking the highest value
+    if(high_cap < cap_current){
+      high_cap = cap_current;
+    }
   }
-  Serial.print(capAvg/100);
+  
+  median_cap = int(cap_array.getMedian());
+  
+  Serial.print(high_cap);
   Serial.print('-');
-  //return capAvg/100;
+  Serial.print(median_cap);
+  Serial.print('-');
+  Serial.print(low_cap);
+  Serial.print('&');
+}
+void cap_hard_reset(){
+  digitalWrite(CAP_SEND, LOW);
+  delay(500);
 }
 
 void servo_info(){
@@ -379,8 +404,8 @@ void setup() {
         //pinMode(IRA, INPUT_PULLUP);
         //pinMode(IRB, INPUT_PULLUP);
 
-        encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
-        encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
+        //encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
+        //encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
         
         enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
         //enableInterrupt(IRA,encoderA,CHANGE);
@@ -527,10 +552,15 @@ void command(){
               }
               break;
             case 'C':
+              //Serial.print("Cap");
               if(command_status == 1){
-                get_cap_value();
+                cap_value();
               }
               break;
+            case 'H':
+              if(command_status == 1){
+                cap_hard_reset();
+              }
             
             default:
               //Serial.print("Hello11");
