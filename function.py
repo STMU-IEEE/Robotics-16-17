@@ -1,4 +1,4 @@
-
+\
 #Hello this is Nick and Eduardo 
 import serial
 #import Pathfinding
@@ -460,6 +460,7 @@ def us_sensor():
 
 		sensor_total[0] += sensor_collect[0]
 		sensor_total[1] += sensor_collect[1]
+
 		sensor_total[2] += sensor_collect[2]
 		sensor_total[3] += sensor_collect[3] 
 		
@@ -474,8 +475,39 @@ def us_sensor():
 	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}".format(B = left_back_ave,L = left_left_ave,F = right_front_ave, R = right_right_ave) ) 
 	print("\n")
 	return
+def capacitor_sensor():
+	#The right arduino is the only arduino with a capacitive sensor
+	sensor_data = [0,0,0] #Highest, median, and lowest
+	clear_comm()
 
+	print("Collecting data from Capacitive Sensor")
 
+	for i in range(100):#This is the amount of attempts the Raspberry has to recieve the information
+		clear_comm()
+		right.write(b"C")
+		sleep(0.5)
+		sensor_data[0] = read_integer_serial('-', 2)
+		print(sensor_data[0])
+		sensor_data[1] = read_integer_serial('-', 2)
+		print(sensor_data[1])
+		sensor_data[2] = read_integer_serial('&', 2)
+		print(sensor_data[2])
+
+		if(sensor_data[0] != -2 and sensor_data[1] != -2 and sensor_data[2] != -2):
+			print("Communication Success")
+			print(sensor_data)
+			break
+	
+		print("Communication Failure")
+		print(sensor_data)
+
+	
+	return
+def capacitor_hard_reset():
+	right.write(b"H")
+	print("Capacitor sensor reset")
+	#This lets the capacitor reset 
+	return
 def servo_top(servo_location):
 	servo_location = int(servo_location)
 
@@ -744,29 +776,29 @@ motor_change = [0,0,0,0]
 direction = 0
 max_speed = 250
 sensativity = 1
-fre = 100
+fre = 10
 diff = 0
 fix_bias = 15
 lowest_speed = 70
-
+gyro_raw = 0 
 
 
 def get_gyro_reading():
+	
+	global gyro_raw
 
 	motion = sense.get_gyroscope()
-	return (motion["yaw"] - 180) #change gyro reading system from 0 - 360 to -180 - 180
+	gyro_raw = motion["yaw"] - 180
+	return gyro_raw #change gyro reading system from 0 - 360 to -180 - 180
 
 
 def ave_gyro():
-
-	inital_value  = get_gyro_reading()
-	total =  inital_value
-
+	total = 0
 	for i in range(fre):
 		new_value_raw = get_gyro_reading()
 		total = total + new_value_raw
 		sleep(0.02)
-	ave = total / (fre + 1)
+	ave = total / (fre)
 	return ave
 	
 def update_diff():
@@ -1135,13 +1167,14 @@ def gyro_main():
 		#send_speed()
 		sleep(0.5)
 		update_diff()
-		#print("Pre: {P} New: {N} Diff: {D}".format(P = pre_value,N = new_value, D = diff))
-		
+		print("Pre: {P} New: {N} Diff: {D}".format(P = pre_value,N = new_value, D = diff))
+		#print(get_gyro_reading() )
 	return 
  
 def redefine_pre():
 	global pre_value
-	pre_value  = ave_gyro()
+	for i in range(4):
+		pre_value  = ave_gyro()
 	print("Now the value of Pre is {Pre}".format(Pre = pre_value) )
 	return
 		

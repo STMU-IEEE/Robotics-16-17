@@ -12,7 +12,8 @@ from function import redefine_pre,redefine_fre,north,rotate_clockwise,rotate_cou
 from function import rotate_counter_gyro,rotate_clockwise_gyro,redefine_sensa
 from function import move_x,move_y
 from function import encoder_update,encoder_reset,encoder_calibration,encoder_completion
-from function import encoder_current_value,encoder_constant_value
+from function import encoder_current_value,encoder_constant_value,capacitor_sensor
+from function import capacitor_hard_reset
 
 GPIO.setmode(GPIO.BCM)
 
@@ -65,6 +66,10 @@ def command(x):
 	#Sensor Commands
 	if bytes[0] == 'u':
 		us_sensor()
+	if bytes[0] == 'o':#reading the values of the capacitor sensor
+		capacitor_sensor()
+	if bytes[0] == 'h':
+		capacitor_hard_reset()
 	#Servo Command
 	if bytes[0] == 't':
 		servo_top(bytes[1])
