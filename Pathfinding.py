@@ -33,7 +33,7 @@
 import numpy as np
 # from heapq import *
 
-blocked_vals = {-1}  # this is a list of the possible blocked values for pathfinding purposes
+blocked_vals = {-1,}  # this is a list of the possible blocked values for pathfinding purposes
 my_location = (0,0) # first val for vert, second for horiz (row, col)
 default_path = np.array(
     [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
@@ -55,14 +55,16 @@ def follow(path, globalPath):
 
     while path:
         if my_location == path[0]:
-            path = np.delete(path,0);
-        if(world_map[my_location[0]][my_location[1]]<1)
-        world_map[my_location[0]][my_location[1]]=(1)
+            path = np.delete(path,0); # if we have reached the next location, remove it from the path.
+        if world_map[my_location[0]][my_location[1]]<1:
+            world_map[my_location[0]][my_location[1]]=1
 
         # run sensors and \
-        get_sensors()
+        get_sensors(my_location) # update surrounding nodes
+        if world_map[path[0][0]][path[0][1]] in blocked_vals:
+            path = np.delete(path,0); # if my next point is blocked, move on to the next point in the path.
         # update the map here
-        flow_map = flowField(world_map, my_path[0])
+        flow_map = flowField(world_map, path[0])
         travel_direction = flow_map[my_location[0],my_location[1]]
         if travel_direction[0] > 0: # if we need to move north
             move_north()
@@ -81,29 +83,29 @@ def you_are_here(): #for debug purposes
 def dist(a, b):
     return ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) **.5
 
-def get_sensors():
-    neighbor_dirs = [(0,1),(0,-1),(1,0),(-1,0)]
-    for i,j in neighbor_dirs:
-        if 0 <= neighbor[0] < world_map.shape[0]:
-            if 0 <= neighbor[1] < world_map.shape[1]:
-                world_map[i][j] = obstacles[i][j]
-            else:
-                # vertical bounds
-                continue
-        else:
-            # horizontal bounds
-            continue
-    return
+# def get_sensors():
+#     neighbor_dirs = [(0,1),(0,-1),(1,0),(-1,0)]
+#     for i,j in neighbor_dirs:
+#         if 0 <= neighbor[0] < world_map.shape[0]:
+#             if 0 <= neighbor[1] < world_map.shape[1]:
+#                 world_map[i][j] = obstacles[i][j]
+#             else:
+#                 # vertical bounds
+#                 continue
+#         else:
+#             # horizontal bounds
+#             continue
+#     return
 
 def flowField(world, target):
     output_field = np.zeros((7,7,2), dtype=np.int)
     neighbor_dirs = [(0,1),(0,-1),(1,0),(-1,0)]
-    closed_set = set();
+    closed_set = set()
     parents = {}
     g_score = {start:0}
-    open_set = set(); # list of nodes to be explored
+    open_set = set() # list of nodes to be explored
 
-    open_set.add(target);
+    open_set.add(target)
 
 
     while open_set:
@@ -122,52 +124,4 @@ def flowField(world, target):
 
 
 
-    return True
-
-# def aStar(world, start, goal):
-#     neighbor_dirs = [(0,1),(0,-1),(1,0),(-1,0)] #,(1,1),(1,-1),(-1,1),(-1,-1)]
-#                                                 #INCLUDE THESE FOR DIAGONALS
-#
-#     closed_set  = set()     # this is the set of checked nodes
-#     parents     = {}        # list of inheritances to reconstruct path at the end
-#     g_score     = {start:0} #
-#     f_score     = {start:dist(start, goal)}
-#     open_set    = []        # list of nodes to be explored.
-#                             # <kept in a n ordered heap for better search times>
-#
-#     heappush(open_set, (fscore[start], start))
-#         # start the search at the start location
-#     while oheap:
-#         current_loc = heappop(open_set)[1]
-#         if current_loc == goal:
-#             path = []
-#             while current_loc in parents:
-#                 path.append(current_loc)
-#                 current_loc = came_from[current]
-#             path.reverse() #the path is calculated from goal to start, reverse for path from start to goal.
-#             return path
-#
-#             closed_set.add(current)
-#             for i, j in neighbor_dirs:
-#                 neighbor = current_loc[0] + i, current_loc[1] + j
-#                 tentative_g = g_score[current_loc] + dist(current_loc)
-#                 if 0 <= neighbor[0] < world.shape[0]:
-#                     if 0 <= neighbor[1] < world.shape[1]:
-#                         if array[neighbor[0]][neighbor[1]] in blocked_vals:
-#                             continue
-#                     else:
-#                         # vertical bounds
-#                         continue
-#                 else:
-#                     # horizontal bounds
-#                     continue
-#
-#                 if neighbor in closed_set and tentative_g >= g_score.get(neighbor, 0):
-#                     continue
-#
-#                 if tentative_g < g_score.get(neighbor, 0) or neighbor not in [i[1]for i in oheap]:
-#                     parents[neighbor] = current
-#                     g_score[neighbor] = tentative_g
-#                     f_score[neighbor] = tentative_g + dist(neighbor, goal)
-#                     heappush(oheap, (f_score[neighbor], neighbor))
-#     return false
+    return output_field
