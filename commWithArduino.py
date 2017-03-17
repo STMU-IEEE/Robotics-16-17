@@ -2,7 +2,7 @@
 import RPi.GPIO as GPIO
 
 #from original comm
-from function import read_integer_serial,end,clear_comm,stop,move_right,move_left
+from function import end,clear_comm,stop,move_right,move_left
 from function import move_forward,move_reverse,us_sensor,servo_top,servo_bottom
 from function import servo_change,servo_info,restart_comm
 #from gyro
@@ -13,7 +13,8 @@ from function import rotate_counter_gyro,rotate_clockwise_gyro,redefine_sensa
 from function import move_x,move_y
 from function import encoder_update,encoder_reset,encoder_calibration,encoder_completion
 from function import encoder_current_value,encoder_constant_value,capacitor_sensor
-from function import capacitor_hard_reset
+from function import capacitor_hard_reset, read_integer_serial_long,capacitor_calibration
+from function import capacitor_block_identity
 
 GPIO.setmode(GPIO.BCM)
 
@@ -70,6 +71,10 @@ def command(x):
 		capacitor_sensor()
 	if bytes[0] == 'h':
 		capacitor_hard_reset()
+	if bytes[0] == 'l':
+		capacitor_calibration()
+	if bytes[0] == 'y':
+		capacitor_block_identity()
 	#Servo Command
 	if bytes[0] == 't':
 		servo_top(bytes[1])
