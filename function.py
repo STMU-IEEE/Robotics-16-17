@@ -287,11 +287,11 @@ def encoder_update():#1 for Y, 2 for X
 
 	global encoder_value
 	
-	encoder_value[0] = read_integer_serial('-',1)#A1
-	encoder_value[1] = read_integer_serial('&',1)#B1
+	encoder_value[0] = read_integer_serial_long('-',1)#A1
+	encoder_value[1] = read_integer_serial_long('&',1)#B1
 
-	encoder_value[2] = read_integer_serial('-',2)#A2
-	encoder_value[3] = read_integer_serial('&',2)#B2
+	encoder_value[2] = read_integer_serial_long('-',2)#A2
+	encoder_value[3] = read_integer_serial_long('&',2)#B2
 
 	return
 
@@ -303,7 +303,6 @@ def encoder_reset():
 	encoder_update()
 
 	return
-
 
 def encoder_current_value():
 	encoder_update()
@@ -583,6 +582,8 @@ def us_sensor():
 
 def capacitor_sensor():
 	#The right arduino is the only arduino with a capacitive sensor
+	capacitor_hard_reset()
+	sleep(0.5)
 	sensor_data = [0,0,0] #Highest, median, and lowest
 	clear_comm()
 
@@ -656,6 +657,31 @@ def capacitor_calibration():
 		if(i == 2):#Isolated
 			for j in range(3):
 				capacitor_data_iso[j] = capacitor_data_current[j]
+
+def capacitor_calibrate_move(block_calibrate):
+	print("Calibration Iniciated: Movement Procedure")
+	print("Identity Calibrated: ", end = '')
+	
+	
+	if(block_calibrate == 0):#Wire test
+		print("Not Isolated with Wire")
+		capacitor_sensor()
+		for j in range(3):
+			capacitor_data_wire[j] = capacitor_data_current[j]
+
+	if(block_calibrate == 1):#Not Isolated with no wire
+		print("Not Isolated without Wire")
+		capacitor_sensor()
+		for j in range(3):
+			capacitor_data_notiso[j] = capacitor_data_current[j]
+
+	if(block_calibrate == 2):#Isolated
+		print("Isolated")
+		capacitor_sensor()
+		for j in range(3):
+			capacitor_data_iso[j] = capacitor_data_current[j]
+
+	
 
 def capacitor_block_identity():
 	#first check if calibration has been done
@@ -775,7 +801,7 @@ def capacitor_block_identity():
 	for r in range(3):
 		if(diff_min[r] < diff_min_min):
 			min_index_min = r
-			diff_min_min = diff_min[h]
+			diff_min_min = diff_min[r]
 
 	print("Block Identity: ", end = '')
 	if(min_index_min == 0):
@@ -786,7 +812,7 @@ def capacitor_block_identity():
 		print("Isolated")
 	print("Difference: {A}".format(A = diff_min_min))
 
-	#If we onlye use the max difference
+	#If we only use the max difference
 	print("\nUsing the maximum difference")
 
 	diff_max = [diff_wire[0],diff_notiso[0], diff_iso[0]]
@@ -814,10 +840,11 @@ def capacitor_block_identity():
 	diff_rating[min_index_max] = diff_rating[min_index_max] + 1
 	diff_rating[min_index_median] = diff_rating[min_index_median] + 1
 	diff_rating[min_index_min] = diff_rating[min_index_min] + 1
+	diff_rating[min_index] = diff_rating[min_index] + 1
 	
 	print(diff_rating)
 
-	diff_rating_max = 4
+	diff_rating_max = 0
 	diff_rating_max_index = 0
 
 	for u in range(3):
@@ -831,8 +858,12 @@ def capacitor_block_identity():
 		print("Not Isolated without Wire")
 	if(diff_rating_max_index == 2):
 		print("Isolated")
-	#if all tied
-	if(diff_rating[0] == diff_rating[1] and diff_rating[1] == diff_rating[2]):
+	#if all tied 2-2
+	tied_check = 0
+	for p in range(3):
+		if(diff_rating[p] == 2):
+			tied_check = tied_check + 1
+	if(tied_check == 2):
 		print("WARNING")
 		print("Tied in sensor catorgories")
 		print("Recommended to retake the values")
@@ -878,13 +909,13 @@ def servo_info():
 	left.write(b"n")
 	right.write(b"n")
 	
-	left_servo_position = read_integer_serial('-' , 1)
-	left_servo_height_top = read_integer_serial('-', 1)
-	left_servo_height_bottom = read_integer_serial('&', 1)
+	left_servo_position = read_integer_serial_long('-' , 1)
+	left_servo_height_top = read_integer_serial_long('-', 1)
+	left_servo_height_bottom = read_integer_serial_long('&', 1)
 	
-	right_servo_position = read_integer_serial('-', 2)
-	right_servo_height_top = read_integer_serial('-', 2)
-	right_servo_height_bottom = read_integer_serial('&' , 2)
+	right_servo_position = read_integer_serial_long('-', 2)
+	right_servo_height_top = read_integer_serial_long('-', 2)
+	right_servo_height_bottom = read_integer_serial_long('&' , 2)
 	
 	print("Left Servo Information:")
 	print("Position: {P} Height Top: {T} Height Bottom: {B}".format(P = left_servo_position, T = left_servo_height_top, B = left_servo_height_bottom) )

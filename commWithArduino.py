@@ -14,7 +14,7 @@ from function import move_x,move_y
 from function import encoder_update,encoder_reset,encoder_calibration,encoder_completion
 from function import encoder_current_value,encoder_constant_value,capacitor_sensor
 from function import capacitor_hard_reset, read_integer_serial_long,capacitor_calibration
-from function import capacitor_block_identity
+from function import capacitor_block_identity, capacitor_calibrate_move
 
 GPIO.setmode(GPIO.BCM)
 
@@ -75,6 +75,8 @@ def command(x):
 		capacitor_calibration()
 	if bytes[0] == 'y':
 		capacitor_block_identity()
+	if bytes[0] == 'v':
+		capacitor_calibrate_move(int(bytes[1]))
 	#Servo Command
 	if bytes[0] == 't':
 		servo_top(bytes[1])
