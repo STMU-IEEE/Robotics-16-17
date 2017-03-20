@@ -1,4 +1,4 @@
-\
+
 #Hello this is Nick and Eduardo 
 import serial
 #import Pathfinding
@@ -668,7 +668,7 @@ def capacitor_block_identity():
 	diff_notiso_total = 0
 	diff_iso_total = 0
 
-	if(diff_wire[0] == 0):
+	if(capacitor_data_wire[0] == 0):
 		print("WARNING")
 		print("Recommended recalibration of the Capacitor Sensor")
 
@@ -743,7 +743,7 @@ def capacitor_block_identity():
 	print("Difference: {A}".format(A = diff_min))
 	
 
-	#If we over only with the median difference
+	#If we use only with the median difference
 	print("\nUsing the Median difference")
 
 	diff_median = [diff_wire[1], diff_notiso[1], diff_iso[1]]
@@ -763,10 +763,9 @@ def capacitor_block_identity():
 	if(min_index_median == 2):
 		print("Isolated")
 	print("Difference: {A}".format(A = diff_median_min))
-
-
-	#If we over the difference individually
-	print("\nUsing the individuals differences")
+	
+	#If we use only the min difference
+	print("\nUsing the Minimun difference")
 
 	#This finds the min difference in the lowest value
 	diff_min = [diff_wire[2], diff_notiso[2], diff_iso[2]]
@@ -777,9 +776,19 @@ def capacitor_block_identity():
 		if(diff_min[r] < diff_min_min):
 			min_index_min = r
 			diff_min_min = diff_min[h]
-	
-	#I found the min for the median already so the next section is purely the 	min diff of the max values
-	
+
+	print("Block Identity: ", end = '')
+	if(min_index_min == 0):
+		print("Not Isolated with Wire")
+	if(min_index_min == 1):
+		print("Not Isolated without Wire")
+	if(min_index_min == 2):
+		print("Isolated")
+	print("Difference: {A}".format(A = diff_min_min))
+
+	#If we onlye use the max difference
+	print("\nUsing the maximum difference")
+
 	diff_max = [diff_wire[0],diff_notiso[0], diff_iso[0]]
 	diff_max_min = 999999
 	min_index_max = 0
@@ -788,6 +797,18 @@ def capacitor_block_identity():
 		if(diff_max[k] < diff_max_min):
 			min_index_max = k
 			diff_max_min = diff_max[k]
+	
+	print("Block Identity: ", end = '')
+	if(min_index_max == 0):
+		print("Not Isolated with Wire")
+	if(min_index_max == 1):
+		print("Not Isolated without Wire")
+	if(min_index_max == 2):
+		print("Isolated")
+	print("Difference: {A}".format(A = diff_max_min))
+
+	#If we over the difference individually
+	print("\nUsing the individuals differences")
 
 	diff_rating = [0,0,0]
 	diff_rating[min_index_max] = diff_rating[min_index_max] + 1
@@ -810,7 +831,11 @@ def capacitor_block_identity():
 		print("Not Isolated without Wire")
 	if(diff_rating_max_index == 2):
 		print("Isolated")
-
+	#if all tied
+	if(diff_rating[0] == diff_rating[1] and diff_rating[1] == diff_rating[2]):
+		print("WARNING")
+		print("Tied in sensor catorgories")
+		print("Recommended to retake the values")
 	return	
 	
 
