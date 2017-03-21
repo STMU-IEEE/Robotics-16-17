@@ -312,18 +312,43 @@ void us_sensor(){
   Serial.print("&");
 }
 
+void bubble_sort(int a[], int size){
+  int holder = 0;
+    for(int i = 0, i<(size-1); i++){
+      for(int j = 0; j < (size-(i+1)); j++){
+        if(a[j] > a[j+1]){
+          holder = a[j];
+          a[j] = a[j+1];
+          a[j+1] = holder;
+        }
+      }
+    }
+    //smallest ---- highest
+}
+
 void cap_value(){
   
   long total = 0, cap_current = 0;
   long low_cap = 99999999, high_cap = 0, median_cap = 0;
-  RunningMedian cap_array = RunningMedian(50);
+  int cap_array_norm[150];
+  
+  int median_location_first = 0;
+  int median_location_last = 0;
+  int first_flag = 0;
+  int last_flag = 0;
+  
+  RunningMedian cap_array = RunningMedian(150);
+  RunningMedian cap_array_minside = RunningMedian(150);
+  RunningMedian cap_array_maxside = RunningMedian(150);
 
-  for (int i = 0, capAvg = 0; i < 100; i++){
+  for (int i = 0; i < 150; i++){
     
     //Taking the Median
     cap_current = cap_sense.capacitiveSensorRaw(30);
-    cap_array.add(cap_current);
+    cap_array_norm[i] = cap.sense.capacitiveSensorRaw(30);
     
+    //cap_array.add(cap_current);
+    /*
     //Taking the lowest value
     if(low_cap > cap_current){
       low_cap = cap_current;
@@ -333,9 +358,32 @@ void cap_value(){
     if(high_cap < cap_current){
       high_cap = cap_current;
     }
+    */
+    
   }
   
-  median_cap = int(cap_array.getMedian());
+  bubble_sort(cap_array_norm, size(cap_array_norm));
+  
+  for(int j = 0; i < 150; i++){
+    cap_array.add(cap_array_norm[i]);
+  }
+  
+  median_cap = cap_array.getMedian();
+  
+  for(int k = 0;k<150; k++){
+    if(median_cap == cap_array_norm[k]){
+      if(first_flag == 0){
+        median_location_first = k;
+        first_flag = 1;
+      }
+    }
+    else
+      if(first_flag == 1){
+        median_location_first = k-1;
+        first_flag = 0;
+        last_flag = 1;
+      }
+  }
   
   Serial.print(high_cap);
   Serial.print('-');
@@ -387,9 +435,9 @@ void encoder_reset(){
   encoder_B.zero();
 }
 void encoder_report(){
-  Serial.print(abs(round(encoder_A.getPosition())));
+  Serial.print(abs(round(encoder_A.getRawPosition())));
   Serial.print('-');
-  Serial.print(abs(round(encoder_B.getPosition())));
+  Serial.print(abs(round(encoder_B.getRawPosition())));
   Serial.print('&');
 }
 
