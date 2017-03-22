@@ -127,6 +127,7 @@ int command_status = 1;
 int motor_speed[2];
 int ultrasonic1 = 0, ultrasonic2 = 0;
 
+
 //-------------------FUNCTIONs----------------
 void stop_motor_ALL(){
   
@@ -312,85 +313,169 @@ void us_sensor(){
   Serial.print("&");
 }
 
-void bubble_sort(int a[], int size){
-  int holder = 0;
-    for(int i = 0, i<(size-1); i++){
-      for(int j = 0; j < (size-(i+1)); j++){
+void bubble_sort(long a[], int sizeofarray){
+  
+  //Serial.println("Begun BubbleSorting");
+  long holder = 0;
+    for(int i = 0; i < sizeofarray - i; i++){
+      for(int j = 0; j < sizeofarray - (i+1); j++){
         if(a[j] > a[j+1]){
+          //Serial.print("Value of ");
+          //Serial.print(a[j]);
+          //Serial.println(" has been moved up"); 
           holder = a[j];
           a[j] = a[j+1];
           a[j+1] = holder;
         }
       }
     }
+
+  //Printing results
+  /*
+  for(int i = 0; i < sizeofarray; i++){
+    Serial.print(a[i]);
+    Serial.print(" ");
+  }
+  */
     //smallest ---- highest
+}
+
+long findMedian(long a[], int size){
+  //Serial.println("Inside FindMedian");
+  //Serial.print("Median: ");
+  //Serial.println(a[round(size/2) - 1]);
+  //to account for the zeroth element
+  long returned_value = 0;
+  size = size-1;
+  /*
+  Serial.print("Size: ");
+  Serial.println(size);
+  Serial.println("Median Location");
+  Serial.print("With round: ");
+  Serial.println(round(size/2));
+  Serial.print("Without round: ");
+  */
+  float size_div = 0;
+  size_div = float(size)/2;
+  //Serial.println(size_div);
+  
+  if(size_div != round(size/2)){
+    //Serial.println("Warning no normal Median found");
+    returned_value = (a[round(size/2)] + a[round(size/2)+1])/2;
+  }
+  else
+    returned_value = a[round(size/2)];
+  
+  return returned_value;
+  
 }
 
 void cap_value(){
   
+  int data_sample = 40;
   long total = 0, cap_current = 0;
-  long low_cap = 99999999, high_cap = 0, median_cap = 0;
-  int cap_array_norm[150];
+  long cap_array_norm[data_sample], cap_array_min[data_sample], cap_array_max[data_sample];
+  long min_median_cap = 0, max_median_cap = 0, median_cap = 0, ave_cap = 0;
   
   int median_location_first = 0;
   int median_location_last = 0;
+  
   int first_flag = 0;
   int last_flag = 0;
   
-  RunningMedian cap_array = RunningMedian(150);
-  RunningMedian cap_array_minside = RunningMedian(150);
-  RunningMedian cap_array_maxside = RunningMedian(150);
-
-  for (int i = 0; i < 150; i++){
-    
-    //Taking the Median
-    cap_current = cap_sense.capacitiveSensorRaw(30);
-    cap_array_norm[i] = cap.sense.capacitiveSensorRaw(30);
-    
-    //cap_array.add(cap_current);
-    /*
-    //Taking the lowest value
-    if(low_cap > cap_current){
-      low_cap = cap_current;
-    }
-    
-    //Taking the highest value
-    if(high_cap < cap_current){
-      high_cap = cap_current;
-    }
-    */
-    
-  }
+  RunningMedian cap_array = RunningMedian(data_sample);
+  RunningMedian cap_array_minside = RunningMedian(data_sample);
+  RunningMedian cap_array_maxside = RunningMedian(data_sample);
   
-  bubble_sort(cap_array_norm, size(cap_array_norm));
+  //Collecting Data
+  //Serial.println("\n Iniciating Data Collection");
   
-  for(int j = 0; i < 150; i++){
+  for (int i = 0; i < data_sample; i++){
+    cap_array_norm[i] = cap_sense.capacitiveSensorRaw(30);
     cap_array.add(cap_array_norm[i]);
-  }
-  
-  median_cap = cap_array.getMedian();
-  
-  for(int k = 0;k<150; k++){
-    if(median_cap == cap_array_norm[k]){
-      if(first_flag == 0){
-        median_location_first = k;
-        first_flag = 1;
-      }
+    //Serial.print(i);
+    //Serial.print(": ");
+    //Serial.println(cap_array_norm[i]);
     }
-    else
-      if(first_flag == 1){
-        median_location_first = k-1;
-        first_flag = 0;
-        last_flag = 1;
-      }
+    
+  //Serial.println("Finished Collecting Data");
+  //Serial.println("Printing the cap_array_norm");
+  
+  for(int l = 0; l < data_sample; l++){
+    //Serial.print(l);
+    //Serial.print(": ");
+    //Serial.println(cap_array_norm[l]);
+    ave_cap += cap_array_norm[l];
+  }
+  ave_cap /= data_sample;
+  
+ 
+  //Rearranged Data
+  bubble_sort(cap_array_norm, data_sample);
+  
+  //Serial.println("Bubblesort Complete");
+
+  //Serial.print("Average of Data: ");
+  //Serial.println(ave_cap);
+  
+  
+  median_cap = findMedian(cap_array_norm, data_sample);
+  //Serial.print("Median with findMedian: ");
+  //Serial.println(median_cap);
+  
+  //Serial.println("Found Median");
+  /*
+  for(int e = 0; e < median_location_first; e++){
+    cap_array_minside.add(cap_array_norm[e]);
   }
   
-  Serial.print(high_cap);
+  */
+  //Serial.println("Printing the lower array");
+  for(int e = 0; e < round(data_sample/2) ; e++){
+    cap_array_min[e] = cap_array_norm[e];
+    //Serial.print(cap_array_min[e]);
+    //Serial.print(" ");
+  }
+  //Serial.print("\n");
+  
+  //min_median_cap = cap_array_minside.getMedian();
+  
+  min_median_cap = findMedian(cap_array_min, (data_sample / 2) );
+  
+  //Serial.print("Min Median: ");
+  //Serial.println(min_median_cap);
+  //Serial.println("Found min median");
+
+  
+  //Finding the median in the second section of the array
+  
+  //Serial.println("Printing the higher array");
+  for(int w = round(data_sample/2); w < data_sample; w++){
+    cap_array_max[w-round(data_sample/2)] = cap_array_norm[w]; 
+    //Serial.print(cap_array_max[w-round(data_sample/2)]);
+    //Serial.print(" ");  
+  }
+  //Serial.print("\n");
+
+  max_median_cap = findMedian(cap_array_max, data_sample/2 );
+  //Serial.println("Max Median: ");
+  //Serial.println(max_median_cap);
+  //Serial.println("Found max median");
+  
+  Serial.print(abs(max_median_cap));
   Serial.print('-');
-  Serial.print(median_cap);
+  Serial.print(abs(median_cap));
   Serial.print('-');
-  Serial.print(low_cap);
+  Serial.print(abs(min_median_cap));
+  Serial.print('-');
+  Serial.print(abs(ave_cap));
   Serial.print('&');
+  
+}
+void cap_test(){
+  for(int i = 0; i < 100; i++){
+    Serial.println(cap_sense.capacitiveSensorRaw(30));
+  }
 }
 void cap_hard_reset(){
   digitalWrite(CAP_SEND, LOW);
@@ -449,8 +534,8 @@ void setup() {
         myservo.attach(5);
         myservo.write(servoH_top);
 
-        encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
-        encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
+        //encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
+        //encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
         
         enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
         
@@ -589,6 +674,10 @@ void command(){
             case 'H':
               if(command_status == 1){
                 cap_hard_reset();
+              }
+            case '+':
+              if(command_status == 1){
+                cap_test();
               }
             
             default:
