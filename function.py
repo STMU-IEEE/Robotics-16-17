@@ -293,7 +293,10 @@ def rotate_clockwise(bytes):
 	return
 
 def encoder_update():#1 for Y, 2 for X
-	clear_comm()
+	
+	for f in range(3):
+		clear_comm()
+	
 	left.write(b"m")
 	right.write(b"m")
 
@@ -671,6 +674,10 @@ def capacitor_sensor():
 			for i in range(4):
 				capacitor_data_current[i] = sensor_data[i]#data transfer
 			break
+
+	for f in range(5):
+		clear_comm()
+		sleep(0.2)
 
 
 	
@@ -1103,6 +1110,7 @@ def capacitor_block_multiple(data_sample):
 
 	#Test the identities and let capacitor_block_score get some values
 	for a in range(data_sample):
+		sleep(0.75)
 		print(capacitor_block_identity())
 		
 	#Find the max score
@@ -1301,7 +1309,7 @@ def encoder_calibration(axes,test_quantity):
 
 		encoder_reset()
 
-		sleep(2)
+		sleep(1)
 		
 		print("Beginning test {A}".format(A = i+1))
 
@@ -1326,6 +1334,8 @@ def encoder_calibration(axes,test_quantity):
 				print("Motor speed changed to X+ default")
 				bytes[i + 1] = str(move_x_speed_p[i])
 			move_right(bytes)
+
+		sleep(2)
 
 		while(cali_pres == 1):
 			sleep(0.001)
