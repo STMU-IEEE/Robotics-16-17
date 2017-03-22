@@ -59,7 +59,7 @@ def command(x):
 	if bytes[0] == 'B':
 		encoder_update()	
 		encoder_current_value()
-	if bytes[0] == 'V':
+	if bytes[0] == 'H':
 		encoder_constant_value()
 	#regarding side, 1 is for positive direction, while 2 is for negative directions
 	if bytes[0] == 'X':
@@ -79,6 +79,9 @@ def command(x):
 		print(capacitor_block_identity())#0 wire, 1 no wire no insulation, 2 insulation
 	if bytes[0] == 'v':
 		capacitor_calibrate_move(int(bytes[1]), int(bytes[2]), int(bytes[3]))
+	if bytes[0] == 'V':
+		print("Hello")
+		capacitor_block_multiple(int(bytes[1]))
 	#Servo Command
 	if bytes[0] == 't':
 		servo_top(bytes[1])

@@ -59,6 +59,8 @@ capacitor_data_iso = [0,0,0,0]
 capacitor_data_notiso = [0,0,0,0]
 
 capacitor_data_current = [0,0,0,0]#place holder for the newest data from the capacitor sensor
+
+capacitor_block_score = [0,0,0]#This will hold the scores of mutiple data samples from the capacitor_block_identity
  
 
 #functions that control the arduino
@@ -1038,6 +1040,11 @@ def capacitor_block_identity():
 	diff_rating[min_index_min] = diff_rating[min_index_min] + 1
 	diff_rating[min_index_ave] = diff_rating[min_index_ave] + 2
 	diff_rating[min_index] = diff_rating[min_index] + 1
+
+	#Passing over the scores of a data samples
+	for s in range(3):
+		capacitor_block_score[s] += diff_rating[s]
+		
 	
 	print(diff_rating)
 
@@ -1058,6 +1065,7 @@ def capacitor_block_identity():
 	if(diff_rating_max_index == 2):
 		print("Isolated")
 		block_identity_message = 2
+
 	#if all tied 2-2
 	tied_check = 0
 
@@ -1086,6 +1094,43 @@ def capacitor_block_identity():
 
 	return block_identity_message
 	
+
+def capacitor_block_multiple(data_sample):
+
+	#resetting global variable
+	for d in range(3):
+		capacitor_block_score[d] = 0
+
+	#Test the identities and let capacitor_block_score get some values
+	for a in range(data_sample):
+		print(capacitor_block_identity())
+		
+	#Find the max score
+	index_highest_score = 0
+	highest_score_value = 0
+	for f in range(3):
+		if(highest_score_value < capacitor_block_score[f]):
+			highest_score_value = capacitor_block_score[f]
+			index_highest_score = f
+
+	print("Block Scores: ",end = '')	
+	print(capacitor_block_score)
+
+	print("Block Identity: ", end = '')
+	if(index_highest_score == 0):
+		print("Not Isolated with Wire")
+		block_identity_message = 0
+	if(index_highest_score == 1):
+		print("Not Isolated without Wire")
+		block_identity_message = 1
+	if(index_highest_score == 2):
+		print("Isolated")
+		block_identity_message = 2
+
+	
+	
+	
+	return block_identity_message
 
 def servo_top(servo_location):
 	servo_location = int(servo_location)
