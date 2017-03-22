@@ -41,9 +41,8 @@ time_distance_shift = {'y':7.15,'x':8.77567}
 """
 encoder_value = [0,0,0,0] #left A, left B, right A, right B
 
-
-encoder_constant_x = [15,15,15,15] #value of encoders to reach one block
-encoder_constant_y = [14,14,14,14]
+encoder_constant_x = [3246,3382,3246,3155] #value of encoders to reach one block
+encoder_constant_y = [2863,2850,2859,2792]
 
 #This are the variables that hold a rough estimate of the speed required to make the robot move straight
 
@@ -55,11 +54,11 @@ move_y_speed_n = [180,180,200,200]
 #This are the variables that will be holding the latest recorded values from the capacitive sensor respect to their designation
 #Such as wire, iso, and notiso
 
-capacitor_data_wire = [0,0,0]#max,median,min
-capacitor_data_iso = [0,0,0]
-capacitor_data_notiso = [0,0,0]
+capacitor_data_wire = [0,0,0,0]#max,median,min,average
+capacitor_data_iso = [0,0,0,0]
+capacitor_data_notiso = [0,0,0,0]
 
-capacitor_data_current = [0,0,0]#place holder for the newest data from the capacitor sensor
+capacitor_data_current = [0,0,0,0]#place holder for the newest data from the capacitor sensor
  
 
 #functions that control the arduino
@@ -293,6 +292,8 @@ def encoder_update():#1 for Y, 2 for X
 	encoder_value[2] = read_integer_serial_long('-',2)#A2
 	encoder_value[3] = read_integer_serial_long('&',2)#B2
 
+	print(encoder_value)
+
 	return
 
 def encoder_reset():
@@ -340,7 +341,7 @@ def encoder_completion(axes):
 			if(int(encoder_value[i]) >= average(encoder_constant_x)):
 				completion = completion + 1	
 	
-	if(completion >= 4):
+	if(completion >= 2):
 		return 1
 
 	return 0
@@ -576,35 +577,56 @@ def us_sensor():
 	right_right_ave = sensor_total[3] / sensor_collect_fre
 
 
-	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}".format(B = left_back_ave,L = left_left_ave,F = right_front_ave, R = right_right_ave) ) 
-	print("\n")
-	return
+	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}".format(B = left_back_ave,L = left_left_ave,F = right_front_ave, R = right_right_ave) )
+
+	# North 1000
+	# South  100
+	# East    10
+	# West     1
+		
+	ultra_ave = [right_front_ave, left_back_ave, right_right_ave, left_left_ave]
+	block_direction = [0,0,0,0]
+	block_message = 0
+	for i in range(4):
+		if(ultra_ave[i] <= 8):
+			block_direction[i] = 1
+
+	#print(block_direction)
+	for i in range(4):
+		if(block_direction[i] == 1):
+			block_message = block_message + pow(10,3-i)
+	
+	#print("Block Message: ", end = '')
+	#print(block_message)
+			
+
+	return block_direction
 
 def capacitor_sensor():
 	#The right arduino is the only arduino with a capacitive sensor
 	capacitor_hard_reset()
-	sleep(0.5)
-	sensor_data = [0,0,0] #Highest, median, and lowest
+	sensor_data = [0,0,0,0] #Highest, median, lowest, average
 	clear_comm()
 
 	print("Collecting data from Capacitive Sensor")
 
-	for i in range(100):#This is the amount of attempts the Raspberry has to recieve the information
+	for i in range(20):#This is the amount of attempts the Raspberry has to recieve the information
 		clear_comm()
 		right.write(b"C")
-		sleep(0.5)
+		sleep(0.01)
 		sensor_data[0] = read_integer_serial_long('-', 2)
 		#print(sensor_data[0])
 		sensor_data[1] = read_integer_serial_long('-', 2)
 		#print(sensor_data[1])
-		sensor_data[2] = read_integer_serial_long('&', 2)
+		sensor_data[2] = read_integer_serial_long('-', 2)
 		#print(sensor_data[2])
+		sensor_data[3] = read_integer_serial_long('&', 2)
 
-		if(sensor_data[0] != -2 and sensor_data[1] != -2 and sensor_data[2] != -2):
+		if(sensor_data[0] != -2 and sensor_data[1] != -2 and sensor_data[2] != -2 and sensor_data[3] != -2):
 			#print("Communication Success")
 			print(sensor_data)
 
-			for i in range(3):
+			for i in range(4):
 				capacitor_data_current[i] = sensor_data[i]#data transfer
 			break
 	
@@ -685,10 +707,10 @@ def capacitor_calibrate_move(block_calibrate):
 
 def capacitor_block_identity():
 	#first check if calibration has been done
-
-	diff_wire = [0,0,0]
-	diff_notiso = [0,0,0]
-	diff_iso = [0,0,0]
+	block_identity_message = 0
+	diff_wire = [0,0,0,0]
+	diff_notiso = [0,0,0,0]
+	diff_iso = [0,0,0,0]
 	
 	diff_wire_total = 0
 	diff_notiso_total = 0
@@ -715,7 +737,7 @@ def capacitor_block_identity():
 	capacitor_sensor()
 
 	#Compare the current values of the sensor with the constants of each block
-	for i in range(3):
+	for i in range(4):
 		diff_wire[i] = abs(capacitor_data_current[i] - capacitor_data_wire[i])
 		diff_notiso[i] = abs(capacitor_data_current[i] - capacitor_data_notiso[i])
 		diff_iso[i] = abs(capacitor_data_current[i] - capacitor_data_iso[i])
@@ -725,7 +747,7 @@ def capacitor_block_identity():
 	print("\tWire")
 	print("\t\t", end = '')
 	print(diff_wire)
-	for j in range(3):
+	for j in range(4):
 		diff_wire_total = diff_wire_total + diff_wire[j]
 	print("\t\t\t",end = '')
 	print(diff_wire_total)
@@ -733,7 +755,7 @@ def capacitor_block_identity():
 	print("\tNot Isolated Without Wire")
 	print("\t\t", end = '')
 	print(diff_notiso)
-	for j in range(3):
+	for j in range(4):
 		diff_notiso_total = diff_notiso_total + diff_notiso[j]
 	print("\t\t\t",end = '')
 	print(diff_notiso_total)
@@ -741,7 +763,7 @@ def capacitor_block_identity():
 	print("\tIsolated")
 	print("\t\t", end = '')
 	print(diff_iso)
-	for j in range(3):
+	for j in range(4):
 		diff_iso_total = diff_iso_total + diff_iso[j]
 	print("\t\t\t",end = '')
 	print(diff_iso_total)
@@ -834,12 +856,32 @@ def capacitor_block_identity():
 	print("Difference: {A}".format(A = diff_max_min))
 
 	#If we over the difference individually
-	print("\nUsing the individuals differences")
+
+	print("\nUsing the average differences")
+
+	diff_ave = [diff_wire[4],diff_notiso[4], diff_iso[4]]
+	diff_ave_min = 9999999
+	min_index_ave = 0
+
+	for y in range(3):
+		if(diff_ave[y] < diff_ave_min):
+			min_index_ave = y
+			diff_ave_min = diff_ave[y]
+
+	print("Block Identity: ", end = '')
+	if(min_index_max == 0):
+		print("Not Isolated with Wire")
+	if(min_index_max == 1):
+		print("Not Isolated without Wire")
+	if(min_index_max == 2):
+		print("Isolated")
+	print("Difference: {A}".format(A = diff_ave_min))
 
 	diff_rating = [0,0,0]
 	diff_rating[min_index_max] = diff_rating[min_index_max] + 1
 	diff_rating[min_index_median] = diff_rating[min_index_median] + 1
 	diff_rating[min_index_min] = diff_rating[min_index_min] + 1
+	diff_rating[min_index_ave] = diff_rating[min_index_ave] + 1
 	diff_rating[min_index] = diff_rating[min_index] + 1
 	
 	print(diff_rating)
@@ -854,12 +896,17 @@ def capacitor_block_identity():
 
 	if(diff_rating_max_index == 0):
 		print("Not Isolated with Wire")
+		block_identity_message = 0
 	if(diff_rating_max_index == 1):
 		print("Not Isolated without Wire")
+		block_identity_message = 1
 	if(diff_rating_max_index == 2):
 		print("Isolated")
+		block_identity_message = 2
 	#if all tied 2-2
 	tied_check = 0
+
+	"""
 	for p in range(3):
 		if(diff_rating[p] == 2):
 			tied_check = tied_check + 1
@@ -867,7 +914,10 @@ def capacitor_block_identity():
 		print("WARNING")
 		print("Tied in sensor catorgories")
 		print("Recommended to retake the values")
-	return	
+		block_identity_message = -1
+	"""
+
+	return block_identity_message
 	
 
 def servo_top(servo_location):
@@ -921,9 +971,7 @@ def servo_info():
 	print("Position: {P} Height Top: {T} Height Bottom: {B}".format(P = left_servo_position, T = left_servo_height_top, B = left_servo_height_bottom) )
 	print("Right Servo Information:")
 	print("Position: {P} Height Top: {T} Height Bottom: {B}".format(P = right_servo_position, T = right_servo_height_top, B = right_servo_height_bottom) )
-	
-	return	
-
+		
 def restart_comm():
 	left.write(b"R")
 	right.write(b"R")

@@ -1,20 +1,22 @@
-﻿import function
+from function import *
+#from function import restart_comm
 import RPi.GPIO as GPIO
 
 #from original comm
-from function import end,clear_comm,stop,move_right,move_left
-from function import move_forward,move_reverse,us_sensor,servo_top,servo_bottom
-from function import servo_change,servo_info,restart_comm
+#from function import end,clear_comm,stop,move_right,move_left
+#from function import move_forward,move_reverse,us_sensor,servo_top,servo_bottom
+#from function import servo_change,servo_info,restart_comm
 #from gyro
-from function import get_gyro_reading,ave_gyro,change_speed,speed_constraint
-from function import speed_display,send_speed,update_diff,rotation,move_gyro,gyro_main
-from function import redefine_pre,redefine_fre,north,rotate_clockwise,rotate_counter
-from function import rotate_counter_gyro,rotate_clockwise_gyro,redefine_sensa
-from function import move_x,move_y
-from function import encoder_update,encoder_reset,encoder_calibration,encoder_completion
-from function import encoder_current_value,encoder_constant_value,capacitor_sensor
-from function import capacitor_hard_reset, read_integer_serial_long,capacitor_calibration
-from function import capacitor_block_identity, capacitor_calibrate_move
+#from function import get_gyro_reading,ave_gyro,change_speed,speed_constraint
+#from function import speed_display,send_speed,update_diff,rotation,move_gyro,gyro_main
+#from function import redefine_pre,redefine_fre,north,rotate_clockwise,rotate_counter
+#from function import rotate_counter_gyro,rotate_clockwise_gyro,redefine_sensa
+#from function import move_x,move_y
+#from function import encoder_update,encoder_reset,encoder_calibration,encoder_completion
+
+#from function import encoder_current_value,encoder_constant_value,capacitor_sensor
+#from function import capacitor_hard_reset, read_integer_serial_long,capacitor_calibration
+#from function import capacitor_block_identity, capacitor_calibrate_move
 
 GPIO.setmode(GPIO.BCM)
 
@@ -66,7 +68,7 @@ def command(x):
 		move_y(bytes[1], bytes[2])
 	#Sensor Commands
 	if bytes[0] == 'u':
-		us_sensor()
+		print(us_sensor())
 	if bytes[0] == 'o':#reading the values of the capacitor sensor
 		capacitor_sensor()
 	if bytes[0] == 'h':
@@ -74,7 +76,7 @@ def command(x):
 	if bytes[0] == 'l':
 		capacitor_calibration()
 	if bytes[0] == 'y':
-		capacitor_block_identity()
+		print(capacitor_block_identity())#0 wire, 1 no wire no insulation, 2 insulation
 	if bytes[0] == 'v':
 		capacitor_calibrate_move(int(bytes[1]))
 	#Servo Command

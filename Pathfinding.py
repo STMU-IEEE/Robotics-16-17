@@ -1,3 +1,4 @@
+from function import *
 #
 #    [0]A  [1]B  [2]C  [3]D  [4]E  [5]F  [6]G
 #   +-----+-----+-----+-----+-----+-----+-----+
@@ -33,7 +34,7 @@
 import numpy as np
 # from heapq import *
 
-blocked_vals = {-1,}  # this is a list of the possible blocked values for pathfinding purposes
+blocked_vals = {-1}  # this is a list of the possible blocked values for pathfinding purposes
 my_location = (0,0) # first val for vert, second for horiz (row, col)
 default_path = np.array(
     [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
@@ -83,20 +84,6 @@ def you_are_here(): #for debug purposes
 def dist(a, b):
     return ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) **.5
 
-# def get_sensors():
-#     neighbor_dirs = [(0,1),(0,-1),(1,0),(-1,0)]
-#     for i,j in neighbor_dirs:
-#         if 0 <= neighbor[0] < world_map.shape[0]:
-#             if 0 <= neighbor[1] < world_map.shape[1]:
-#                 world_map[i][j] = obstacles[i][j]
-#             else:
-#                 # vertical bounds
-#                 continue
-#         else:
-#             # horizontal bounds
-#             continue
-#     return
-
 def flowField(world, target):
     output_field = np.zeros((7,7,2), dtype=np.int)
     neighbor_dirs = [(0,1),(0,-1),(1,0),(-1,0)]
@@ -125,3 +112,43 @@ def flowField(world, target):
 
 
     return output_field
+def move_north():
+	move_y(1,1)
+	return
+def move_south():
+	move_y(2,1)
+	return
+def move_east():
+	move_x(1,1)
+	return
+def move_west():
+	move_x(2,1)
+	return
+def get_sensors(location):
+	block_direction = us_sensor()
+	print(block_direction)
+	current_block_identity = capacitor_block_identity()
+	print(current_block_identity)
+	#Ultrasonic function return values
+	#0: no near by block
+	# North 1000
+	# South  100
+	# East    10
+	# West     1
+	#Example of multiple blocks: North and South: #1100
+	#Capacitor function return values
+	#-1 -> Warning retake value
+	#0-> tunnel
+	#1-> dead_ends
+	#2-> Insulation
+	world_map[my_location[0]][my_location[1]] = current_block_identity
+
+	if(block_direction[0] == 1):#North
+		world_map[my_location[0]+1][my_location[1]] = -1;
+	elif(block_direction[1] == 1):#South
+		world_map[my_location[0]-1][my_location[1]] = -1;
+	elif(block_direction[2] == 1):#East
+		world_map[my_location[0]][my_location[1]+1] = -1;
+	elif(block_direction[3] == 1):#West
+		world_map[my_location[0]][my_location[1]-1] = -1;
+	return
