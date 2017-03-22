@@ -78,7 +78,7 @@ def command(x):
 	if bytes[0] == 'y':
 		print(capacitor_block_identity())#0 wire, 1 no wire no insulation, 2 insulation
 	if bytes[0] == 'v':
-		capacitor_calibrate_move(int(bytes[1]))
+		capacitor_calibrate_move(int(bytes[1]), int(bytes[2]), int(bytes[3]))
 	#Servo Command
 	if bytes[0] == 't':
 		servo_top(bytes[1])

@@ -1,4 +1,3 @@
-#include <RunningMedian.h>
 #include <CapacitiveSensor.h>
 #include <EnableInterrupt.h>
 #include <NewPing.h>
@@ -377,22 +376,11 @@ void cap_value(){
   long cap_array_norm[data_sample], cap_array_min[data_sample], cap_array_max[data_sample];
   long min_median_cap = 0, max_median_cap = 0, median_cap = 0, ave_cap = 0;
   
-  int median_location_first = 0;
-  int median_location_last = 0;
-  
-  int first_flag = 0;
-  int last_flag = 0;
-  
-  RunningMedian cap_array = RunningMedian(data_sample);
-  RunningMedian cap_array_minside = RunningMedian(data_sample);
-  RunningMedian cap_array_maxside = RunningMedian(data_sample);
-  
   //Collecting Data
   //Serial.println("\n Iniciating Data Collection");
   
   for (int i = 0; i < data_sample; i++){
     cap_array_norm[i] = cap_sense.capacitiveSensorRaw(30);
-    cap_array.add(cap_array_norm[i]);
     //Serial.print(i);
     //Serial.print(": ");
     //Serial.println(cap_array_norm[i]);
@@ -533,9 +521,11 @@ void setup() {
         //Serial.println("Welcome to the Arduino Command HQ");  
         myservo.attach(5);
         myservo.write(servoH_top);
-
-        encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
-        encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
+        
+        //Remember to comment this two declarations before testing anything since they will make the Arduino 
+        //become unresponsive
+        //encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
+        //encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
         
         enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
         

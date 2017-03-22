@@ -153,8 +153,19 @@ def read_integer_serial_long(terminating_char, side):
 		if(side == 2):#Right
 			new_char = right.read()
 
+		#sleep(1)
+		#print("Character Received: {A}".format(A = new_char))
+
 		if len(new_char) == 0:
 			return -2
+
+		if(new_char == b'\r'):
+			#print("Identified b(r)")
+			continue
+		if(new_char == b'\n'):
+			#print("Identified b(n)") 
+			#new_char = terminating_char
+			break
 
 		new_char = ord(new_char) - 48
 
@@ -605,7 +616,7 @@ def us_sensor():
 def capacitor_sensor():
 	#The right arduino is the only arduino with a capacitive sensor
 	capacitor_hard_reset()
-	sensor_data = [0,0,0,0] #Highest, median, lowest, average
+	sensor_data = [-2,-2,-2,-2] #Highest, median, lowest, average
 	clear_comm()
 
 	print("Collecting data from Capacitive Sensor")
@@ -613,7 +624,7 @@ def capacitor_sensor():
 	for i in range(20):#This is the amount of attempts the Raspberry has to recieve the information
 		clear_comm()
 		right.write(b"C")
-		sleep(0.01)
+		sleep(0.5)
 		sensor_data[0] = read_integer_serial_long('-', 2)
 		#print(sensor_data[0])
 		sensor_data[1] = read_integer_serial_long('-', 2)
@@ -621,17 +632,44 @@ def capacitor_sensor():
 		sensor_data[2] = read_integer_serial_long('-', 2)
 		#print(sensor_data[2])
 		sensor_data[3] = read_integer_serial_long('&', 2)
+		#print(sensor_data[3])
+		
+		for i in range(4):#If any of the values is a trash value
+			if(sensor_data[i] < 10000 and sensor_data[i] > -2):#To small 
+				#print("Trash Value Detected: Cut off")
+				print("C, ", end = '')
+			if(sensor_data[i] > 100000):#To big
+				#print("Trash Value Detected: Run on")
+				print("R, ", end = '')
+			if(sensor_data[i] == -2):
+				#print("Communication Failure")
+				print("F, ", end = '')
+				continue
 
 		if(sensor_data[0] != -2 and sensor_data[1] != -2 and sensor_data[2] != -2 and sensor_data[3] != -2):
 			#print("Communication Success")
+			print("")
 			print(sensor_data)
+
+			#Safe harness if somehow trash value pass through
+
+			if(sensor_data[i] < 10000 and sensor_data[i] > -2):#To small 
+				#print("Trash Value Detected: Cut off")
+				print("C, ", end = '')
+				for l in range(4):#Resetting back the sensor data to fix problem
+					sensor_data[l] = -2
+				continue
+			if(sensor_data[i] > 100000):#To big
+				#print("Trash Value Detected: Run on")
+				print("R, ", end = '')
+				for l in range(4):#Resetting back the sensor data to fix problem
+					sensor_data[l] = -2
+				continue
 
 			for i in range(4):
 				capacitor_data_current[i] = sensor_data[i]#data transfer
 			break
-	
-		#print("Communication Failure")
-		#print(sensor_data)
+
 
 	
 	return
@@ -640,7 +678,15 @@ def capacitor_hard_reset():
 	print("Capacitor sensor reset")
 	#This lets the capacitor reset 
 	return
-
+def capacitor_check_trash():
+	for i in range(4):
+		if(capacitor_data_current[i] > 100000 or capacitor_data_current[i] < 10000 or capacitor_data_current[i] == -2):
+			print("Current values of capacitor are trash values")
+			print("Recollecting data")
+			capacitor_sensor()
+			break
+			
+	
 def capacitor_calibration():
 	
 	print("Iniciating Capacitor Sensor Calibration")
@@ -669,41 +715,134 @@ def capacitor_calibration():
 		capacitor_sensor()
 
 		if(i == 0):#Wire test
-			for j in range(3):
+			for j in range(4):
 				capacitor_data_wire[j] = capacitor_data_current[j]
 
 		if(i == 1):#Not Isolated with no wire
-			for j in range(3):
+			for j in range(4):
 				capacitor_data_notiso[j] = capacitor_data_current[j]
 
 		if(i == 2):#Isolated
-			for j in range(3):
+			for j in range(4):
 				capacitor_data_iso[j] = capacitor_data_current[j]
 
-def capacitor_calibrate_move(block_calibrate):
+def capacitor_calibrate_move(block_calibrate, data_sample, use_pre):
 	print("Calibration Iniciated: Movement Procedure")
 	print("Identity Calibrated: ", end = '')
+	divider = data_sample 
+	data_holder = [0,0,0,0]
+
+
+	if(use_pre == 1):
+		divider = divider + 1
+		for u in range(4):
+			if(block_calibrate == 0):		
+				data_holder[u] = capacitor_data_wire[u]
+			if(block_calibrate == 1):
+				data_holder[u] = capacitor_data_notiso[u]
+			if(block_calibrate == 2):
+				data_holder[u] = capacitor_data_iso[u]
+	
+	print("Using this as the pre_value: ", end = '')
+	print(data_holder)
 	
 	
 	if(block_calibrate == 0):#Wire test
 		print("Not Isolated with Wire")
-		capacitor_sensor()
-		for j in range(3):
-			capacitor_data_wire[j] = capacitor_data_current[j]
+		
+		#Collecting multiple samples and finding the average
+		
+		for i in range(data_sample):
+			sleep(0.7)
+			capacitor_sensor()
+			capacitor_check_trash()
+			for h in range(4):
+				data_holder[h] = capacitor_data_current[h] + data_holder[h]
 
-	if(block_calibrate == 1):#Not Isolated with no wire
+		#print("Total: ", end = '')
+		#print(data_holder)
+
+		for k in range(4):
+			data_holder[k] /= divider
+
+		for j in range(4):
+			capacitor_data_wire[j] = round(data_holder[j])
+
+		print("Wire Data is now: ", end = '')
+		print(capacitor_data_wire)
+
+	if(block_calibrate == 1):#No Wire test
 		print("Not Isolated without Wire")
-		capacitor_sensor()
-		for j in range(3):
-			capacitor_data_notiso[j] = capacitor_data_current[j]
+		
+		#Collecting multiple samples and finding the average
+		
+		for i in range(data_sample):
+			capacitor_sensor()
+			capacitor_check_trash()
+			for h in range(4):
+				data_holder[h] = capacitor_data_current[h] + data_holder[h]
 
-	if(block_calibrate == 2):#Isolated
+		#print("Total: ", end = '')
+		#print(data_holder)
+
+		for k in range(4):
+			data_holder[k] /= divider
+
+		for j in range(4):
+			capacitor_data_notiso[j] = round(data_holder[j])
+
+		print("Wire Data is now: ", end = '')
+		print(capacitor_data_notiso)
+
+	if(block_calibrate == 2):#Isolated test
 		print("Isolated")
-		capacitor_sensor()
-		for j in range(3):
-			capacitor_data_iso[j] = capacitor_data_current[j]
+		
+		#Collecting multiple samples and finding the average
+		
+		for i in range(data_sample):
+			capacitor_sensor()
+			capacitor_check_trash()
+			for h in range(4):
+				data_holder[h] = capacitor_data_current[h] + data_holder[h]
 
+		#print("Total: ", end = '')
+		#print(data_holder)
+
+		for k in range(4):
+			data_holder[k] /= divider
+
+		for j in range(4):
+			capacitor_data_iso[j] = round(data_holder[j])
+
+		print("Wire Data is now: ", end = '')
+		print(capacitor_data_iso)
+
+def capacitor_calibrate_update(block_calibrate):
 	
+	print("Updating Block Data")	
+	print("Before update Calibrate")
+	if(block_calibrate == 0):
+		print(capacitor_data_wire)
+	if(block_calibrate == 1):
+		print(capacitor_data_notiso)
+	if(block_calibrate == 2):
+		print(capacitor_data_iso)
+
+	for u in range(4):
+		if(block_calibrate == 0):#Wire
+			capacitor_data_wire[u] = round((capacitor_data_current[u]+capacitor_data_wire[u])/2)
+		if(block_calibrate == 1):#No Wire
+			capacitor_data_notiso[u] = round((capacitor_data_current[u]+capacitor_data_notiso[u])/2)
+		if(block_calibrate == 2):#Wire
+			capacitor_data_iso[u] = round((capacitor_data_current[u]+capacitor_data_iso[u])/2)
+
+	print("After update Calibrate")
+	if(block_calibrate == 0):
+		print(capacitor_data_wire)
+	if(block_calibrate == 1):
+		print(capacitor_data_notiso)
+	if(block_calibrate == 2):
+		print(capacitor_data_iso)
 
 def capacitor_block_identity():
 	#first check if calibration has been done
@@ -715,6 +854,8 @@ def capacitor_block_identity():
 	diff_wire_total = 0
 	diff_notiso_total = 0
 	diff_iso_total = 0
+
+	diff_holder = [0,0,0,0,0,0]#max,median,min,ave,overall
 
 	if(capacitor_data_wire[0] == 0):
 		print("WARNING")
@@ -776,6 +917,8 @@ def capacitor_block_identity():
 		if(diff[k] < diff_min):
 			min_index = k
 			diff_min = diff[k]
+
+	diff_holder[4] = diff_min
 	
 	#If we go over the overall difference between all three variables
 	print("\nUsing the overall difference")
@@ -803,6 +946,8 @@ def capacitor_block_identity():
 			min_index_median = h
 			diff_median_min = diff_median[h]
 
+	diff_holder[1] = diff_median_min
+
 	print("Block Identity: ", end = '')
 	if(min_index_median == 0):
 		print("Not Isolated with Wire")
@@ -825,6 +970,8 @@ def capacitor_block_identity():
 			min_index_min = r
 			diff_min_min = diff_min[r]
 
+	diff_holder[2] = diff_min_min
+
 	print("Block Identity: ", end = '')
 	if(min_index_min == 0):
 		print("Not Isolated with Wire")
@@ -845,6 +992,8 @@ def capacitor_block_identity():
 		if(diff_max[k] < diff_max_min):
 			min_index_max = k
 			diff_max_min = diff_max[k]
+
+	diff_holder[0] = diff_max_min
 	
 	print("Block Identity: ", end = '')
 	if(min_index_max == 0):
@@ -859,7 +1008,7 @@ def capacitor_block_identity():
 
 	print("\nUsing the average differences")
 
-	diff_ave = [diff_wire[4],diff_notiso[4], diff_iso[4]]
+	diff_ave = [diff_wire[3],diff_notiso[3], diff_iso[3]]
 	diff_ave_min = 9999999
 	min_index_ave = 0
 
@@ -867,6 +1016,8 @@ def capacitor_block_identity():
 		if(diff_ave[y] < diff_ave_min):
 			min_index_ave = y
 			diff_ave_min = diff_ave[y]
+
+	diff_holder[3] = diff_ave_min
 
 	print("Block Identity: ", end = '')
 	if(min_index_max == 0):
@@ -877,11 +1028,15 @@ def capacitor_block_identity():
 		print("Isolated")
 	print("Difference: {A}".format(A = diff_ave_min))
 
+
+	#Here are the rating for each block
+	#Average and Median should have a greater weight when
+	#it comes down to which block should be picked
 	diff_rating = [0,0,0]
 	diff_rating[min_index_max] = diff_rating[min_index_max] + 1
-	diff_rating[min_index_median] = diff_rating[min_index_median] + 1
+	diff_rating[min_index_median] = diff_rating[min_index_median] + 2
 	diff_rating[min_index_min] = diff_rating[min_index_min] + 1
-	diff_rating[min_index_ave] = diff_rating[min_index_ave] + 1
+	diff_rating[min_index_ave] = diff_rating[min_index_ave] + 2
 	diff_rating[min_index] = diff_rating[min_index] + 1
 	
 	print(diff_rating)
@@ -916,6 +1071,18 @@ def capacitor_block_identity():
 		print("Recommended to retake the values")
 		block_identity_message = -1
 	"""
+	#only recalibrate if difference between values is not too big
+	diff_tolerance = 100
+	diff_flag = 0
+
+	for j in range(4):
+		if(diff_holder[j] > diff_tolerance):
+			diff_flag = 1
+
+	if(diff_flag == 0 and diff_rating[block_identity_message] == 7):
+		 capacitor_calibrate_update(block_identity_message)
+	else:
+		print("Diff Tolerance is surpassed or/and diff_rating is not equal to 7")
 
 	return block_identity_message
 	
