@@ -50,7 +50,7 @@ def command(x):
 	if bytes[0] == 'L':
 		calibration_distance(int(bytes[1]))#1 for Y and 2 for X
 	"""
-	if bytes[0] == 'L':
+	if bytes[0] == 'm':
 		encoder_calibration(int(bytes[1]), int(bytes[2]))#Byte one(1 for Y and 2 for X), Byte Two(quantity of test)
 	if bytes[0] == 'M':
 		encoder_update()
@@ -75,9 +75,9 @@ def command(x):
 		capacitor_hard_reset()
 	if bytes[0] == 'l':
 		capacitor_calibration()
-	if bytes[0] == 'y':
-		print(capacitor_block_identity())#0 wire, 1 no wire no insulation, 2 insulation
 	if bytes[0] == 'v':
+		print(capacitor_block_identity())#0 wire, 1 no wire no insulation, 2 insulation
+	if bytes[0] == 'L':
 		capacitor_calibrate_move(int(bytes[1]), int(bytes[2]), int(bytes[3]))
 	if bytes[0] == 'V':
 		print("Hello")
