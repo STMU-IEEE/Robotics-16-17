@@ -1,5 +1,4 @@
 #include <L3G.h>
-//#include <Gyroscope.ino>
 #include <CapacitiveSensor.h>
 #include <EnableInterrupt.h>
 #include <NewPing.h>
@@ -133,13 +132,14 @@ int ultrasonic1 = 0, ultrasonic2 = 0;
 //Gyro Variables
 const float SAMPLE_RATE = 1;
 const float ADJUSTED_SENSITIVITY = 1;
+
 float angle = 0;
 float rate = 0;
 float prev_rate = 0;
+
 const byte ZYXDA = 0b00001000;
 const int sample_num = 1000;
 int16_t dc_offset = 0;
-float noise = 0;
 int16_t& gyro_robot_z = gyro.g.y; //-Z axis is connected to the gyro's +y rotation
 
 
@@ -700,10 +700,10 @@ void command(){
 
             case '=':
                if(command_status == 1){
-                gyro_cal();
+                gyro_cali();
                }
                break;
-            case ' ':
+            case '?':
                if(command_status == 1){
                 gyro_update_angle();
                 gyro_report_angle();
