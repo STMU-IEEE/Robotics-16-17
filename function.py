@@ -615,6 +615,8 @@ def us_sensor():
 
 	return block_direction
 
+#Capacitor Sensor Code
+
 def capacitor_sensor():
 	#The right arduino is the only arduino with a capacitive sensor
 	capacitor_hard_reset()

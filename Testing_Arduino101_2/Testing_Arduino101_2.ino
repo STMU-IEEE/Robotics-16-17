@@ -1,3 +1,5 @@
+#include <L3G.h>
+//#include <Gyroscope.ino>
 #include <CapacitiveSensor.h>
 #include <EnableInterrupt.h>
 #include <NewPing.h>
@@ -113,6 +115,8 @@ Servo myservo;
 I2CEncoder encoder_B;
 I2CEncoder encoder_A;
 CapacitiveSensor cap_sense = CapacitiveSensor(CAP_SEND,CAP_REC); // (send_pin, receive_pin);
+L3G gyro;
+
 
 
 
@@ -125,6 +129,20 @@ int stop_button = 10;
 int command_status = 1;
 int motor_speed[2];
 int ultrasonic1 = 0, ultrasonic2 = 0;
+
+//Gyro Variables
+const float SAMPLE_RATE = 1;
+const float ADJUSTED_SENSITIVITY = 1;
+float angle = 0;
+float rate = 0;
+float prev_rate = 0;
+const byte ZYXDA = 0b00001000;
+const int sample_num = 1000;
+int16_t dc_offset = 0;
+float noise = 0;
+int16_t& gyro_robot_z = gyro.g.y; //-Z axis is connected to the gyro's +y rotation
+
+
 
 
 //-------------------FUNCTIONs----------------
@@ -540,7 +558,13 @@ void setup() {
         pinMode(TRIGGER_PIN1, OUTPUT);
         pinMode(ECHO_PIN1, INPUT);
         pinMode(TRIGGER_PIN2, OUTPUT);
-        pinMode(ECHO_PIN2, INPUT);        
+        pinMode(ECHO_PIN2, INPUT);       
+
+        if(!gyro.init()){
+          //report gyro not working
+        }
+          
+        gyro.enableDefault();
          
         /*
         Serial.println(AMOTOR);
@@ -673,6 +697,17 @@ void command(){
             default:
              // Serial.println("NULL");
             break;
+
+            case '=':
+               if(command_status == 1){
+                gyro_cal();
+               }
+               break;
+            case ' ':
+               if(command_status == 1){
+                gyro_update_angle();
+                gyro_report_angle();
+               }
           }
       }
 }
