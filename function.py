@@ -188,6 +188,15 @@ def end():
 def clear_comm():
 	left.flushInput()
 	right.flushInput()
+	return
+
+def clear_comm_absolute():
+        while(len(left.read()) != 0):
+                left.flushInput()
+        while(len(right.read()) != 0):
+                right.flushInput()
+        return
+
 
 def stop():
 	right.write(b"x")
@@ -294,8 +303,7 @@ def rotate_clockwise(bytes):
 
 def encoder_update():#1 for Y, 2 for X
 	
-	for f in range(3):
-		clear_comm()
+	clear_comm_absolute()
 	
 	left.write(b"m")
 	right.write(b"m")
@@ -402,25 +410,6 @@ def move_y(side, speed):
 		sleep(0.01)
 	stop()
 
-
-	
-	""" Time dependent System
-	time_interval = time_distance_function(int(speed),1) * block
-	print("time interval given per block: {A}".format(A = time_interval))
-	
-	before_mov = time()
-	
-	future_mov = before_mov + time_interval 
-	
-	if(side == FRONT):
-		move_forward(bytes)
-	if(side == BACK):
-		move_reverse(bytes)
-	while(time() < future_mov):
-		sleep(0.001)
-	stop()
-	"""
-
 	return
 	
 def move_x(side, speed):
@@ -461,89 +450,12 @@ def move_x(side, speed):
 		encoder_update()
 		sleep(0.01)
 	stop()
-
-	""" Time dependent system
-	time_interval = time_distance_function(int(speed),2) * block
-	
-	before_mov = time()
-	
-	future_mov = before_mov + time_interval 
-	print("time interval given per block: {B}".format(B = time_interval) )
-	
-	if(side == LEFT):
-		move_left(bytes)
-	if(side == RIGHT):
-		move_right(bytes)
-		
-	while(time() < future_mov):
-		sleep(0.001)
-	stop()
-
-	"""
 	
 	return
 
-"""
 def us_sensor():
 	sensor_collect_fre = 5
-	clear_comm()
-	left.write(b"u")
-	right.write(b"u")
-
-	sensor_total = [0,0,0,0]#left_back, left_left, right_front, right_right
-	sensor_collect = [0,0,0,0]
-	trash_value = 0
-
-	for i in range(sensor_collect_fre):
-	
-		sensor_collect[0] = read_integer_serial('-', 1)#1 means left, 2 means right
-		while(sensor_collect[0] == -2):
-			clear_comm()
-			left.write(b"u")
-			sensor_collect[0] = read_integer_serial('-', 1) 
-
-		sensor_collect[1] = read_integer_serial('&', 1)
-		while(sensor_collect[1] == -2):
-			clear_comm()
-			left.write(b"u")
-			trash_value = read_integer_serial('-', 1)
-			sensor_collect[1] = read_integer_serial('&',1)
-
-		sensor_collect[2] = read_integer_serial('-', 2)
-		while(sensor_collect[2] == -2):
-			clear_comm()
-			right.write(b"u")
-			sensor_collect[2] = read_integer_serial('-', 2)
-
-		sensor_collect[3] = read_integer_serial('&' , 2)
-		while(sensor_collect[3] == -2):
-			clear_comm()
-			right.write(b"u")
-			trash_value = read_integer_serial('-', 2)
-			sensor_collect[3] = read_integer_serial('&' ,2)
-
-		sensor_total[0] += sensor_collect[0]
-		sensor_total[1] += sensor_collect[1]
-
-		sensor_total[2] += sensor_collect[2]
-		sensor_total[3] += sensor_collect[3] 
-		
-
-	left_back_ave = sensor_total[0] / sensor_collect_fre
-	left_left_ave = sensor_total[1] / sensor_collect_fre
-
-	right_front_ave = sensor_total[2] / sensor_collect_fre
-	right_right_ave = sensor_total[3] / sensor_collect_fre
-
-
-	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}".format(B = left_back_ave,L = left_left_ave,F = right_front_ave, R = right_right_ave) ) 
-	print("\n")
-	return
-"""
-
-def us_sensor():
-	sensor_collect_fre = 5
-	clear_comm()
+	clear_comm_absolute()
 	left.write(b"u")
 	right.write(b"u")
 
@@ -629,25 +541,28 @@ def capacitor_sensor():
 	print("Collecting data from Capacitive Sensor")
 
 	for i in range(20):#This is the amount of attempts the Raspberry has to recieve the information
-		clear_comm()
+		clear_comm_absolute()
 		right.write(b"C")
-		sleep(0.5)
-		sensor_data[0] = read_integer_serial_long('-', 2)
+		#sleep(0.5)
+		capacitor_hard_reset()
+		sensor_data[0] = abs(read_integer_serial_long('-', 2))
 		#print(sensor_data[0])
-		sensor_data[1] = read_integer_serial_long('-', 2)
+		sensor_data[1] = abs(read_integer_serial_long('-', 2))
 		#print(sensor_data[1])
-		sensor_data[2] = read_integer_serial_long('-', 2)
+		sensor_data[2] = abs(read_integer_serial_long('-', 2))
 		#print(sensor_data[2])
-		sensor_data[3] = read_integer_serial_long('&', 2)
+		sensor_data[3] = abs(read_integer_serial_long('&', 2))
 		#print(sensor_data[3])
 		
 		for i in range(4):#If any of the values is a trash value
 			if(sensor_data[i] < 10000 and sensor_data[i] > -2):#To small 
 				#print("Trash Value Detected: Cut off")
 				print("C, ", end = '')
+				continue
 			if(sensor_data[i] > 100000):#To big
 				#print("Trash Value Detected: Run on")
 				print("R, ", end = '')
+				continue
 			if(sensor_data[i] == -2):
 				#print("Communication Failure")
 				print("F, ", end = '')
@@ -657,46 +572,36 @@ def capacitor_sensor():
 			#print("Communication Success")
 			print("")
 			print(sensor_data)
-
-			#Safe harness if somehow trash value pass through
-
-			if(sensor_data[i] < 10000 and sensor_data[i] > -2):#To small 
-				#print("Trash Value Detected: Cut off")
-				print("C, ", end = '')
-				for l in range(4):#Resetting back the sensor data to fix problem
-					sensor_data[l] = -2
-				continue
-			if(sensor_data[i] > 100000):#To big
-				#print("Trash Value Detected: Run on")
-				print("R, ", end = '')
-				for l in range(4):#Resetting back the sensor data to fix problem
-					sensor_data[l] = -2
-				continue
-
+			
 			for i in range(4):
 				capacitor_data_current[i] = sensor_data[i]#data transfer
 			break
 
-	for f in range(5):
-		clear_comm()
-		sleep(0.2)
-
-
-	
+	clear_comm_absolute()
 	return
+
 def capacitor_hard_reset():
 	right.write(b"H")
 	print("Capacitor sensor reset")
 	#This lets the capacitor reset 
 	return
-def capacitor_check_trash():
-	for i in range(4):
-		if(capacitor_data_current[i] > 100000 or capacitor_data_current[i] < 10000 or capacitor_data_current[i] == -2):
-			print("Current values of capacitor are trash values")
-			print("Recollecting data")
-			capacitor_sensor()
-			break
-			
+
+def capacitor_trash_value():
+        flag = False
+        for i in range(4):
+                if(capacitor_data_current[i] > 100000 or capacitor_data_current[i] < 10000 or capacitor_data_current[i] == -2):
+                        flag = True
+                        print("Capacitor_trash_value found trash value")
+                        break
+                
+        return flag
+
+def capacitor_fix_value():
+         while(capacitor_trash_value == True):
+                print("Recalculating values")
+                capacitor_sensor()
+                break
+        return		
 	
 def capacitor_calibration():
 	
@@ -756,8 +661,7 @@ def capacitor_calibrate_move(block_calibrate, data_sample, use_pre):
 	
 	print("Using this as the pre_value: ", end = '')
 	print(data_holder)
-	
-	
+
 	if(block_calibrate == 0):#Wire test
 		print("Not Isolated with Wire")
 		
@@ -766,7 +670,7 @@ def capacitor_calibrate_move(block_calibrate, data_sample, use_pre):
 		for i in range(data_sample):
 			sleep(0.7)
 			capacitor_sensor()
-			capacitor_check_trash()
+			capacitor_fix_value()
 			for h in range(4):
 				data_holder[h] = capacitor_data_current[h] + data_holder[h]
 
@@ -789,7 +693,7 @@ def capacitor_calibrate_move(block_calibrate, data_sample, use_pre):
 		
 		for i in range(data_sample):
 			capacitor_sensor()
-			capacitor_check_trash()
+			capacitor_fix_value()
 			for h in range(4):
 				data_holder[h] = capacitor_data_current[h] + data_holder[h]
 
@@ -812,7 +716,7 @@ def capacitor_calibrate_move(block_calibrate, data_sample, use_pre):
 		
 		for i in range(data_sample):
 			capacitor_sensor()
-			capacitor_check_trash()
+			capacitor_fix_value()
 			for h in range(4):
 				data_holder[h] = capacitor_data_current[h] + data_holder[h]
 
@@ -1043,6 +947,7 @@ def capacitor_block_identity():
 	#Here are the rating for each block
 	#Average and Median should have a greater weight when
 	#it comes down to which block should be picked
+	
 	diff_rating = [0,0,0]
 	diff_rating[min_index_max] = diff_rating[min_index_max] + 1
 	diff_rating[min_index_median] = diff_rating[min_index_median] + 2
@@ -1137,9 +1042,6 @@ def capacitor_block_multiple(data_sample):
 		print("Isolated")
 		block_identity_message = 2
 
-	
-	
-	
 	return block_identity_message
 
 def servo_top(servo_location):
@@ -1216,85 +1118,6 @@ def start_button_pressed(channel):
 	
 #This code is for the motor encoders
 
-""" Time dependent calibration
-
-def calibration_distance(axes):
-	print("Calibration Iniciated")
-	sleep(2)
-	
-	global cali_pres
-	global time_distance_slope
-	global time_distance_shift
-	
-	cali_pres = 1
-	
-	bytes = ['@','@', '@', '@', '@']
-	bytes[1] = str( 250 )
-	bytes[2] = str( 250 - 15 )
-	bytes[3] = str( 250 )
-	bytes[4] = str( 250 )
-	print("250 to all motors")
-	if(axes == 1):#Y Calibration
-		move_forward(bytes)
-	if(axes == 2):#X Calibration
-		move_right(bytes)
-	
-	inital_time1 = time()
-	print("Stopwatch start:")
-	while(cali_pres == 1):
-		sleep(0.001)
-	print("Stopwatch stop!")
-	stop()
-	after_time1 = time()
-	diff_time1 = after_time1 - inital_time1
-	print("Time measured: {A}".format(A=diff_time1)) 
-	
-	print("Iniciating part 2")
-	sleep(5)
-	cali_pres = 1
-	print("100 to all motors")
-	bytes = ['@','@', '@', '@', '@']
-	bytes[1] = str( 100 )
-	bytes[2] = str( 100 - 15 )
-	bytes[3] = str( 100 )
-	bytes[4] = str( 100 )
-	if(axes == 1):#Y Calibration
-		move_forward(bytes)
-	if(axes == 2):#X Calibration
-		move_right(bytes)
-	print("Stopwatch start:")
-	inital_time2 = time()
-	
-	while(cali_pres == 1):
-		sleep(0.001)
-	print("Stopwatch stop!")
-	stop()
-	after_time2 = time()
-	
-	diff_time2 = after_time2 - inital_time2
-	print("Time measured: {B}".format(B = diff_time2))
-	if(axes == 1):#Y Calibration
-		time_distance_slope['y'] = (diff_time1 - diff_time2)/(250-100)
-		time_distance_shift['y'] = diff_time1-250*(time_distance_slope['y'])
-		print("The slope is {A} and the shift is {B}".format(A=time_distance_slope['y'],B = time_distance_shift['y']) )
-	if(axes == 2):#X Calibration	
-		time_distance_slope['x'] = (diff_time1 - diff_time2)/(250-100)
-		time_distance_shift['x'] = diff_time1-250*(time_distance_slope['x'])
-		print("The slope is {A} and the shift is {B}".format(A=time_distance_slope['x'],B = time_distance_shift['x']) )
-	
-	return
-"""
-	
-""" For time dependet system
-def time_distance_function(speed,axes):
-	if(axes == 1):#Y Calculation
-		calculated_time = time_distance_slope['y']*speed + time_distance_shift['y']
-	if(axes == 2):#X Calculation
-		calculated_time = time_distance_slope['x']*speed + time_distance_shift['x']
-	return calculated_time
-	
-"""
-
 def encoder_calibration(axes,test_quantity):
 	test_sample = [0,0,0,0]
 
@@ -1365,9 +1188,9 @@ def encoder_calibration(axes,test_quantity):
 GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
 
 
-"""Gyro Code Ahead"""
+"""Raspberry Gyro Code Ahead
 
-""" 
+
 Information Here
 positive increase means clockwise rotation
 negative increase means counter-clockwise rotation
@@ -1390,7 +1213,7 @@ Direction is reference with the following numbers
 					V
 					4
 
-"""
+
 
 #Setting up gyro sensitive variables [defaults]
 sense = SenseHat()
@@ -1828,4 +1651,34 @@ def north():
 	north = sense.get_compass()
 	print("North: %s" % north)
 	return
+	
+"""
+
+"""
+Arduino Gyro Code Ahead
+"""
+
+gyro_angle = [0,0] #Left, Right
+
+def gyro_cali():
+        clear_comm()
+        left.write(b'=')
+        right.write(b'=')
+        return
+def gyro_update_angle():
+        clear_comm()
+        left.write(b'?')
+        right.write(b'?')
+
+        gyro_angle[0] = read_integer_serial_long(1, '&')
+        gyro_angle[1] = read_integer_serial_long(2, '&')
+
+        return
+def gyro_report_angle():
+        print("Left:\t{A}\tRight:\t{B}".format(A = gyro_angle[0], B = gyro_angle[1]))
+        return
+
+                
+                
+                
 

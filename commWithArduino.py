@@ -2,22 +2,6 @@ from function import *
 #from function import restart_comm
 import RPi.GPIO as GPIO
 
-#from original comm
-#from function import end,clear_comm,stop,move_right,move_left
-#from function import move_forward,move_reverse,us_sensor,servo_top,servo_bottom
-#from function import servo_change,servo_info,restart_comm
-#from gyro
-#from function import get_gyro_reading,ave_gyro,change_speed,speed_constraint
-#from function import speed_display,send_speed,update_diff,rotation,move_gyro,gyro_main
-#from function import redefine_pre,redefine_fre,north,rotate_clockwise,rotate_counter
-#from function import rotate_counter_gyro,rotate_clockwise_gyro,redefine_sensa
-#from function import move_x,move_y
-#from function import encoder_update,encoder_reset,encoder_calibration,encoder_completion
-
-#from function import encoder_current_value,encoder_constant_value,capacitor_sensor
-#from function import capacitor_hard_reset, read_integer_serial_long,capacitor_calibration
-#from function import capacitor_block_identity, capacitor_calibrate_move
-
 GPIO.setmode(GPIO.BCM)
 
 FRONT_C = 1
@@ -45,11 +29,7 @@ def command(x):
 		rotate_counter(bytes)
 	if bytes[0] == 'e':
 		rotate_clockwise(bytes)
-	#Calibration, Distance, and Time Commands
-	"""Time Dependent System
-	if bytes[0] == 'L':
-		calibration_distance(int(bytes[1]))#1 for Y and 2 for X
-	"""
+	#Calibration and Distance Commands
 	if bytes[0] == 'm':
 		encoder_calibration(int(bytes[1]), int(bytes[2]))#Byte one(1 for Y and 2 for X), Byte Two(quantity of test)
 	if bytes[0] == 'M':
@@ -80,7 +60,6 @@ def command(x):
 	if bytes[0] == 'L':
 		capacitor_calibrate_move(int(bytes[1]), int(bytes[2]), int(bytes[3]))
 	if bytes[0] == 'V':
-		print("Hello")
 		capacitor_block_multiple(int(bytes[1]))
 	#Servo Command
 	if bytes[0] == 't':
@@ -100,6 +79,8 @@ def command(x):
 		restart_comm()
 	if bytes[0] == 'C':
 		clear_comm()
+	"""
+        Raspberry Pi Gyro Commands
 	#Gyro Commands 
 	if bytes[0] == 'W':
 		move_gyro(FRONT_C, bytes[1], bytes[2])
@@ -125,6 +106,16 @@ def command(x):
 	#Magnetometer Commands
 	if bytes[0] == 'N':
 		north()
+	"""
+	#Arduino Gyro Commands
+	
+	if bytes[0] == 'I':
+                gyro_cali()
+        if bytes[0] == 'A':
+                gyro_update_angle()
+        if bytes[0] == 'R':
+                gyro_report_angle()
+                
 	
 	return
 

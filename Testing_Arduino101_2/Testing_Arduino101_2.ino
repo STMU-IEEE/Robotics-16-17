@@ -693,11 +693,7 @@ void command(){
               if(command_status == 1){
                 cap_test();
               }
-            
-            default:
-             // Serial.println("NULL");
-            break;
-
+	      break;
             case '=':
                if(command_status == 1){
                 gyro_cali();
@@ -708,6 +704,10 @@ void command(){
                 gyro_update_angle();
                 gyro_report_angle();
                }
+	       break;
+            default:
+             // Serial.println("NULL");
+               break;
           }
       }
 }
