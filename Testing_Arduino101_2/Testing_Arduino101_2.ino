@@ -120,12 +120,17 @@ L3G gyro;
 
 
 //------------------VARIABLESs----------------
+//Communication Variables
+const char confirm_char = '@';
+const char term_char = '-';
+const char end_char = '&';
+const char emergency_char = '%';
 char input, trash_input;
+bool command_status = 1;
+
+//General Sensor Variables
+const int stop_button = 10;
 int servoH_top = 170, servoH_bottom = 0;
-long last_time = 0;
-int control = 0; 
-int stop_button = 10;
-int command_status = 1;
 int motor_speed[2];
 int ultrasonic1 = 0, ultrasonic2 = 0;
 
@@ -142,10 +147,64 @@ const int sample_num = 1000;
 int16_t dc_offset = 0;
 int16_t& gyro_robot_z = gyro.g.y; //-Z axis is connected to the gyro's +y rotation
 
+//Capactitor Variables
+const int data_sample = 40;
+long cap_current = 0;
+long cap_array_norm[data_sample], cap_array_min[data_sample], cap_array_max[data_sample];
+long min_median_cap = 0, max_median_cap = 0, median_cap = 0, ave_cap = 0;
+long capacitor_message[4];
 
+//-------------------SETUP----------------
+void setup() {
+        Wire.begin();
+        Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
+        Serial.println("Welcome to the Arduino Command HQ");  
+        myservo.attach(5);
+        myservo.write(servoH_top);
+        
+        //Remember to comment this two declarations before testing anything since they will make the Arduino 
+        //become unresponsive
+        //encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
+        //encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
+        
+        enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
+        
+        pinMode(AMOTOR, OUTPUT);
+        pinMode(BMOTOR, OUTPUT);
+        pinMode(AMOTOR_BRAKE, OUTPUT);
+        pinMode(BMOTOR_BRAKE, OUTPUT);
+        pinMode(DIR_A, OUTPUT);
+        pinMode(DIR_B, OUTPUT);
+
+        
+        pinMode(TRIGGER_PIN1, OUTPUT);
+        pinMode(ECHO_PIN1, INPUT);
+        pinMode(TRIGGER_PIN2, OUTPUT);
+        pinMode(ECHO_PIN2, INPUT);       
+
+        Serial.println("A");
+        if(gyro.init()){
+          //report gyro not working
+          Serial.println("Gyro not found");
+        }
+        Serial.println("B");
+        gyro.enableDefault();
+
+        delay(100);
+        //Serial.println("End of Setup");
+}
 
 
 //-------------------FUNCTIONs----------------
+bool RPi_confirm(){
+  while(Serial.available() > 0);
+  if(Serial.read() == confirm_char){
+    return 1;
+  }
+  else
+    return 0;
+}
+
 void stop_motor_ALL(){
   
     command_status = 0;
@@ -163,19 +222,6 @@ void stop_motor_ALL(){
     }
   
 }
-/*
-void move_forward(){
-
-    digitalWrite(DIR_A, HIGH);
-    digitalWrite(DIR_B, HIGH);
-
-    digitalWrite(AMOTOR_BRAKE, LOW);
-    digitalWrite(BMOTOR_BRAKE, LOW);
-
-    digitalWrite(AMOTOR, HIGH);
-    digitalWrite(BMOTOR, HIGH);
-}
-*/
 void variable_forward(){
     while(Serial.available () < 2);//wait for the motor speed info
     motor_speed[0] = Serial.parseInt();//motor A speed
@@ -197,20 +243,6 @@ void variable_forward(){
     analogWrite(AMOTOR, motor_speed[0]);
     analogWrite(BMOTOR, motor_speed[1]);
 }
-/*
-void move_reverse(){
-    digitalWrite(DIR_A, LOW);
-    digitalWrite(DIR_B, LOW);
-
-
-    digitalWrite(AMOTOR_BRAKE, LOW);
-    digitalWrite(BMOTOR_BRAKE, LOW);
-
-
-    digitalWrite(AMOTOR, HIGH);
-    digitalWrite(BMOTOR, HIGH);
-}
-*/
 void variable_reverse(){
     while(Serial.available () < 2);//wait for the motor speed info
     motor_speed[0] = Serial.parseInt();//motor A speed
@@ -232,19 +264,6 @@ void variable_reverse(){
     analogWrite(AMOTOR, motor_speed[0]);
     analogWrite(BMOTOR, motor_speed[1]);
 }
-/*
-void move_in(){
-    digitalWrite(DIR_A, HIGH);
-    digitalWrite(DIR_B, LOW);
-
-
-    digitalWrite(AMOTOR_BRAKE, LOW);
-    digitalWrite(BMOTOR_BRAKE, LOW);
-
-    digitalWrite(AMOTOR, HIGH);
-    digitalWrite(BMOTOR, HIGH);
-}
-*/
 void variable_in(){
     while(Serial.available () < 2);//wait for the motor speed info
     motor_speed[0] = Serial.parseInt();//motor A speed
@@ -266,19 +285,6 @@ void variable_in(){
     analogWrite(AMOTOR, motor_speed[0]);
     analogWrite(BMOTOR, motor_speed[1]);
 }
-/*
-void move_out(){
-    digitalWrite(DIR_A, LOW);
-    digitalWrite(DIR_B, HIGH);
-
-
-    digitalWrite(AMOTOR_BRAKE, LOW);
-    digitalWrite(BMOTOR_BRAKE, LOW);
-
-    digitalWrite(AMOTOR, HIGH);
-    digitalWrite(BMOTOR, HIGH);
-}
-*/
 void variable_out(){
     while(Serial.available () < 2);//wait for the motor speed info
     motor_speed[0] = Serial.parseInt();//motor A speed
@@ -325,59 +331,35 @@ void us_sensor(){
   ultrasonic2 = ave_us2;
 
   Serial.print(ultrasonic1);
-  Serial.print('-');
+  Serial.print(term_char);
   Serial.print(ultrasonic2);
-  Serial.print("&");
+  Serial.print(end_char);
 }
 
 void bubble_sort(long a[], int sizeofarray){
-  
-  //Serial.println("Begun BubbleSorting");
+  //smallest ---- highest
   long holder = 0;
     for(int i = 0; i < sizeofarray - i; i++){
       for(int j = 0; j < sizeofarray - (i+1); j++){
         if(a[j] > a[j+1]){
-          //Serial.print("Value of ");
-          //Serial.print(a[j]);
-          //Serial.println(" has been moved up"); 
           holder = a[j];
           a[j] = a[j+1];
           a[j+1] = holder;
         }
       }
     }
-
-  //Printing results
-  /*
-  for(int i = 0; i < sizeofarray; i++){
-    Serial.print(a[i]);
-    Serial.print(" ");
-  }
-  */
-    //smallest ---- highest
 }
 
 long findMedian(long a[], int size){
-  //Serial.println("Inside FindMedian");
-  //Serial.print("Median: ");
-  //Serial.println(a[round(size/2) - 1]);
-  //to account for the zeroth element
+
   long returned_value = 0;
   size = size-1;
-  /*
-  Serial.print("Size: ");
-  Serial.println(size);
-  Serial.println("Median Location");
-  Serial.print("With round: ");
-  Serial.println(round(size/2));
-  Serial.print("Without round: ");
-  */
+  
   float size_div = 0;
   size_div = float(size)/2;
-  //Serial.println(size_div);
-  
+
   if(size_div != round(size/2)){
-    //Serial.println("Warning no normal Median found");
+
     returned_value = (a[round(size/2)] + a[round(size/2)+1])/2;
   }
   else
@@ -389,93 +371,52 @@ long findMedian(long a[], int size){
 
 void cap_value(){
   
-  int data_sample = 40;
-  long total = 0, cap_current = 0;
-  long cap_array_norm[data_sample], cap_array_min[data_sample], cap_array_max[data_sample];
-  long min_median_cap = 0, max_median_cap = 0, median_cap = 0, ave_cap = 0;
-  
-  //Collecting Data
-  //Serial.println("\n Iniciating Data Collection");
   
   for (int i = 0; i < data_sample; i++){
     cap_array_norm[i] = cap_sense.capacitiveSensorRaw(30);
-    //Serial.print(i);
-    //Serial.print(": ");
-    //Serial.println(cap_array_norm[i]);
-    }
-    
-  //Serial.println("Finished Collecting Data");
-  //Serial.println("Printing the cap_array_norm");
-  
+  }
+
   for(int l = 0; l < data_sample; l++){
-    //Serial.print(l);
-    //Serial.print(": ");
-    //Serial.println(cap_array_norm[l]);
     ave_cap += cap_array_norm[l];
   }
   ave_cap /= data_sample;
   
- 
-  //Rearranged Data
+
   bubble_sort(cap_array_norm, data_sample);
   
-  //Serial.println("Bubblesort Complete");
-
-  //Serial.print("Average of Data: ");
-  //Serial.println(ave_cap);
-  
-  
   median_cap = findMedian(cap_array_norm, data_sample);
-  //Serial.print("Median with findMedian: ");
-  //Serial.println(median_cap);
-  
-  //Serial.println("Found Median");
-  /*
-  for(int e = 0; e < median_location_first; e++){
-    cap_array_minside.add(cap_array_norm[e]);
-  }
-  
-  */
-  //Serial.println("Printing the lower array");
+
   for(int e = 0; e < round(data_sample/2) ; e++){
     cap_array_min[e] = cap_array_norm[e];
-    //Serial.print(cap_array_min[e]);
-    //Serial.print(" ");
   }
-  //Serial.print("\n");
-  
-  //min_median_cap = cap_array_minside.getMedian();
   
   min_median_cap = findMedian(cap_array_min, (data_sample / 2) );
   
-  //Serial.print("Min Median: ");
-  //Serial.println(min_median_cap);
-  //Serial.println("Found min median");
-
-  
-  //Finding the median in the second section of the array
-  
-  //Serial.println("Printing the higher array");
   for(int w = round(data_sample/2); w < data_sample; w++){
     cap_array_max[w-round(data_sample/2)] = cap_array_norm[w]; 
-    //Serial.print(cap_array_max[w-round(data_sample/2)]);
-    //Serial.print(" ");  
   }
-  //Serial.print("\n");
 
   max_median_cap = findMedian(cap_array_max, data_sample/2 );
-  //Serial.println("Max Median: ");
-  //Serial.println(max_median_cap);
-  //Serial.println("Found max median");
-  
-  Serial.print(abs(max_median_cap));
-  Serial.print('-');
-  Serial.print(abs(median_cap));
-  Serial.print('-');
-  Serial.print(abs(min_median_cap));
-  Serial.print('-');
-  Serial.print(abs(ave_cap));
-  Serial.print('&');
+
+  capacitor_message[0] = abs(max_median_cap);
+  capacitor_message[1] = abs(median_cap);
+  capacitor_message[2] = abs(min_median_cap);
+  capacitor_message[3] = abs(ave_cap);
+
+
+  for(int a = 0; a < sizeof(capacitor_message); a++){
+    Serial.print(capacitor_message[a]);
+    if(a < sizeof(capacitor_message)){
+      Serial.print(term_char);
+    }
+    else{
+      Serial.print(end_char);
+    }
+    if(!RPi_confirm()){
+      Serial.print(emergency_char);
+      break;
+    }
+  }
   
 }
 void cap_test(){
@@ -490,11 +431,11 @@ void cap_hard_reset(){
 
 void servo_info(){
   Serial.print(myservo.read());
-  Serial.print('-');
+  Serial.print(term_char);
   Serial.print(servoH_top);
-  Serial.print('-');
+  Serial.print(term_char);
   Serial.print(servoH_bottom);
-  Serial.print('&');
+  Serial.print(end_char);
 }
 void servo_bottom(){
   myservo.write(servoH_bottom);
@@ -507,74 +448,20 @@ void servo_change(){
     servoH_top = Serial.parseInt();//motor A speed
     servoH_bottom = Serial.parseInt();//motor B speed
 }
-/*
-void test(){
-  int A = 0;
-  int B = 0;
-  while(Serial.available () < 2);//wait for the motor speed info
-  A = Serial.parseInt();//motor A speed
-  B = Serial.parseInt();//motor B speed
-  Serial.print("\n");
-  Serial.print(A);
-  Serial.print("\n");
-  Serial.print(B);
-  Serial.print("\n");
-}
-*/
+
 void encoder_reset(){
   encoder_A.zero();
   encoder_B.zero();
 }
 void encoder_report(){
   Serial.print(abs(round(encoder_A.getRawPosition())));
-  Serial.print('-');
+  Serial.print(term_char);
   Serial.print(abs(round(encoder_B.getRawPosition())));
-  Serial.print('&');
+  Serial.print(term_char);
 }
 
-//------------------CODEs---------------------
-void setup() {
-        Wire.begin();
-        Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
-        //Serial.println("Welcome to the Arduino Command HQ");  
-        myservo.attach(5);
-        myservo.write(servoH_top);
-        
-        //Remember to comment this two declarations before testing anything since they will make the Arduino 
-        //become unresponsive
-        encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
-        encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
-        
-        enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
-        
-        pinMode(AMOTOR, OUTPUT);
-        pinMode(BMOTOR, OUTPUT);
-        pinMode(AMOTOR_BRAKE, OUTPUT);
-        pinMode(BMOTOR_BRAKE, OUTPUT);
-        pinMode(DIR_A, OUTPUT);
-        pinMode(DIR_B, OUTPUT);
+//------------------LOOPs---------------------
 
-        
-        pinMode(TRIGGER_PIN1, OUTPUT);
-        pinMode(ECHO_PIN1, INPUT);
-        pinMode(TRIGGER_PIN2, OUTPUT);
-        pinMode(ECHO_PIN2, INPUT);       
-
-        if(!gyro.init()){
-          //report gyro not working
-        }
-          
-        gyro.enableDefault();
-         
-        /*
-        Serial.println(AMOTOR);
-        Serial.println(BMOTOR);
-        Serial.println(AMOTOR_BRAKE);
-        Serial.println(BMOTOR_BRAKE);
-        */
-        delay(100);
-        //Serial.println("End of Setup");
-}
 
 void loop() {  
   //Serial.println("Loop"); 
@@ -582,6 +469,7 @@ void loop() {
   //us_sensor();
 }
 
+//-------------------COMMANDSs----------------
 
 void command(){
       if (Serial.available() > 0) {
@@ -680,7 +568,7 @@ void command(){
               break;
              
             case 'C':
-              //Serial.print("Cap");
+              Serial.print("Cap");
               if(command_status == 1){
                 cap_value();
               }
@@ -689,11 +577,12 @@ void command(){
               if(command_status == 1){
                 cap_hard_reset();
               }
+              break;
             case '+':
               if(command_status == 1){
                 cap_test();
               }
-	      break;
+	            break;
             case '=':
                if(command_status == 1){
                 gyro_cali();
@@ -704,6 +593,7 @@ void command(){
                 gyro_update_angle();
                 gyro_report_angle();
                }
+               break;
 	       break;
             default:
              // Serial.println("NULL");
