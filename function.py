@@ -69,7 +69,8 @@ capacitor_data_constant = [capacitor_data_wire capacitor_data_iso capacitor_data
 capacitor_data_current = [0,0,0,0]#place holder for the newest data from the capacitor sensor
 capacitor_block_score = [0,0,0]#This will hold the scores of mutiple data samples from the capacitor_block_identity
 
-term_char = '-'
+neg_char_b = b'-'
+term_char = '#'
 end_char = '&'
 end_char_b = b'&'
 confirm_char = b'@'
@@ -143,6 +144,7 @@ def read_integer_serial(terminating_char, side):
 	transmitted_value = 0
 	counter = 1 
 	new_char = 0
+	char_is_negative = 1
 
 
 	while(counter < 15):
@@ -165,6 +167,9 @@ def read_integer_serial(terminating_char, side):
 			#print("Identified b(n)") 
 			#new_char = terminating_char
 			break
+		if(new_char == neg_char_b):
+			char_is_negative = -1
+			continue
 
 		new_char = ord(new_char) - 48
 
@@ -174,7 +179,7 @@ def read_integer_serial(terminating_char, side):
 		transmitted_value = transmitted_value * 10 + int(new_char)
 		counter = counter + 1
 		
-	return(transmitted_value)
+	return(transmitted_value * char_is_negative)
 
 def read_integer_serial_long(side,terminating_char):
 		#side if 1 means left and 2 means right
@@ -184,6 +189,7 @@ def read_integer_serial_long(side,terminating_char):
 	transmitted_value = 0
 	counter = 1 
 	new_char = 0
+	char_is_negative = 1
 
 
 	while(counter < 15):
@@ -206,6 +212,9 @@ def read_integer_serial_long(side,terminating_char):
 			#print("Identified b(n)") 
 			#new_char = terminating_char
 			break
+		if(new_char == neg_char_b):
+			char_is_negative = -1
+			continue
 
 		new_char = ord(new_char) - 48
 
@@ -220,7 +229,7 @@ def read_integer_serial_long(side,terminating_char):
 		if(side == 2):#Right
 			right.write(b"@")
 		
-	return(transmitted_value)
+	return(transmitted_value * char_is_negative)
 
 #-----------------COMMUNICATION-------------------
 def end():
