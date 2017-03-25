@@ -124,8 +124,8 @@ L3G gyro;
 //------------------VARIABLESs----------------
 //Communication Variables
 const char confirm_char = '@';
-const char term_char = '-';
-const char end_char = '&';
+const char term_char = ' ';
+const char end_char = '\n';
 const char emergency_char = '%';
 const char unknown_arduino_b = '^';
 char input, trash_input;
@@ -166,7 +166,7 @@ long capacitor_message[4];
 //-------------------SETUP----------------
 void setup() {
         Wire.begin();
-        Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
+        Serial.begin(57600);     // opens serial port, sets data rate to 57600 bps
         //Serial.println("Welcome to the Arduino Command HQ");  
         myservo.attach(5);
         myservo.write(servoH_top);
@@ -219,6 +219,22 @@ bool RPi_confirm(){
   }
   else
     return 0;
+}
+
+void print_array(int ary, int ary_size){
+  for(int a = 0; a < ary_size; a++){
+    Serial.print(capacitor_message[a]);
+    if(a < ary_size - 1){
+      Serial.print(term_char);
+    }
+    else{
+      Serial.print(end_char);
+    }
+  }
+  if(!RPi_confirm()){
+    Serial.print(emergency_char);
+  }
+  return;
 }
 
 void whoami_assignment(){
@@ -406,6 +422,8 @@ long findMedian(long a[], int size){
   
 }
 
+
+
 void cap_value(){
   
   
@@ -440,21 +458,8 @@ void cap_value(){
   capacitor_message[2] = abs(min_median_cap);
   capacitor_message[3] = abs(ave_cap);
 
+  print_array(capacitor_message, sizeof(capacitor_message));
 
-  for(int a = 0; a < 4; a++){
-    Serial.print(capacitor_message[a]);
-    if(a < 3){
-      Serial.print(term_char);
-    }
-    else{
-      Serial.print(end_char);
-      break;
-    }
-    if(!RPi_confirm()){
-      Serial.print(emergency_char);
-      break;
-    }
-  }
   
 }
 void cap_test(){
@@ -495,7 +500,7 @@ void encoder_report(){
   Serial.print(abs(round(encoder_A.getRawPosition())));
   Serial.print(term_char);
   Serial.print(abs(round(encoder_B.getRawPosition())));
-  Serial.print(term_char);
+  Serial.print(end_char);
 }
 
 //------------------LOOPs---------------------

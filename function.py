@@ -19,8 +19,8 @@ GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 left_ard='/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_6493833393235151C131-if00'
 right_ard='/dev/serial/by-id/usb-Arduino_LLC__www.arduino.cc__Genuino_Uno_85531303631351112162-if00'
-left = serial.Serial(left_ard, 9600)
-right = serial.Serial(right_ard, 9600)
+left = serial.Serial(left_ard, 57600)
+right = serial.Serial(right_ard, 57600)
 
 left.timeout = 0.1
 right.timeout = 0.1
