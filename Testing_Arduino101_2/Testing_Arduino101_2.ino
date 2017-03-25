@@ -88,6 +88,8 @@
 #define TRIGGER_PIN2 4
 #define ECHO_PIN2 A3
 
+#define DEBUG_LED 13 //built-in LED on Arduino board
+
 #define MAX_DISTANCE 200
 
 
@@ -125,8 +127,14 @@ const char confirm_char = '@';
 const char term_char = '-';
 const char end_char = '&';
 const char emergency_char = '%';
+const char unknown_arduino_b = '^';
 char input, trash_input;
 bool command_status = 1;
+
+int left_arduino = 0;
+int right_arduino = 1;
+int unknown_arduino = -1;
+int whoami = unknown_arduino;
 
 //General Sensor Variables
 const int stop_button = 10;
@@ -135,8 +143,8 @@ int motor_speed[2];
 int ultrasonic1 = 0, ultrasonic2 = 0;
 
 //Gyro Variables
-const float SAMPLE_RATE = 1;
-const float ADJUSTED_SENSITIVITY = 1;
+const float SAMPLE_RATE[] = {183.63F, 188.05F};//Marked, Non_marked
+const float ADJUSTED_SENSITIVITY[] = {0.008956528F , 0.008956528F}; 
 
 float angle = 0;
 float rate = 0;
@@ -146,6 +154,7 @@ const byte ZYXDA = 0b00001000;
 const int sample_num = 1000;
 int16_t dc_offset = 0;
 int16_t& gyro_robot_z = gyro.g.y; //-Z axis is connected to the gyro's +y rotation
+bool gyro_is_calibrated = 0;
 
 //Capactitor Variables
 const int data_sample = 40;
@@ -158,7 +167,7 @@ long capacitor_message[4];
 void setup() {
         Wire.begin();
         Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
-        Serial.println("Welcome to the Arduino Command HQ");  
+        //Serial.println("Welcome to the Arduino Command HQ");  
         myservo.attach(5);
         myservo.write(servoH_top);
         
@@ -168,7 +177,8 @@ void setup() {
         //encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
         
         enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
-        
+
+        pinMode(DEBUG_LED, OUTPUT);
         pinMode(AMOTOR, OUTPUT);
         pinMode(BMOTOR, OUTPUT);
         pinMode(AMOTOR_BRAKE, OUTPUT);
@@ -182,13 +192,14 @@ void setup() {
         pinMode(TRIGGER_PIN2, OUTPUT);
         pinMode(ECHO_PIN2, INPUT);       
 
-        Serial.println("A");
-        if(gyro.init()){
+        //Serial.println("A");
+        if(!gyro.init()){
           //report gyro not working
-          Serial.println("Gyro not found");
+          //Serial.println("Gyro not found");
         }
-        Serial.println("B");
+        //Serial.println("B");
         gyro.enableDefault();
+        whoami_assignment();
 
         delay(100);
         //Serial.println("End of Setup");
@@ -197,12 +208,38 @@ void setup() {
 
 //-------------------FUNCTIONs----------------
 bool RPi_confirm(){
-  while(Serial.available() > 0);
+ int end_value = millis() + 20*1000;
+  while(Serial.available() < 1){
+    if(end_value < millis()){
+      return 0;
+    }
+  }
   if(Serial.read() == confirm_char){
     return 1;
   }
   else
     return 0;
+}
+
+void whoami_assignment(){
+  
+  //Serial.println("Waiting Assignment");
+  while(Serial.available() < 1);
+  //Serial.println("Recieved Assigment");
+  int assignment_given;
+  assignment_given = Serial.read();
+  
+  if(assignment_given == '0'){
+    //Serial.println("Left Arduino");
+    whoami = left_arduino;
+  }
+  else if(assignment_given == '1'){
+    //Serial.println("Right Arduino");
+    whoami = right_arduino;
+  }
+  else{
+    whoami = unknown_arduino;
+  }
 }
 
 void stop_motor_ALL(){
@@ -404,13 +441,14 @@ void cap_value(){
   capacitor_message[3] = abs(ave_cap);
 
 
-  for(int a = 0; a < sizeof(capacitor_message); a++){
+  for(int a = 0; a < 4; a++){
     Serial.print(capacitor_message[a]);
-    if(a < sizeof(capacitor_message)){
+    if(a < 3){
       Serial.print(term_char);
     }
     else{
       Serial.print(end_char);
+      break;
     }
     if(!RPi_confirm()){
       Serial.print(emergency_char);
@@ -464,7 +502,11 @@ void encoder_report(){
 
 
 void loop() {  
-  //Serial.println("Loop"); 
+  //Serial.println("Loop");
+  
+  if(gyro_is_calibrated == 1){
+     gyro_update_angle();  
+  }
   command();
   //us_sensor();
 }
@@ -584,16 +626,31 @@ void command(){
               }
 	            break;
             case '=':
+               Serial.println("Gyro_Cali");
                if(command_status == 1){
                 gyro_cali();
                }
                break;
             case '?':
                if(command_status == 1){
-                gyro_update_angle();
                 gyro_report_angle();
                }
                break;
+             case '(':
+                if(command_status == 1){
+                  whoami_assignment(); 
+                }
+                break;
+              case '.':
+                if(command_status == 1){
+                  gyro_test_value();
+                }
+                break;
+              case ',':
+                if(command_status == 1){
+                  gyro_reset_angle();
+                }
+                break;
 	       break;
             default:
              // Serial.println("NULL");

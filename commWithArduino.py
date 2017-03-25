@@ -13,7 +13,7 @@ BACK_C = 4
 def command(x):
 
 	bytes = x.split()
-	
+
 	#Motor Commands
 	if bytes[0] == 'w':
 		move_forward(bytes)
@@ -37,7 +37,7 @@ def command(x):
 	if bytes[0] == 'K':
 		encoder_reset()
 	if bytes[0] == 'B':
-		encoder_update()	
+		encoder_update()
 		encoder_current_value()
 	if bytes[0] == 'H':
 		encoder_constant_value()
@@ -81,7 +81,7 @@ def command(x):
 		clear_comm()
 	"""
         Raspberry Pi Gyro Commands
-	#Gyro Commands 
+	#Gyro Commands
 	if bytes[0] == 'W':
 		move_gyro(FRONT_C, bytes[1], bytes[2])
 	if bytes[0] == 'A':
@@ -97,7 +97,7 @@ def command(x):
 	if bytes[0] == 'P':
 		redefine_pre()
 	if bytes[0] == 'F':
-		redefine_fre(bytes[1])	
+		redefine_fre(bytes[1])
 	if bytes[0] == 'I':
 		redefine_sensa(bytes[1])
 	if bytes[0] == 'T':#testing
@@ -115,14 +115,14 @@ def command(x):
 		gyro_update_angle()
 	if bytes[0] == 'R':
 		gyro_report_angle()
-    """       
-	
+    """
+
 	return
 
 #Here is the loop that recieves input from the user
 
 print("Welcome to The Raspberry Pi Controller HQ")
-print("FRONT: 1, LEFT: 2, RIGHT: 3, BACK: 4") 
+print("FRONT: 1, LEFT: 2, RIGHT: 3, BACK: 4")
 print("Variable Speed: [direction (wasd) and x to stop] [Left A] [Left B] [Right A] [Right B]")
 print("Move by axes and block: [direction (XY)] [positive or negative] [motor speed] [number of block] ")
 print("Servo: FRONT = 1 BACK = 4 --> [up(t) or down(b) or pick_up(p)] [servo#]")
@@ -132,8 +132,9 @@ print("Ultrasonic Sensor: 'u' ")
 restart_comm()
 clear_comm()
 stop()
+assign_side()
 #servo_top()
-while(True):  
+while(True):
 	x = input("Enter Command: ")
 	print(x)
 	if x == '1':
@@ -141,9 +142,5 @@ while(True):
 		break
 	else:
 		command(x)
-	
+
 GPIO.cleanup()
-
-
-
-
