@@ -46,6 +46,7 @@ encoder_value = [0,0,0,0] #left A, left B, right A, right B
 
 encoder_constant_x = [3246,3382,3246,3155] #value of encoders to reach one block
 encoder_constant_y = [2863,2850,2859,2792]
+
 encoder_constant = [encoder_constant_y encoder_constant_x]
 
 #This are the variables that hold a rough estimate of the speed required to make the robot move straight
