@@ -7,6 +7,7 @@ from sense_hat import SenseHat
 from time import sleep, time
 import colorama
 from colorama import Fore, Back, Style
+from statistics import mean, median, median_low, median_high
 
 
 GPIO.setmode(GPIO.BCM)
@@ -85,52 +86,6 @@ def assign_side():
     left.write(b'0')
     right.write(b'1')
     return
-
-def average(list):
-	total = 0
-	for i in range(len(list)):
-		total = total + list[i]
-	return round( total / len(list) )
-
-def find_min_index(given_list,size_list):
-	min_value = 99999999
-	index = 0
-
-	for i in range(size_list):
-		if(given_list[i] < min_value):
-			index = i
-			min_value = given_list[i]
-	return index
-
-def find_min_value(given_list,size_list):
-	min_value = 99999999
-	index = 0
-
-	for i in range(size_list):
-		if(given_list[i] < min_value):
-			index = i
-			min_value = given_list[i]
-	return min_value
-
-def find_max_index(given_list,size_list):
-	max_value = 0
-	index = 0
-
-	for i in range(size_list):
-		if(given_list[i] > max_value):
-			index = i
-			max_value = given_list[i]
-	return index
-
-def find_max_index(given_list,size_list):
-	max_value = 0
-	index = 0
-
-	for i in range(size_list):
-		if(given_list[i] > max_value):
-			index = i
-			max_value = given_list[i]
-	return max_value
 
 def int_speed(bytes):
 	bytes_integer = [0,0,0,0,0]
@@ -510,7 +465,7 @@ def encoder_completion(axes):
 				completion = completion + 1
 	"""
 	for i in range(4):
-		if(int(encoder_value[i]) >= average(encoder_constant[axes][i])):
+		if(int(encoder_value[i]) >= mean(encoder_constant[axes][i])):
 			completion = completion + 1
 
 	if(completion >= 4):
@@ -1226,8 +1181,8 @@ def capacitor_block_identity():
 	"""
 	for i in range(3):
 		for j in range(5):
-			diff_index_min[j] = find_min_index(diff_all[j], len(diff_all[j]) )
-			diff_value_min[j] = find_min_index(diff_all[j], len(diff_all[j]) )
+			diff_index_min[j] = diff_all[j].index(min(diff_all[j])
+			diff_value_min[j] = diff_all[j][diff_index_min[j]]
 
 	print("General Min Results")
 	print(diff_index_min)
@@ -1246,9 +1201,9 @@ def capacitor_block_identity():
 	print("Difference Rating")
 	print(diff_rating)
 
-	diff_rating_max_index = find_max_index(diff_rating, len(diff_rating))
-	diff_rating_max = find_max_index(diff_rating, len(diff_rating))
-
+	diff_rating_max_index = diff_rating.index(max(diff_rating))
+	diff_rating_max = diff_rating[diff_rating_max_index]
+    
 	block_identity_message = diff_rating_max_index
 
 	#if all tied 2-2
