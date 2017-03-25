@@ -71,12 +71,10 @@ capacitor_data_constant = [capacitor_data_wire capacitor_data_iso capacitor_data
 capacitor_data_current = [0,0,0,0]#place holder for the newest data from the capacitor sensor
 capacitor_block_score = [0,0,0]#This will hold the scores of mutiple data samples from the capacitor_block_identity
 
-neg_char_b = b'-'
-term_char = '#'
-end_char = '&'
-end_char_b = b'&'
-confirm_char = b'@'
-emergency_char = b'%'
+term_char = ' '
+end_char = '\n'
+confirm_char = '@'
+emergency_char = '%'
 
 
 #functions that control the arduino
@@ -96,7 +94,7 @@ def int_speed(bytes):
 		bytes_integer[i] = int(bytes_integer[i])
 		bytes[i] = str( bytes_integer[i] )
 	return bytes
-
+"""
 def read_integer_serial(terminating_char, side):
 	#side if 1 means left and 2 means right
 	#term_char separates values
@@ -191,6 +189,27 @@ def read_integer_serial_long(side,terminating_char):
 			right.write(b"@")
 
 	return(transmitted_value * char_is_negative)
+"""
+def read_arduino(side_arduino,with_confirmation):
+	#side if 1 means left and 2 means right
+	#term_char separates values
+	#end_char ends of transmition
+	
+	if(side_arduino == left_arduino):
+		bline = left.readline()
+		if(with_confirmation):
+			left.write(confirm_char)
+	if(side_arduino == right.arduino):
+		bline = right.readline()
+		if(with_confirmation):
+			right.write(confirm_char)
+			
+	trans_array = [float(s) for s in bline.decode().split()]
+	
+	return trans_array
+		
+		
+	
 
 #-----------------COMMUNICATION-------------------
 def end():
@@ -414,12 +433,14 @@ def encoder_update():#1 for Y, 2 for X
 	right.write(b"m")
 
 	global encoder_value
+	encoder_holder = read_arduino(left_arduino, 0)
+	
+	encoder_value[0] = encoder_holder[0]
+	encoder_value[1] = encoder_holder[1]
 
-	encoder_value[0] = read_integer_serial(term_char,1)#A1
-	encoder_value[1] = read_integer_serial(end_char,1)#B1
-
-	encoder_value[2] = read_integer_serial(term_char,2)#A2
-	encoder_value[3] = read_integer_serial(end_char,2)#B2
+	encoder_holder = read_arduino(right_arduino, 0)
+	encoder_value[2] = encoder_holder[0]
+	encoder_value[3] = encoder_holder[1]
 
 	print(encoder_value)
 
@@ -565,34 +586,41 @@ def us_sensor():
 	sensor_total = [0,0,0,0]#left_back, left_left, right_front, right_right
 	sensor_collect = [0,0,0,0]
 	trash_value = 0
+	sensor_holder_right = [0,0]
+	sensor_holder_left = [0,0]
 
 	for i in range(sensor_collect_fre):
 
-		sensor_collect[0] = read_integer_serial(term_char, left_arduino)#1 means left, 2 means right
+		"""
+		sensor_collect[0] = read_arduino(left_arduino, 0)#1 means left, 2 means right
 		while(sensor_collect[0] == -2):
 			clear_comm()
 			left.write(b"u")
-			sensor_collect[0] = read_integer_serial(term_char, left_arduino)
+			sensor_collect[0] = read_arduino(left_arduino, 0)
 
-		sensor_collect[1] = read_integer_serial(end_char, left_arduino)
+		sensor_collect[1] = read_arduino(left_arduino, 0)
 		while(sensor_collect[1] == -2):
 			clear_comm()
 			left.write(b"u")
-			trash_value = read_integer_serial(term_char, left_arduino)
-			sensor_collect[1] = read_integer_serial(end_char, left_arduino)
+			trash_value = read_arduino(left_arduino, 0)
+			sensor_collect[1] = read_arduino(left_arduino, 0)
 
-		sensor_collect[2] = read_integer_serial(term_char, right_arduino)
+		sensor_collect[2] = read_arduino(right_arduino, 0)
 		while(sensor_collect[2] == -2):
 			clear_comm()
 			right.write(b"u")
-			sensor_collect[2] = read_integer_serial(term_char, right_arduino)
+			sensor_collect[2] = read_arduino(right_arduino, 0)
 
-		sensor_collect[3] = read_integer_serial(end_char , right_arduino)
+		sensor_collect[3] = read_arduino(right_arduino, 0)
 		while(sensor_collect[3] == -2):
 			clear_comm()
 			right.write(b"u")
-			trash_value = read_integer_serial(term_char, right_arduino)
-			sensor_collect[3] = read_integer_serial(end_char , right_arduino)
+			trash_value = read_arduino(right_arduino, 0)
+			sensor_collect[3] = read_arduino(right_arduino, 0)
+		"""
+		sensor_holder_left = read_arduino(left_arduino,0)
+		sensor_holder_right = read_arduino(right_arduino,0)
+		sensor_collect = sensor_holder_left + sensor_holder_right
 
 		sensor_total[0] += sensor_collect[0]
 		sensor_total[1] += sensor_collect[1]
@@ -650,14 +678,18 @@ def capacitor_sensor():
 		right.write(b"C")
 		#sleep(0.5)
 		capacitor_hard_reset()
-		sensor_data[0] = read_integer_serial_long(term_char, right_arduino)
+		"""
+		sensor_data[0] = read_arduino(right_arduino, 1)
 		print(sensor_data[0])
-		sensor_data[1] = read_integer_serial_long(term_char, right_arduino)
+		sensor_data[1] = read_arduino(right_arduino, 1)
 		print(sensor_data[1])
-		sensor_data[2] = read_integer_serial_long(term_char, right_arduino)
+		sensor_data[2] = read_arduino(right_arduino, 1)
 		print(sensor_data[2])
-		sensor_data[3] = read_integer_serial_long(end_char, right_arduino)
+		sensor_data[3] = read_arduino(right_arduino, 1)
 		print(sensor_data[3])
+		"""
+		sensor_data = read_arduino(right_arduino, 1)
+		print(sensor_data)
 
 		for i in range(4):#If any of the values is a trash value
 			if(sensor_data[i] < 10000 and sensor_data[i] > -2):#To small
@@ -1309,14 +1341,18 @@ def servo_change(bytes):
 def servo_info():
 	left.write(b"n")
 	right.write(b"n")
+	
+	servo_holder = read_arduino(left_arduino, 0)
+	
+	left_servo_position = servo_holder[0]
+	left_servo_height_top = servo_holder[1]
+	left_servo_height_bottom = servo_holder[2]
 
-	left_servo_position = read_integer_serial(term_char , 1)
-	left_servo_height_top = read_integer_serial(term_char, 1)
-	left_servo_height_bottom = read_integer_serial(end_char, 1)
-
-	right_servo_position = read_integer_serial(term_char, 2)
-	right_servo_height_top = read_integer_serial(term_char, 2)
-	right_servo_height_bottom = read_integer_serial(end_char , 2)
+	servo_holder = read_arduino(right_arduino , 0)
+	
+	right_servo_position = servo_holder[0]
+	right_servo_height_top = servo_holder[1]
+	right_servo_height_bottom = servo_holder[2]
 
 	print("Left Servo Information:")
 	print("Position: {P} Height Top: {T} Height Bottom: {B}".format(P = left_servo_position, T = left_servo_height_top, B = left_servo_height_bottom) )
@@ -1812,8 +1848,8 @@ def gyro_update_angle():
     left.write(b'?')
     right.write(b'?')
 
-    gyro_angle[0] = read_integer_serial(end_char, arduino_left)
-    gyro_angle[1] = read_integer_serial(end_char, arduino_right)
+    gyro_angle[0] = read_arduino(arduino_left, 0)
+    gyro_angle[1] = read_arduino(arduino_right, 0)
 
     return
 
