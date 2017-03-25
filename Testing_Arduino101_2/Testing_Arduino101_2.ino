@@ -173,8 +173,8 @@ void setup() {
         
         //Remember to comment this two declarations before testing anything since they will make the Arduino 
         //become unresponsive
-        //encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
-        //encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
+        encoder_A.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
+        encoder_B.init(MOTOR_393_SPEED_ROTATIONS,MOTOR_393_TIME_DELTA);
         
         enableInterrupt(stop_button, stop_motor_ALL , CHANGE); 
 
@@ -193,9 +193,13 @@ void setup() {
         pinMode(ECHO_PIN2, INPUT);       
 
         //Serial.println("A");
-        if(!gyro.init()){
+        if(gyro.init()){
           //report gyro not working
           //Serial.println("Gyro not found");
+          Serial.print("*");
+        }
+        else{
+          Serial.print("!");
         }
         //Serial.println("B");
         gyro.enableDefault();
@@ -458,7 +462,7 @@ void cap_value(){
   capacitor_message[2] = abs(min_median_cap);
   capacitor_message[3] = abs(ave_cap);
 
-  print_array(capacitor_message, sizeof(capacitor_message));
+  print_array(capacitor_message, sizeof(capacitor_message)/sizeof(long));
 
   
 }
@@ -615,7 +619,7 @@ void command(){
               break;
              
             case 'C':
-              Serial.print("Cap");
+              //Serial.print("Cap");
               if(command_status == 1){
                 cap_value();
               }
@@ -631,7 +635,7 @@ void command(){
               }
 	            break;
             case '=':
-               Serial.println("Gyro_Cali");
+               //Serial.println("Gyro_Cali");
                if(command_status == 1){
                 gyro_cali();
                }
