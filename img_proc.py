@@ -40,11 +40,11 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
     upper = np.array([15, 15, 15])
     shapeMask = cv2.inRange(image, lower, upper)
     # Bitwise-AND mask and original image
-    res = cv2.bitwise_and(image,image, mask= shapeMask)
-
+    #res = cv2.bitwise_and(image,image, mask= shapeMask)
+(cnts, _) = cv2.findContours(shapeMask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cv2.imshow('frame',image)
     cv2.imshow('mask',shapeMask)
-    cv2.imshow('res',res)
+   # cv2.imshow('res',res)
     key = cv2.waitKey(5) & 0xFF
 
 

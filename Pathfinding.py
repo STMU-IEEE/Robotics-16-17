@@ -33,7 +33,7 @@ from function import *
 
 import numpy as np
 # from heapq import *
-
+world_size = 7
 blocked_vals = {-1}  # this is a list of the possible blocked values for pathfinding purposes
 my_location = (0,0) # first val for vert, second for horiz (row, col)
 default_path = np.array(
@@ -43,11 +43,10 @@ default_path = np.array(
     [3,6],[3,5],[3,4],[3,3],[3,2],[3,1],[3,0],
     [4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],
     [5,6],[5,5],[5,4],[5,3],[5,2],[5,1],[5,0],
-    [6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6]
-)
+    [6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6])
 my_path=default_path
 
-world_map = np.full((7,7), 8, dtype=np.int)
+world_map = np.full((world_size,world_size), 8, dtype=np.int)
 # unexplored blocks will have a travel cost value of 8.
 # this travel cost will be reduced to 1 when the robot explores that region.
 flow_map = []
@@ -108,47 +107,72 @@ def flowField(world, target):
                     g_score[neighbor] = -1
                 else: continue
             else: continue
+        for y in range(0,world_size):
+            for x in range(0,world_size):
+                if y == world_size-1:
+                    y_dir = min(g_score[(y-1,x)]-g_score[(y,x)],0)
+                elif y == 0:
+                    y_dir = max(g_score[(y,x)]-g_score[(y+1,x)],0)
+                else:
+                    y_dir = g_score[(y-1,x)]-g_score[(y+1,x)]
+
+                if(y_dir != 0):
+                    y_dir = y_dir/abs(y_dir) # normalize the vector.
+
+                if (x == world_size-1) or (world_map[y][x+1] in blocked_vals):
+                    x_dir = min(g_score[(y,x-1)]-g_score[(y,x)],0)
+                elif x == 0 or world_map[y][x-1] in blocked_vals:
+                    x_dir = max(g_score[(y,x)]-g_score[(y,x+1)],0)
+                else:
+                    x_dir = g_score[(y,x-1)]-g_score[(y,x+1)]
+
+                if(x_dir != 0):
+                    x_dir = x_dir/abs(x_dir) # normalize the vector.
+                output_field[y][x]=(y_dir,x_dir)
+
+
+
 
 
 
     return output_field
 def move_north():
-	move_y(1,1)
-	return
+    move_y(1,1)
+    return
 def move_south():
-	move_y(2,1)
-	return
+    move_y(2,1)
+    return
 def move_east():
-	move_x(1,1)
-	return
+    move_x(1,1)
+    return
 def move_west():
-	move_x(2,1)
-	return
+    move_x(2,1)
+    return
 def get_sensors(location):
-	block_direction = us_sensor()
-	print(block_direction)
-	current_block_identity = capacitor_block_identity()
-	print(current_block_identity)
-	#Ultrasonic function return values
-	#0: no near by block
-	# North 1000
-	# South  100
-	# East    10
-	# West     1
-	#Example of multiple blocks: North and South: #1100
-	#Capacitor function return values
-	#-1 -> Warning retake value
-	#0-> tunnel
-	#1-> dead_ends
-	#2-> Insulation
-	world_map[my_location[0]][my_location[1]] = current_block_identity
+    block_direction = us_sensor()
+    print(block_direction)
+    current_block_identity = capacitor_block_identity()
+    print(current_block_identity)
+    #Ultrasonic function return values
+    #0: no near by block
+    # North 1000
+    # South  100
+    # East    10
+    # West     1
+    #Example of multiple blocks: North and South: #1100
+    #Capacitor function return values
+    #-1 -> Warning retake value
+    #0-> tunnel
+    #1-> dead_ends
+    #2-> Insulation
+    world_map[my_location[0]][my_location[1]] = current_block_identity
 
-	if(block_direction[0] == 1):#North
-		world_map[my_location[0]+1][my_location[1]] = -1;
-	elif(block_direction[1] == 1):#South
-		world_map[my_location[0]-1][my_location[1]] = -1;
-	elif(block_direction[2] == 1):#East
-		world_map[my_location[0]][my_location[1]+1] = -1;
-	elif(block_direction[3] == 1):#West
-		world_map[my_location[0]][my_location[1]-1] = -1;
-	return
+    if(block_direction[0] == 1):#North
+        world_map[my_location[0]+1][my_location[1]] = -1;
+    elif(block_direction[1] == 1):#South
+        world_map[my_location[0]-1][my_location[1]] = -1;
+    elif(block_direction[2] == 1):#East
+        world_map[my_location[0]][my_location[1]+1] = -1;
+    elif(block_direction[3] == 1):#West
+        world_map[my_location[0]][my_location[1]-1] = -1;
+    return

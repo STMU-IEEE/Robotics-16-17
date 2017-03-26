@@ -31,7 +31,7 @@ def command(x):
 		rotate_clockwise(bytes)
 	#Calibration and Distance Commands
 	if bytes[0] == 'm':
-		encoder_calibration(int(bytes[1]), int(bytes[2]))#Byte one(1 for Y and 2 for X), Byte Two(quantity of test)
+		encoder_calibration(int(bytes[1]), int(bytes[2]))#Byte one(0 for Y and 1 for X), Byte Two(quantity of test)
 	if bytes[0] == 'M':
 		encoder_update()
 	if bytes[0] == 'K':
@@ -41,7 +41,7 @@ def command(x):
 		encoder_current_value()
 	if bytes[0] == 'H':
 		encoder_constant_value()
-	#regarding side, 1 is for positive direction, while 2 is for negative directions
+	#regarding side, 0 is for positive direction, while 1 is for negative directions
 	if bytes[0] == 'X':
 		move_x(bytes[1], bytes[2])#side, speed
 	if bytes[0] == 'Y':
@@ -51,6 +51,8 @@ def command(x):
 		print(us_sensor())
 	if bytes[0] == 'o':#reading the values of the capacitor sensor
 		capacitor_sensor()
+	if bytes[0] == '|':
+		capacitor_report()
 	if bytes[0] == 'h':
 		capacitor_hard_reset()
 	if bytes[0] == 'l':
@@ -132,6 +134,7 @@ print("Ultrasonic Sensor: 'u' ")
 restart_comm()
 clear_comm()
 stop()
+read_gyro_status()
 assign_side()
 #servo_top()
 while(True):
