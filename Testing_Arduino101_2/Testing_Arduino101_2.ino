@@ -155,7 +155,7 @@ const int sample_num = 1000;
 int16_t dc_offset = 0;
 int16_t& gyro_robot_z = gyro.g.y; //-Z axis is connected to the gyro's +y rotation
 bool gyro_is_calibrated = 0;
-char gyro_status = '!';
+bool gyro_status = 0;
 
 //Capactitor Variables
 const int data_sample = 40;
@@ -197,13 +197,13 @@ void setup() {
         if(gyro.init()){
           //report gyro not working
           //Serial.println("Gyro not found");
-          gyro_status = '*';
+          gyro_status = 1;
           
         }
         else{
-          gyro_status = "!";
+          gyro_status = 0;
         }
-        Serial.print(gyro_status);
+        Serial.println(gyro_status);
         
         //Serial.println("B");
         gyro.enableDefault();
