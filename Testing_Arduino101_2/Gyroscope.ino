@@ -48,4 +48,7 @@ void gyro_test_value(){
     gyro_report_angle();
   }
 }
+void gyro_status_report(){
+  Serial.print(gyro_status);
+}
 

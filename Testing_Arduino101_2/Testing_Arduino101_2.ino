@@ -155,6 +155,7 @@ const int sample_num = 1000;
 int16_t dc_offset = 0;
 int16_t& gyro_robot_z = gyro.g.y; //-Z axis is connected to the gyro's +y rotation
 bool gyro_is_calibrated = 0;
+char gyro_status = '!';
 
 //Capactitor Variables
 const int data_sample = 40;
@@ -196,11 +197,14 @@ void setup() {
         if(gyro.init()){
           //report gyro not working
           //Serial.println("Gyro not found");
-          Serial.print("*");
+          gyro_status = '*';
+          
         }
         else{
-          Serial.print("!");
+          gyro_status = "!";
         }
+        Serial.print(gyro_status);
+        
         //Serial.println("B");
         gyro.enableDefault();
         whoami_assignment();
@@ -602,6 +606,8 @@ void command(){
               
             case 'R':
               command_status = 1;
+              gyro_status_report();
+              whoami_assignment();
               break;
               
             case 'k':
@@ -660,7 +666,11 @@ void command(){
                   gyro_reset_angle();
                 }
                 break;
-	       break;
+	            case '_':
+                if(command_status == 1){
+                  gyro_status_report();
+                }
+                break;
             default:
              // Serial.println("NULL");
                break;
