@@ -10,7 +10,11 @@ from time import sleep, time
 import colorama
 from colorama import Fore, Back, Style
 from statistics import mean, median, median_low, median_high
-
+"""
+install funsim's fork of ivPID from https://github.com/funsim/ivPID
+`sudo python3 setup.py install`
+"""
+from ivPID.pid import PID
 
 GPIO.setmode(GPIO.BCM)
 
@@ -28,6 +32,10 @@ right = serial.Serial(right_ard, 57600)
 #left.timeout = 0.1
 #right.timeout = 0.1
 
+# PID object
+my_pid = PID(P=1.0, I=0.0, D=0.0) # only P term (-1.0 power per degree error); not really PID!
+my_pid.setSampleTime(1.0/30.0) #30Hz. Increase if "wobbling"; decrease if losing data
+old_output = 0.0 # initial value
 
 FRONT = 1
 LEFT = 2
@@ -61,6 +69,8 @@ move_x_speed_p = [215,190,200,205]
 move_x_speed_n = [210,185,210,185]
 move_y_speed_p = [165,165,200,200]
 move_y_speed_n = [180,180,200,200]
+
+current_speed = [0,0,0,0]
 
 move_x_speed = [move_x_speed_p, move_x_speed_n]
 move_y_speed = [move_y_speed_p, move_y_speed_n]
@@ -1007,6 +1017,19 @@ def gyro_update_angle():
 def gyro_report_angle():
 	print("Left:\t{A}\tRight:\t{B}".format(A = gyro_angle[left_arduino], B = gyro_angle[right_arduino]))
 	return
+
+def update_PID():
+	new_output = my_pid.update(gyro[right_arduino]) # for now, use 1 sensor
+    result = new_output != old_output
+	old_output = new_output
+	return result
+
+	
+	
+		
+
+
+	
 
 """
 def fix_direction():

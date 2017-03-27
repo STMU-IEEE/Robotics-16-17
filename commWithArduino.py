@@ -126,7 +126,7 @@ def command(x):
 print("Welcome to The Raspberry Pi Controller HQ")
 print("FRONT: 1, LEFT: 2, RIGHT: 3, BACK: 4")
 print("Variable Speed: [direction (wasd) and x to stop] [Left A] [Left B] [Right A] [Right B]")
-print("Move by axes and block: [direction (XY)] [positive or negative] [motor speed] [number of block] ")
+print("Move by axes and block: [direction (X or Y)] [positive(0) or negative(1)] 1 ")
 print("Servo: FRONT = 1 BACK = 4 --> [up(t) or down(b) or pick_up(p)] [servo#]")
 print("Gyro: [direction (caps motor's keys)] [max_speed] [gryo_sensativity]")
 print("Communication Commands: [command (R or C)]")
