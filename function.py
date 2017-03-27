@@ -1022,16 +1022,30 @@ def update_PID():
 	new_output = my_pid.update(gyro[right_arduino]) # for now, use 1 sensor
     result = new_output != old_output
 	old_output = new_output
+	print("PID's OUTPUT: {new_output}")
 	return result
 
-	
-	
-		
+def obtain_new_motor_speeds(axes, direction, rotation_ratio):
+	GYRO_SENSITIVITY = 1
+	#rotation_ratio = my_pid.output
+	for i in range(len(motor_speed[axes][direction])):
+		new_motor_speed = move_speed[axes][direction] + rotation_ratio * GYRO_SENSITIVITY
+	return new_motor_speed
+
+def update_motor_speed(axes,direction,motor_speed):
+	print("New Speed", end = '')
+	print(motor_speed)
+
+	if(axes == Y):
+		if(direction == pos_direction):
+			move_forward(motor_speed)
+		if(direction == neg_direction):
+			move_backward(motor_speed)
+	if(axes == X):
+		if(direction == pos_direction):
+			move_right(motor_speed)
+		if(direction == neg_direction):
+			move_left(motor_speed)
+	return
 
 
-	
-
-"""
-def fix_direction():
-	
-"""
