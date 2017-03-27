@@ -60,7 +60,7 @@ def command(x):
 	if bytes[0] == 'v':
 		print(capacitor_block_identity())#0 wire, 1 no wire no insulation, 2 insulation
 	if bytes[0] == 'L':
-		capacitor_calibrate_move(int(bytes[1]), int(bytes[2]), int(bytes[3]))
+		capacitor_calibrate_move(int(bytes[1]), int(bytes[2]), int(bytes[3]))#1: block identity,2: quantity of data samples 3: use previous values?
 	if bytes[0] == 'V':
 		capacitor_block_multiple(int(bytes[1])) #Quantity of test
 	#Servo Command
@@ -110,14 +110,14 @@ def command(x):
 		north()
 	"""
 	#Arduino Gyro Commands
-	"""
-	if bytes[0] == 'I':
+	
+	if bytes[0] == '=':
 		gyro_cali()
-	if bytes[0] == 'A':
+	if bytes[0] == '?':
 		gyro_update_angle()
-	if bytes[0] == 'R':
 		gyro_report_angle()
-    """
+
+    
 
 	return
 

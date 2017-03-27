@@ -263,11 +263,6 @@ def restart_comm():
 	right.write(b"R")
 	return
 
-def restart_comm():
-	left.write(b"R")
-	right.write(b"R")
-	return
-
 #Function that occurs when stop and/or start button are pressed
 
 def start_button_pressed(channel):
@@ -431,7 +426,7 @@ def encoder_calibration(axes,test_quantity):
 				bytes[i + 1] = str(move_x_speed_p[i])
 			move_right(bytes)
 
-		sleep(2)
+		sleep(1)
 
 		while(cali_pres == 1):
 			sleep(0.001)
@@ -440,6 +435,7 @@ def encoder_calibration(axes,test_quantity):
 		encoder_update()
 		for i in range(4):
 			test_sample[i] = test_sample[i] + encoder_value[i]
+		stop()
 
 	for i in range(4):
 			test_sample[i] = test_sample[i] / test_quantity
@@ -451,7 +447,7 @@ def encoder_calibration(axes,test_quantity):
 		if axes == X:#X
 			encoder_constant_x[i] = test_sample[i]
 			print("{A}: {B}".format(A = i, B = encoder_constant_x[i]))
-
+	stop()
 	return
 
 
@@ -644,12 +640,16 @@ def us_sensor():
 		sensor_holder_right = read_arduino(right_arduino,no)
 		
 		if(len(sensor_holder_left) < 2 and len(sensor_holder_right) < 2):
-			i = i - 1
 			print("*")
 			continue
 		
 		actual_sensor_collect_fre += 1
 		sensor_collect = sensor_holder_left + sensor_holder_right
+
+		for i in range(4):
+			if(sensor_collect[i] == 0):
+				sensor_collect[i] = 200
+					
 
 		sensor_total[0] += sensor_collect[0]
 		sensor_total[1] += sensor_collect[1]
@@ -675,7 +675,7 @@ def us_sensor():
 	ultra_ave = [right_front_ave, left_back_ave, right_right_ave, left_left_ave]
 
 	block_direction = [0,0,0,0]
-	"""
+	
 	block_message = 0
 	for i in range(4):
 		if(ultra_ave[i] <= 8):
@@ -688,7 +688,7 @@ def us_sensor():
 
 	#print("Block Message: ", end = '')
 	#print(block_message)
-	"""
+	
 	print("Block Direction : ", end = '')
 
 	return block_direction
@@ -1629,6 +1629,10 @@ def gyro_cali():
 	clear_comm()
 	left.write(b'=')
 	right.write(b'=')
+	left_confirmation = read_arduino(left_arduino, no)
+	right_confirmation = read_arduino(right_arduino, no)
+	print("Left:\t{A}\tRight:\t{B}".format(A = left_confirmation, B = right_confirmation))
+
 	return
 
 def gyro_update_angle():
@@ -1636,11 +1640,16 @@ def gyro_update_angle():
 	left.write(b'?')
 	right.write(b'?')
 
-	gyro_angle[0] = read_arduino(arduino_left, no)
-	gyro_angle[1] = read_arduino(arduino_right, no)
+	gyro_angle[left_arduino] = read_arduino(left_arduino, no)
+	gyro_angle[right_arduino] = read_arduino(right_arduino, no)
 
 	return
 
 def gyro_report_angle():
-	print("Left:\t{A}\tRight:\t{B}".format(A = gyro_angle[0], B = gyro_angle[1]))
+	print("Left:\t{A}\tRight:\t{B}".format(A = gyro_angle[left_arduino], B = gyro_angle[right_arduino]))
 	return
+
+"""
+def fix_direction():
+	
+"""

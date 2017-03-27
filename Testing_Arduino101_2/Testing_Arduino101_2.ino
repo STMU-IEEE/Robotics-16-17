@@ -196,12 +196,12 @@ void setup() {
         //Serial.println("A");
         if(gyro.init()){
           //report gyro not working
-          //Serial.println("Gyro not found");
-          gyro_status = 0;
+          //Serial.println("Gyro found");
+          gyro_status = 1;
           
         }
         else{
-          gyro_status = 1;
+          gyro_status = 0;
         }
         
         Serial.println(gyro_status);
@@ -218,7 +218,9 @@ void setup() {
 //-------------------FUNCTIONs----------------
 bool RPi_confirm(){
  int end_value = millis() + 20*1000;
+ 
   while(Serial.available() < 1){
+    gyro_update_angle();
     if(end_value < millis()){
       return 0;
     }
@@ -285,7 +287,10 @@ void stop_motor_ALL(){
   
 }
 void variable_forward(){
-    while(Serial.available () < 2);//wait for the motor speed info
+    while(Serial.available () < 2){
+      gyro_update_angle();
+      //wait for the motor speed info
+    }
     motor_speed[0] = Serial.parseInt();//motor A speed
     motor_speed[1] = Serial.parseInt();//motor B speed
 
@@ -306,7 +311,10 @@ void variable_forward(){
     analogWrite(BMOTOR, motor_speed[1]);
 }
 void variable_reverse(){
-    while(Serial.available () < 2);//wait for the motor speed info
+    while(Serial.available () < 2){
+      gyro_update_angle();
+      //wait for the motor speed info
+    }
     motor_speed[0] = Serial.parseInt();//motor A speed
     motor_speed[1] = Serial.parseInt();//motor B speed
 
@@ -327,7 +335,9 @@ void variable_reverse(){
     analogWrite(BMOTOR, motor_speed[1]);
 }
 void variable_in(){
-    while(Serial.available () < 2);//wait for the motor speed info
+    while(Serial.available () < 2){
+      gyro_update_angle();//wait for the motor speed info
+    }
     motor_speed[0] = Serial.parseInt();//motor A speed
     motor_speed[1] = Serial.parseInt();//motor B speed
 
@@ -348,7 +358,9 @@ void variable_in(){
     analogWrite(BMOTOR, motor_speed[1]);
 }
 void variable_out(){
-    while(Serial.available () < 2);//wait for the motor speed info
+    while(Serial.available () < 2){
+      gyro_update_angle();//wait for the motor speed info
+    }
     motor_speed[0] = Serial.parseInt();//motor A speed
     motor_speed[1] = Serial.parseInt();//motor B speed
 
@@ -496,7 +508,9 @@ void servo_top(){
   myservo.write(servoH_top);
 }
 void servo_change(){
-    while(Serial.available () < 2);//wait for the motor speed info
+    while(Serial.available () < 2){
+      gyro_update_angle();//wait for the motor speed info
+    }
     servoH_top = Serial.parseInt();//motor A speed
     servoH_bottom = Serial.parseInt();//motor B speed
 }
@@ -652,26 +666,26 @@ void command(){
                 gyro_report_angle();
                }
                break;
-             case '(':
-                if(command_status == 1){
-                  whoami_assignment(); 
-                }
-                break;
-              case '.':
-                if(command_status == 1){
-                  gyro_test_value();
-                }
-                break;
-              case ',':
-                if(command_status == 1){
-                  gyro_reset_angle();
-                }
-                break;
-	            case '_':
-                if(command_status == 1){
-                  gyro_status_report();
-                }
-                break;
+           case '(':
+              if(command_status == 1){
+                whoami_assignment(); 
+              }
+              break;
+            case '.':
+              if(command_status == 1){
+                gyro_test_value();
+              }
+              break;
+            case ',':
+              if(command_status == 1){
+                gyro_reset_angle();
+              }
+              break;
+            case '_':
+              if(command_status == 1){
+                gyro_status_report();
+              }
+              break;
             default:
              // Serial.println("NULL");
                break;

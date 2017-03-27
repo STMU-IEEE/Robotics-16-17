@@ -24,11 +24,11 @@ void gyro_update_angle(){
   if(whoami == unknown_arduino){
     Serial.print(unknown_arduino_b);
   }
-  else{
-  gyro.read();
-  rate = (float)(gyro_robot_z - dc_offset) * ADJUSTED_SENSITIVITY[whoami];
-  angle += (((prev_rate + rate) / SAMPLE_RATE[whoami]) / 2);
-  prev_rate = rate;  
+  else if(gyro_data_ready()){
+    gyro.read();
+    rate = (float)(gyro_robot_z - dc_offset) * ADJUSTED_SENSITIVITY[whoami];
+    angle += (((prev_rate + rate) / SAMPLE_RATE[whoami]) / 2);
+    prev_rate = rate;  
   }
 }
 
