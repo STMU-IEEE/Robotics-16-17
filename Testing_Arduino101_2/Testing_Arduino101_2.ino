@@ -197,13 +197,14 @@ void setup() {
         if(gyro.init()){
           //report gyro not working
           //Serial.println("Gyro not found");
-          gyro_status = 1;
+          gyro_status = 0;
           
         }
         else{
-          gyro_status = 0;
+          gyro_status = 1;
         }
-        Serial.println(gyro_status);
+        
+        Serial.print(gyro_status);
         
         //Serial.println("B");
         gyro.enableDefault();

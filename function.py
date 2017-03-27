@@ -43,6 +43,9 @@ right_arduino = 1
 pos_direction = 0
 neg_direction = 1
 
+yes = 1
+no = 0
+
 cali_pres = 0
 
 encoder_value = [0,0,0,0] #left A, left B, right A, right B
@@ -91,8 +94,8 @@ def assign_side():
     return
 
 def read_gyro_status():
-	gyro_status_left = read_arduino(left_arduino, 0)
-	gyro_status_right = read_arduino(right_arduino, 0)
+	gyro_status_left = read_arduino(left_arduino, no)
+	gyro_status_right = read_arduino(right_arduino, no)
 	print("Left Gyro: {A}\tRight Gyro: {B}".format(A = gyro_status_left, B = gyro_status_right))
 	return
 
@@ -460,12 +463,12 @@ def encoder_update():#1 for Y, 2 for X
 	right.write(b"m")
 
 	global encoder_value
-	encoder_holder = read_arduino(left_arduino, 0)
+	encoder_holder = read_arduino(left_arduino, no)
 	
 	encoder_value[0] = encoder_holder[0]
 	encoder_value[1] = encoder_holder[1]
 
-	encoder_holder = read_arduino(right_arduino, 0)
+	encoder_holder = read_arduino(right_arduino, no)
 	encoder_value[2] = encoder_holder[0]
 	encoder_value[3] = encoder_holder[1]
 
@@ -637,8 +640,8 @@ def us_sensor():
 		left.write(b"u")
 		right.write(b"u")
 
-		sensor_holder_left = read_arduino(left_arduino,0)
-		sensor_holder_right = read_arduino(right_arduino,0)
+		sensor_holder_left = read_arduino(left_arduino,no)
+		sensor_holder_right = read_arduino(right_arduino,no)
 		
 		if(len(sensor_holder_left) < 2 and len(sensor_holder_right) < 2):
 			i = i - 1
@@ -717,7 +720,7 @@ def capacitor_sensor():
 		sensor_data[3] = read_arduino(right_arduino, 1)
 		print(sensor_data[3])
 		"""
-		sensor_data = read_arduino(right_arduino, 1)
+		sensor_data = read_arduino(right_arduino, yes)
 		print(sensor_data)
 
 		if(len(sensor_data) == 0):
@@ -1127,13 +1130,13 @@ def servo_info():
 	left.write(b"n")
 	right.write(b"n")
 	
-	servo_holder = read_arduino(left_arduino, 0)
+	servo_holder = read_arduino(left_arduino, no)
 	
 	left_servo_position = servo_holder[0]
 	left_servo_height_top = servo_holder[1]
 	left_servo_height_bottom = servo_holder[2]
 
-	servo_holder = read_arduino(right_arduino , 0)
+	servo_holder = read_arduino(right_arduino , no)
 	
 	right_servo_position = servo_holder[0]
 	right_servo_height_top = servo_holder[1]
@@ -1633,8 +1636,8 @@ def gyro_update_angle():
 	left.write(b'?')
 	right.write(b'?')
 
-	gyro_angle[0] = read_arduino(arduino_left, 0)
-	gyro_angle[1] = read_arduino(arduino_right, 0)
+	gyro_angle[0] = read_arduino(arduino_left, no)
+	gyro_angle[1] = read_arduino(arduino_right, no)
 
 	return
 
