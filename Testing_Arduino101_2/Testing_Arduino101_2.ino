@@ -204,7 +204,7 @@ void setup() {
           gyro_status = 1;
         }
         
-        Serial.print(gyro_status);
+        Serial.println(gyro_status);
         
         //Serial.println("B");
         gyro.enableDefault();
