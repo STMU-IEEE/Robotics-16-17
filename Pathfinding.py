@@ -51,6 +51,10 @@ world_map = np.full((world_size,world_size), 8, dtype=np.int)
 # this travel cost will be reduced to 1 when the robot explores that region.
 flow_map = []
 
+#Eduardo's Function Variables
+pos_direction = 0
+neg_direction = 0
+
 def follow(path, globalPath):
 
     while path:
@@ -137,16 +141,16 @@ def flowField(world, target):
 
     return output_field
 def move_north():
-    move_y(1,1)
+    move_y(pos_direction)
     return
 def move_south():
-    move_y(2,1)
+    move_y(neg_direction)
     return
 def move_east():
-    move_x(1,1)
+    move_x(pos_direction)
     return
 def move_west():
-    move_x(2,1)
+    move_x(pos_direction)
     return
 def get_sensors(location):
     block_direction = us_sensor()

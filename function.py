@@ -58,8 +58,8 @@ cali_pres = 0
 
 encoder_value = [0,0,0,0] #left A, left B, right A, right B
 
-encoder_constant_x = [3246,3382,3246,3155] #value of encoders to reach one block
-encoder_constant_y = [2863,2850,2859,2792]
+encoder_constant_x = [2500,2500,2500,2500] #value of encoders to reach one block
+encoder_constant_y = [2600,2600,2600,2600]
 
 encoder_constant = [encoder_constant_y, encoder_constant_x]
 
@@ -89,6 +89,13 @@ capacitor_data_current = [0,0,0,0]#place holder for the newest data from the cap
 
 capacitor_block_score = [0,0,0]#This will hold the scores of mutiple data samples from the capacitor_block_identity
 
+#Gyro Variables
+gyro_angle = [0,0] #Left, Right
+gyro_cali_b = b'='
+gyro_update_angle_b = b'?'
+gyro_is_calibrated = no
+
+#Communication Variables
 term_char = ' '
 end_char = '\n'
 confirm_char = '@'
@@ -109,23 +116,13 @@ def read_gyro_status():
 	print("Left Gyro: {A}\tRight Gyro: {B}".format(A = gyro_status_left, B = gyro_status_right))
 	return
 
-def int_speed(bytes):
-	bytes_integer = [0,0,0,0,0]
-	for i in range(len(bytes)):
-		if i == 0:
-			continue
-		bytes_integer[i] = eval(bytes[i])
-		bytes_integer[i] = int(bytes_integer[i])
-		bytes[i] = str( bytes_integer[i] )
-	return bytes
-
 def arduino_data_ready(side_arduino):
 	if(side_arduino == left_arduino):
 		while(left.in_waiting == 0):
-			sleep(0.01)
+			sleep(0.001)
 	if(side_arduino == right_arduino):
 		while(right.in_waiting == 0):
-			sleep(0.01)
+			sleep(0.001)
 	return True
 
 def read_arduino(side_arduino,with_confirmation):
@@ -146,7 +143,16 @@ def read_arduino(side_arduino,with_confirmation):
 
 	print(bline)
 	
-			
+	if(bline == b'^'):#Unknown Arduino
+		print("Found ^!")
+		return 
+	if(bline == b'%\n'):#Emergency Char
+		print("FOUND EMERGENCY CHAR")
+		return 	
+	if(bline == b'\r'):
+		print("Found backlash r")
+		return 
+
 	trans_array = [float(s) for s in bline.decode().split()]
 	
 	return trans_array
@@ -200,100 +206,93 @@ def stop():
 	left.write(b"x")
 	return
 
-def move_right(bytes):
-	bytes = int_speed(bytes)
+def move_right(data_in):
 	left.write(b"i")
-	left.write(bytes[1].encode() )
+	left.write(data_in[1].encode() )
 	left.write(end_char.encode())#separator char
-	left.write(bytes[2].encode() )
+	left.write(data_in[2].encode() )
 	left.write(end_char.encode())
 
 	right.write(b"o")
-	right.write(bytes[3].encode() )
+	right.write(data_in[3].encode() )
 	right.write(end_char.encode())#separator char
-	right.write(bytes[4].encode() )
+	right.write(data_in[4].encode() )
 	right.write(end_char.encode())
 	return
 
-def move_left(bytes):
-	bytes = int_speed(bytes)
+def move_left(data_in):
 	left.write(b"o")
-	left.write(bytes[1].encode() )
+	left.write(data_in[1].encode() )
 	left.write(end_char.encode())#Separator Char
-	left.write(bytes[2].encode() )
+	left.write(data_in[2].encode() )
 	left.write(end_char.encode())
 
 	right.write(b"i")
-	right.write(bytes[3].encode() )
+	right.write(data_in[3].encode() )
 	right.write(end_char.encode())#Separator Char
-	right.write(bytes[4].encode() )
+	right.write(data_in[4].encode() )
 	right.write(end_char.encode())
 	return
 ##LINE 40
 
-def move_forward(bytes):
-	bytes = int_speed(bytes)
-
-	print("FORWARD_FUNCTION")
-	print(bytes)
-
+def move_forward(data_in):
+	print("Forward Function")
+	print(data_in)
 	left.write(b"w")
-	left.write(bytes[1].encode() )
+	left.write(data_in[1].encode() )
 	left.write(end_char.encode())#Separator Char
-	left.write(bytes[2].encode() )
+	left.write(data_in[2].encode() )
 	left.write(end_char.encode())
 	#sleep(1)
 	right.write(b"w")
-	right.write(bytes[3].encode() )
+	right.write(data_in[3].encode() )
 	right.write(end_char.encode())#Separator Char
-	right.write(bytes[4].encode() )
+	right.write(data_in[4].encode() )
 	right.write(end_char.encode())
 	return
 
-def move_reverse(bytes):
-	bytes = int_speed(bytes)
+def move_reverse(data_in):
+
 	left.write(b"r")
-	left.write(bytes[1].encode() )
+	left.write(data_in[1].encode() )
 	left.write(end_char.encode())#Separator Char
-	left.write(bytes[2].encode() )
+	left.write(data_in[2].encode() )
 	left.write(end_char.encode())
 
 	right.write(b"r")
-	right.write(bytes[3].encode() )
+	right.write(data_in[3].encode() )
 	right.write(end_char.encode())#Separator Char
-	right.write(bytes[4].encode() )
+	right.write(data_in[4].encode() )
 	right.write(end_char.encode())
 	return
 
-def rotate_counter(bytes):
+def rotate_counter(data_in):
 	#counter clockwise --> left reverse, right forward
-	bytes = int_speed(bytes)
 	left.write(b"r")
-	left.write(bytes[1].encode() )
+	left.write(data_in[1].encode() )
 	left.write(end_char.encode())
-	left.write(bytes[1].encode() )
+	left.write(data_in[1].encode() )
 	left.write(end_char.encode())
 
 	right.write(b"w")
-	right.write(bytes[1].encode() )
+	right.write(data_in[1].encode() )
 	right.write(end_char.encode())
-	right.write(bytes[1].encode() )
+	right.write(data_in[1].encode() )
 	right.write(end_char.encode())
 	return
 
-def rotate_clockwise(bytes):
+def rotate_clockwise(data_in):
 	#counter clockwise --> left forward, right reverse
-	bytes = int_speed(bytes)
 	left.write(b"w")
-	left.write(bytes[1].encode() )
+	left.write(data_in[1].encode() )
 	left.write(end_char.encode())
-	left.write(bytes[1].encode() )
+	left.write(data_in[1].encode() )
 	left.write(end_char.encode())
 
 	right.write(b"r")
-	right.write(bytes[1].encode() )
+	right.write(data_in[1].encode() )
 	right.write(end_char.encode())
-	right.write(bytes[1].encode() )
+	right.write(data_in[1].encode() )
 	right.write(end_char.encode())
 
 	return
@@ -321,11 +320,11 @@ def encoder_calibration(axes,test_quantity):
 
 		cali_pres = 1
 
-		bytes = ['@','@', '@', '@', '@']
-		bytes[1] = str( 250 )
-		bytes[2] = str( 250 )
-		bytes[3] = str( 250 )
-		bytes[4] = str( 250 )
+		data_in = ['@','@', '@', '@', '@']
+		data_in[1] = str( 250 )
+		data_in[2] = str( 250 )
+		data_in[3] = str( 250 )
+		data_in[4] = str( 250 )
 
 		#print("250 to all motors")
 
@@ -333,13 +332,13 @@ def encoder_calibration(axes,test_quantity):
 		if(axes == Y):#Y Calibration
 			for i in range(4):
 				print("Motor speed changed to Y+ default")
-				bytes[i + 1] = str(move_y_speed_p[i])
-			move_forward(bytes)
+				data_in[i + 1] = str(move_y_speed_p[i])
+			move_forward(data_in)
 		if(axes == X):#X Calibration
 			for i in range(4):
 				print("Motor speed changed to X+ default")
-				bytes[i + 1] = str(move_x_speed_p[i])
-			move_right(bytes)
+				data_in[i + 1] = str(move_x_speed_p[i])
+			move_right(data_in)
 
 		sleep(1)
 
@@ -419,76 +418,92 @@ def encoder_completion(axes):
 		if(int(encoder_value[i]) >= mean(encoder_constant[axes])):
 			completion = completion + 1
 
-	if(completion >= 4):
+	if(completion >= 3):
 		return 1
 
 	return 0
 
-def move_y(direction, speed):
+def move_y(direction):
 	direction = int(direction)
-	print("Axes: Y Side:{A} Speed: {B}".format(A = direction, B = speed))
+	print("Axes: Y Side:{A}".format(A = direction))
 
 	encoder_reset()
-	bytes = ['$','$', '$', '$', '$']
-
-	bytes[1] = str( speed )
-	bytes[2] = str( int(speed))
-	bytes[3] = str( speed )
-	bytes[4] = str( speed )
+	data_in = ['0','0','0','0','0']
 
 	for i in range(4):
-		bytes[i+1] = str(move_y_speed[direction][i])
+		data_in[i+1] = str(move_y_speed[direction][i])
 
 	if(direction == pos_direction):
-		move_forward(bytes)
+		move_forward(data_in)
 	if(direction == neg_direction):
-		move_reverse(bytes)
+		move_reverse(data_in)
 
 	#encoder_constant_value()
 	counter = 0
 	while(encoder_completion(Y) == 0): #if the function returns 0, that means that non of the encoders have reach the desired value
-		if(counter >= 30):
-			print(".", end = '')
-			counter = 0
-		counter = counter + 1
 		encoder_update()
-		sleep(0.01)
+		print(update_PID())
+		new_motor_speed = obtain_new_motor_speeds(Y,direction, my_pid.output)
+		update_motor_speed(Y,direction, new_motor_speed )
 	stop()
 
 	return
 
-def move_x(direction, speed):
+def move_x(direction):
 	direction = int(direction)
-	print("Axes: X Side:{A} Speed: {B}".format(A = direction, B = speed))
+	print("Axes: X Side:{A}".format(A = direction))
 
 	encoder_reset()
-	bytes = ['@','@', '@', '@', '@']
-
-	bytes[1] = str( speed )
-	bytes[2] = str( speed )
-	bytes[3] = str( speed )
-	bytes[4] = str( speed )
+	data_in = ['0','0','0','0','0']
 
 	for i in range(4):
-		bytes[i+1] = str(move_x_speed[direction][i])
+		data_in[i+1] = str(move_x_speed[direction][i])
 
 	if(direction == pos_direction):
-		move_right(bytes)
+		move_right(data_in)
 	if(direction == neg_direction):
-		move_left(bytes)
+		move_left(data_in)
 
 
 	#encoder_constant_value()
 	counter = 0
 	while(encoder_completion(X) == 0): #if the function returns 0, that means that non of the encoders have reach the desired value
-		if(counter >= 30):
-			print(".", end = '')
-			counter = 0
-		counter = counter + 1
 		encoder_update()
-		sleep(0.01)
+		update_PID()
+		new_motor_speed = obtain_new_motor_speeds(X,direction, my_pid.output)
+		update_motor_speed(X,direction,new_motor_speed)
 	stop()
+	"""
+def update_PID():
+	new_output = my_pid.update(gyro[right_arduino]) # for now, use 1 sensor
+	result = new_output != old_output
+	old_output = new_output
+	print("PID's OUTPUT: {new_output}")
+	return result
 
+def obtain_new_motor_speeds(axes, direction, rotation_ratio):
+	GYRO_SENSITIVITY = 1
+	#rotation_ratio = my_pid.output
+	for i in range(len(motor_speed[axes][direction])):
+		new_motor_speed = move_speed[axes][direction] + rotation_ratio * GYRO_SENSITIVITY
+	return new_motor_speed
+
+def update_motor_speed(axes,direction,motor_speed):
+	print("New Speed", end = '')
+	print(motor_speed)
+
+	if(axes == Y):
+		if(direction == pos_direction):
+			move_forward(motor_speed)
+		if(direction == neg_direction):
+			move_backward(motor_speed)
+	if(axes == X):
+		if(direction == pos_direction):
+			move_right(motor_speed)
+		if(direction == neg_direction):
+			move_left(motor_speed)
+	return
+	"""
 	return
 
 #-----------------SENSORS-------------------
@@ -944,20 +959,20 @@ def servo_bottom(servo_location):
 		left.write(b"b")
 	return
 
-def servo_change(bytes):
-	#bytes[1] = servoH_top
-	#bytes[2] = servoH_bottom
-	#Sending bytes to the left arduino
-	left.write(bytes[0].encode() )
-	left.write(bytes[1].encode() )
+def servo_change(data_in):
+	#data_in[1] = servoH_top
+	#data_in[2] = servoH_bottom
+	#Sending data_in to the left arduino
+	left.write(data_in[0].encode() )
+	left.write(data_in[1].encode() )
 	left.write(end_char.encode())#Separator Char
-	left.write(bytes[2].encode() )
+	left.write(data_in[2].encode() )
 	left.write(end_char.encode())
-	#Sending bytes to the right arduino
-	right.write(bytes[0].encode() )
-	right.write(bytes[1].encode() )
+	#Sending data_in to the right arduino
+	right.write(data_in[0].encode() )
+	right.write(data_in[1].encode() )
 	right.write(end_char.encode())#Separator Char
-	right.write(bytes[2].encode() )
+	right.write(data_in[2].encode() )
 	right.write(end_char.encode())
 	return
 
@@ -990,27 +1005,33 @@ GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bounceti
 Arduino Gyro Code Ahead
 """
 
-gyro_angle = [0,0] #Left, Right
-gyro_cali_b = b'='
-gyro_update_angle_b = b'?'
 
 def gyro_cali():
+	global gyro_is_calibrated
+	
 	clear_comm()
 	left.write(b'=')
 	right.write(b'=')
 	left_confirmation = read_arduino(left_arduino, no)
 	right_confirmation = read_arduino(right_arduino, no)
+	gyro_is_calibrated = yes
+	print("Gyro(s) are Calibrated")
 	print("Left:\t{A}\tRight:\t{B}".format(A = left_confirmation, B = right_confirmation))
 
 	return
 
 def gyro_update_angle():
 	clear_comm()
+	if(gyro_is_calibrated == no):
+		print("Angle was attempted to be read but Gyro has not been Calibrated!")
+		return 
 	left.write(b'?')
 	right.write(b'?')
 
 	gyro_angle[left_arduino] = read_arduino(left_arduino, no)
 	gyro_angle[right_arduino] = read_arduino(right_arduino, no)
+
+	print("Left:\t{A}\tRight:{B}".format(A = gyro_angle[left_arduino],B = gyro_angle[right_arduino]))
 
 	return
 
@@ -1019,33 +1040,68 @@ def gyro_report_angle():
 	return
 
 def update_PID():
-	new_output = my_pid.update(gyro[right_arduino]) # for now, use 1 sensor
-    result = new_output != old_output
-	old_output = new_output
-	print("PID's OUTPUT: {new_output}")
+	global old_output
+
+	gyro_update_angle()
+
+	while(len(gyro_angle[right_arduino]) == 0):
+		print("Right Gyro malfunction")
+		gyro_update_angle()
+
+	used_angle = round(gyro_angle[right_arduino][0])
+	my_pid.update(used_angle) # for now, use 1 sensor
+	result = (my_pid.output != old_output)
+	old_output = my_pid.output
+	print("PID's OUTPUT: {A}".format(A = my_pid.output))
 	return result
 
 def obtain_new_motor_speeds(axes, direction, rotation_ratio):
-	GYRO_SENSITIVITY = 1
+	GYRO_SENSITIVITY = 5
+	new_motor_speed = ['100','100','100','100','100']
+	#counterclockwise = positive, clockwise = negative
+	#motor_set up [left_front, left_back, right_front, right_back]
+	y_pos = [1,1,-1,-1]
+	y_neg = [-1,-1,1,1]
+	x_pos = [1,-1,1,-1]
+	x_neg = [-1,1,-1,1]
+
+	y_shift = [y_pos, y_neg]
+	x_shift = [x_pos, x_neg]
+
+	overall_shift_factor = [y_shift, x_shift]
+
+	#negative_compensation = []
 	#rotation_ratio = my_pid.output
-	for i in range(len(motor_speed[axes][direction])):
-		new_motor_speed = move_speed[axes][direction] + rotation_ratio * GYRO_SENSITIVITY
+	for i in range(len(move_speed[axes][direction])):
+		new_motor_speed[i+1] = str(move_speed[axes][direction][i] + GYRO_SENSITIVITY * overall_shift_factor[axes][direction][i] * round(rotation_ratio))
 	return new_motor_speed
 
 def update_motor_speed(axes,direction,motor_speed):
-	print("New Speed", end = '')
+	print("New Speed: ", end = '')
 	print(motor_speed)
 
 	if(axes == Y):
 		if(direction == pos_direction):
 			move_forward(motor_speed)
 		if(direction == neg_direction):
-			move_backward(motor_speed)
+			move_reverse(motor_speed)
 	if(axes == X):
 		if(direction == pos_direction):
 			move_right(motor_speed)
 		if(direction == neg_direction):
 			move_left(motor_speed)
 	return
+
+def gyro_PID_test():
+	while(True):
+
+		print(update_PID())
+		sleep(0.3)
+		new_motor_speed = obtain_new_motor_speeds(Y,pos_direction, my_pid.output)
+		update_motor_speed(Y,pos_direction, new_motor_speed )
+
+	return
+
+
 
 

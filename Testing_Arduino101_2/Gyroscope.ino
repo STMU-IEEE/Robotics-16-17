@@ -22,7 +22,7 @@ bool gyro_data_ready(){
 
 void gyro_update_angle(){
   if(whoami == unknown_arduino){
-    Serial.print(unknown_arduino_b);
+    Serial.println(unknown_arduino_b);
   }
   else if(gyro_data_ready()){
     gyro.read();

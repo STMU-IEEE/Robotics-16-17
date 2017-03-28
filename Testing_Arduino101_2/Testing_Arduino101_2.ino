@@ -666,7 +666,7 @@ void command(){
                 gyro_report_angle();
                }
                break;
-           case '(':
+           case ']':
               if(command_status == 1){
                 whoami_assignment(); 
               }
