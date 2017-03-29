@@ -44,7 +44,7 @@ sleep(5)
 #right.timeout = 0.1
 
 # PID object
-my_pid = PID(P=5.0, I=0.0, D=0.0) # only P term (-1.0 power per degree error); not really PID!
+my_pid = PID(P=1.0, I=0.0, D=0.0) # only P term (-1.0 power per degree error); not really PID!
 my_pid.setSampleTime(1.0/30.0) #30Hz. Increase if "wobbling"; decrease if losing data
 old_output = 0.0 # initial value
 
@@ -1168,7 +1168,7 @@ def obtain_new_motor_speeds(axes, direction, rotation_ratio):
 	for i in range(len(move_speed[axes][direction])):
 		new_motor_speed[i+1] = \
             str(move_speed[axes][direction][i] + \
-                overall_shift_factor[axes][direction][i] * round(rotation_ratio) \
+                overall_shift_factor[axes][direction][i] * 5 * round(rotation_ratio) \
                )
 	return new_motor_speed
 
