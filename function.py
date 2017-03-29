@@ -34,6 +34,14 @@ right.reset_input_buffer()
 left.reset_output_buffer()
 right.reset_output_buffer()
 
+# manually reset Arduino by toggling DTR
+left.dtr = False
+right.dtr = False
+sleep(0.01)
+left.dtr = True
+right.dtr = True
+
+
 #left.open()
 #right.open()
 # Arduinos require about 3 seconds before finishing setup()
@@ -151,12 +159,14 @@ def read_arduino(side_arduino,with_confirmation):
 	print(bline)
 	
     #TODO: this should not happen/be necessary
+    '''
 	if('^' in bline.decode()):#Unknown Arduino
 		print("Found ^")
 		restart_comm()
 		read_gyro_status()
 		assign_side()
 		return []
+	'''
 	if(EMERGENCY_CHAR in bline.decode()):#Emergency Char '%'
 		print("FOUND EMERGENCY CHAR")
 		return []	
@@ -385,8 +395,8 @@ def encoder_calibration(axes,test_quantity):
 
 
 def encoder_update():#1 for Y, 2 for X
-
-	clear_comm()
+#TODO: ???
+	clear_comm() 
 
 	left.write(b"m")
 	right.write(b"m")
