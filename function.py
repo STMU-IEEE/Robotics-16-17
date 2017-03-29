@@ -158,8 +158,8 @@ def read_arduino(side_arduino,with_confirmation):
 
 	print(bline)
 	
-    #TODO: this should not happen/be necessary
-    '''
+	#TODO: this should not happen/be necessary
+	'''
 	if('^' in bline.decode()):#Unknown Arduino
 		print("Found ^")
 		restart_comm()
