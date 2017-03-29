@@ -1,40 +1,44 @@
 from sense_hat import SenseHat
-from time import *
-from math import log
-from random import randint
 
 sense = SenseHat()
-timer = 1
 
-#              (x, y, r, g, b)
-#sense.set_pixel(0, 0, 255, 255, 0) #Set LED at coordinate (0,0) to yellow. 
-"""
-for i in range(100):
-	
-	raw_orientation = sense.get_orientation()
-	adjusted_orientation = raw_orientation['yaw']  - 2.3975 * log(timer)
-	print(adjusted_orientation)
-	time.sleep(1) 
-	timer = timer + 1
-"""
-r = [255,0,0]
-o = [255,127,0]
-y = [255,255,0]
-g = [0,255,0]
-b = [0,0,255]
-i = [75,0,130]
-v = [159,0,255]
-e = [0,0,0]
+RED = [255,0,0]#Red         Objective Tunnels
+BLUE = [0,0,255]#Blue       DeadEnds
+GREEN = [0,255,0]#Green		Insulation
+YELLOW = [255,255,0]#		Ready Light
+EMPTY = [0,0,0]#Empty
 
-image = [
-e,e,e,e,e,e,e,e,
-e,e,e,r,r,e,e,e,
-e,r,r,o,o,r,r,e,
-r,o,o,y,y,o,o,r,
-o,y,y,g,g,y,y,o,
-y,g,g,b,b,g,g,y,
-b,b,b,i,i,b,b,b,
-b,i,i,v,v,i,i,b
-]
+def lightmatrix_A7_yellow():
+	sense.set_rotation(270)
+	sense.set_pixel(0,0,YELLOW)
 
-sense.set_pixels(image)
+def lightmatrix_no_color():
+	sense.show_letter(' ', text_colour = [0,0,0], back_colour = EMPTY)
+	return
+
+def lightmatrix_yellow_ready():
+	sense.show_letter(' ', text_colour = [0,0,0], back_colour = YELLOW)
+	return
+
+def lightmatrix_update(x,y,block_score):
+	total = 0
+	print(block_score)
+	for z in range(3):
+		total += block_score[z]
+
+	tunnel_intensity = round(block_score[0] / total * 255)
+	dead_intensity = round(block_score[1] / total * 255)
+	insulation_intensity = round(block_score[2] / total * 255)
+	sense.set_pixel(x,y, [tunnel_intensity, insulation_intensity, dead_intensity])
+	return
+
+def lightmatrix_update_simple(x,y,block_score):
+	block_identity = block_score.index(max(block_score))
+	if(block_identity == 0):
+		sense.set_pixel(x,y,RED)
+	if(block_identity == 1):
+		sense.set_pixel(x,y,BLUE)
+	if(block_identity == 2):
+		sense.set_pixel(x,y,GREEN)
+	return
+

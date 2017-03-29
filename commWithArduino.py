@@ -1,4 +1,5 @@
 from function import *
+from senseHat import *
 #from function import restart_comm
 import RPi.GPIO as GPIO
 
@@ -9,8 +10,14 @@ LEFT_C = 2
 RIGHT_C = 3
 BACK_C = 4
 
+#This are for testing the senseHat.py
+x_pos = 0 
+y_pos = 0
+
 #Switch Case that selects the commands
 def command(x):
+	global x_pos
+	global y_pos
 
 	data_in = x.split()
 
@@ -44,8 +51,18 @@ def command(x):
 	#regarding side, 0 is for positive direction, while 1 is for negative directions
 	if data_in[0] == 'X':
 		move_x(data_in[1])#side, speed
+		#Just for testing purposes
+		if(data_in[1] == '0'):
+			x_pos += 1
+		if(data_in[1] == '1'):
+			x_pos += -1
 	if data_in[0] == 'Y':
 		move_y(data_in[1])
+		#Just for testing purposes
+		if(data_in[1] == '0'):
+			y_pos += 1
+		if(data_in[1] == '1'):
+			y_pos += -1
 	#Sensor Commands
 	if data_in[0] == 'u':
 		print(us_sensor())
@@ -62,7 +79,9 @@ def command(x):
 	if data_in[0] == 'L':
 		capacitor_calibrate_move(int(data_in[1]), int(data_in[2]), int(data_in[3]))#1: block identity,2: quantity of data samples 3: use previous values?
 	if data_in[0] == 'V':
-		capacitor_block_multiple(int(data_in[1])) #Quantity of test
+		cap_block_score = capacitor_block_multiple(int(data_in[1]))# # of test
+		print("X:\t{A}\tY:{B}".format(A = x_pos, B = y_pos))		
+		lightmatrix_update(x_pos,y_pos,cap_block_score)
 	#Servo Command
 	if data_in[0] == 't':
 		servo_top(data_in[1])
@@ -147,6 +166,10 @@ print('Assign IDs...')
 assign_side()
 print('Calibrating gyros...')
 gyro_cali()
+print('Clearing the previous matrix...')
+lightmatrix_no_color()
+print('Marking on matrix tile A7...')
+lightmatrix_A7_yellow()
 #servo_top()
 while(True):
 	x = input("Enter Command: ")

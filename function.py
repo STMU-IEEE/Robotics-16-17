@@ -357,7 +357,6 @@ def encoder_calibration(axes,test_quantity):
 
 		#print("250 to all motors")
 
-
 		if(axes == Y):#Y Calibration
 			for i in range(4):
 				print("Motor speed changed to Y+ default")
@@ -368,8 +367,6 @@ def encoder_calibration(axes,test_quantity):
 				print("Motor speed changed to X+ default")
 				data_in[i + 1] = str(move_x_speed_p[i])
 			move_right(data_in)
-
-		sleep(1)
 
 		while(cali_pres == 1):
 			sleep(0.001)
@@ -946,7 +943,10 @@ def capacitor_block_multiple(data_sample):
 		print("Isolated")
 		block_identity_message = 2
 
-	return block_identity_message
+	#return block_identity_message
+	#For now I(Eduardo) would like to experiment how the robot would score
+	#Each block before deciding which identiy the block is. 
+	return capacitor_block_score
 
 #-----------------SERVOS-------------------
 
