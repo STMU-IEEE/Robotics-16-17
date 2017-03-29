@@ -46,7 +46,7 @@ right.dtr = True
 #right.open()
 # Arduinos require about 3 seconds before finishing setup()
 print('Wait for Arduinos to finish resetting...')
-sleep(5)
+sleep(2)
 
 #left.timeout = 0.1
 #right.timeout = 0.1
@@ -56,6 +56,8 @@ my_pid = PID(P=1.0, I=0.0, D=0.0) # only P term (-1.0 power per degree error); n
 my_pid.setSampleTime(1.0/30.0) #30Hz. Increase if "wobbling"; decrease if losing data
 old_output = 0.0 # initial value
 
+
+#Direction and Arduino Variables
 FRONT = 1
 LEFT = 2
 RIGHT = 3
@@ -75,15 +77,13 @@ no = 0
 
 cali_pres = 0
 
+#Encoder Variables
 encoder_value = [0,0,0,0] #left A, left B, right A, right B
-
-encoder_constant_x = [2500,2500,2500,2500] #value of encoders to reach one block
-encoder_constant_y = [2600,2600,2600,2600]
-
+encoder_constant_x = [2850,2850,2850,2850] #value of encoders to reach one block
+encoder_constant_y = [3000,3000,3000,3000]
 encoder_constant = [encoder_constant_y, encoder_constant_x]
 
-#This are the variables that hold a rough estimate of the speed required to make the robot move straight
-
+#Movement Variables
 move_x_speed_p = [215,190,200,205]
 move_x_speed_n = [210,185,210,185]
 move_y_speed_p = [165,165,200,200]
@@ -96,9 +96,7 @@ move_y_speed = [move_y_speed_p, move_y_speed_n]
 
 move_speed = [move_y_speed, move_x_speed]
 
-#This are the variables that will be holding the latest recorded values from the capacitive sensor respect to their designation
-#Such as wire, iso, and notiso
-
+#Capacitor Variables
 capacitor_data_wire = [0,0,0,0]#max,median,min,average
 capacitor_data_iso = [0,0,0,0]
 capacitor_data_notiso = [0,0,0,0]
@@ -119,6 +117,9 @@ TERM_CHAR = ' '
 END_CHAR = '\n'
 CONFIRM_CHAR = '@'
 EMERGENCY_CHAR = '%'
+
+#Ultrasonic Variables
+ultra_ave = [0,0,0,0]
 
 
 #functions that control the arduino
@@ -218,8 +219,15 @@ def restart_comm():
 def start_button_pressed(channel):
 	#This is where the program to solve the "maze" would go
 	#for now it just makes the robot move foward
-	restart_comm()
+
+	#TODO: Restart Comm is causing this function to fail
+	#restart_comm()
+
+
 	global cali_pres
+	global test_light
+	print("Button Pressed")
+	sleep(0.2)
 
 	if(cali_pres == 1):
 		print("Calibration detected")
@@ -342,20 +350,11 @@ def encoder_calibration(axes,test_quantity):
 	for i in range(test_quantity):
 
 		encoder_reset()
-
-		sleep(1)
-
 		print("Beginning test {A}".format(A = i+1))
 
 		cali_pres = 1
 
 		data_in = ['@','@', '@', '@', '@']
-		data_in[1] = str( 250 )
-		data_in[2] = str( 250 )
-		data_in[3] = str( 250 )
-		data_in[4] = str( 250 )
-
-		#print("250 to all motors")
 
 		if(axes == Y):#Y Calibration
 			for i in range(4):
@@ -393,7 +392,7 @@ def encoder_calibration(axes,test_quantity):
 
 def encoder_update():#1 for Y, 2 for X
 #TODO: ???
-	clear_comm() 
+	#clear_comm() 
 
 	left.write(b"m")
 	right.write(b"m")
@@ -538,9 +537,12 @@ def us_sensor():
 		actual_sensor_collect_fre += 1
 		sensor_collect = sensor_holder_left + sensor_holder_right
 
+		#The ultrasonic sensor will return 0 if max(200) if reached
+		#Still debating whether to make it equal to zero or max
+		#Sometime max can be misread when the sensor might be too close to a wall
 		for i in range(4):
 			if(sensor_collect[i] == 0):
-				sensor_collect[i] = 200
+				sensor_collect[i] = 0
 					
 
 		sensor_total[0] += sensor_collect[0]
@@ -572,7 +574,7 @@ def us_sensor():
 	
 	block_message = 0
 	for i in range(4):
-		if(ultra_ave[i] <= 8):
+		if(ultra_ave[i] <= 12):
 			block_direction[i] = 1
 
 	#print(block_direction)
@@ -586,7 +588,11 @@ def us_sensor():
 	print("Block Direction : ", end = '')
 
 	return block_direction
+"""
+we can use the data of the ultrasonic sensor to get more reliable data
+def wall_calibration()
 
+"""
 #-----------------CAPACITOR-------------------
 
 def capacitor_sensor():
@@ -895,7 +901,7 @@ def capacitor_block_identity():
 	"""
 	#only recalibrate if difference between values is not too big
 
-
+	"""
 	for j in range(4):
 		if(diff_holder[j] > diff_tolerance):
 			diff_overpass_tolerace = 1
@@ -906,6 +912,7 @@ def capacitor_block_identity():
 	else:
 		print("Diff Tolerance is surpassed and/or " + \
                "diff_rating is not equal to 7")
+	"""
 
 	return block_identity_message
 
@@ -1080,8 +1087,7 @@ def pick_up_lid(which_arduino,axes,direction):
 	return 
 
 #Assigned the interrupt their functions
-GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, \
-                      bouncetime = 300)
+GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
 
 #-----------------GYROSCOPE-------------------
 """
@@ -1136,6 +1142,10 @@ def gyro_update_angle():
 
 	return
 
+def gyro_angle_test():
+	while(True):
+		gyro_update_angle()
+
 def gyro_report_angle():
 	print("Left:\t{A}\tRight:\t{B}". \
        format(A = gyro_angle[LEFT_ARDUINO_ID], \
@@ -1152,8 +1162,9 @@ def update_PID():
 		print("Right Gyro malfunction")
 		gyro_update_angle()
 
-	used_angle = round(gyro_angle[RIGHT_ARDUINO_ID][0])
-	my_pid.update(used_angle) # for now, use 1 sensor
+	average_angle = (gyro_angle[RIGHT_ARDUINO_ID][0] + gyro_angle[LEFT_ARDUINO_ID][0]) / 2 
+	#used_angle = round(gyro_angle[RIGHT_ARDUINO_ID][0])
+	my_pid.update(average_angle) # for now, use 1 sensor
 	result = (my_pid.output != old_output)
 	old_output = my_pid.output
 	print("PID's OUTPUT: {A}".format(A = my_pid.output))
@@ -1178,7 +1189,7 @@ def obtain_new_motor_speeds(axes, direction, rotation_ratio):
 	for i in range(len(move_speed[axes][direction])):
 		new_motor_speed[i+1] = \
             str(move_speed[axes][direction][i] + \
-                overall_shift_factor[axes][direction][i] * 5 * round(rotation_ratio) \
+                overall_shift_factor[axes][direction][i] * 10 * round(rotation_ratio) \
                )
 	return new_motor_speed
 
@@ -1207,6 +1218,15 @@ def gyro_PID_test():
 		update_motor_speed(Y,POS_DIRECTION, new_motor_speed )
 
 	return
+"""
+def clear_reset_PID():
+	#do the code here
+	return
+
+def stationary_fix():
+	#Take the initial value of the gyros and try to match them with the values been received now
+	return 
+"""
 
 
 

@@ -29,16 +29,18 @@ def lightmatrix_update(x,y,block_score):
 	tunnel_intensity = round(block_score[0] / total * 255)
 	dead_intensity = round(block_score[1] / total * 255)
 	insulation_intensity = round(block_score[2] / total * 255)
-	sense.set_pixel(x,y, [tunnel_intensity, insulation_intensity, dead_intensity])
+	#The x and y were exhange explicitly 
+	sense.set_pixel(y,x, [tunnel_intensity, insulation_intensity, dead_intensity])
 	return
 
 def lightmatrix_update_simple(x,y,block_score):
 	block_identity = block_score.index(max(block_score))
+	#The x and y were exchnage explicitly
 	if(block_identity == 0):
-		sense.set_pixel(x,y,RED)
+		sense.set_pixel(y,x,RED)
 	if(block_identity == 1):
-		sense.set_pixel(x,y,BLUE)
+		sense.set_pixel(y,x,BLUE)
 	if(block_identity == 2):
-		sense.set_pixel(x,y,GREEN)
+		sense.set_pixel(y,x,GREEN)
 	return
 

@@ -139,6 +139,8 @@ def command(x):
 		gyro_report_angle()
 	if data_in[0] == '[':
 		gyro_PID_test()
+	if data_in[0] == '>':
+		gyro_angle_test()
 
     
 
