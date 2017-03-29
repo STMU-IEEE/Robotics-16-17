@@ -594,19 +594,19 @@ def us_sensor():
 
 def capacitor_sensor():
 	#The right arduino is the only arduino with a capacitive sensor
-	capacitor_hard_reset()
+	#capacitor_hard_reset()
 	sensor_data = [-2,-2,-2,-2] #Highest, median, lowest, average
-	clear_comm()
+	#clear_comm()
 	flag = 0
 
 	print("Collecting data from Capacitive Sensor")
 
-	for i in range(20):#This is the amount of attempts the Raspberry has to recieve the information
+	for i in range(20):#This is the amount of attempts the Raspberry has to receive the information
 		flag = 0
-		clear_comm()
+		#clear_comm()
 		right.write(b"C")
 		#sleep(0.5)
-		capacitor_hard_reset()
+		#capacitor_hard_reset()
 		sensor_data = read_arduino(RIGHT_ARDUINO_ID, yes)
 		print(sensor_data)
 
