@@ -4,7 +4,7 @@ BOARD_TYPE=arduino:avr:uno
 COMPILE=arduino --verify --preserve-temp-files
 UPLOAD=arduino --upload
 MAIN=Testing_Arduino101_2.ino
-SOURCES=$(MAIN) Gyroscope.ino
+SOURCES=$(MAIN) Gyroscope.ino CapacitanceSensor.ino Motors.ino Commands.ino Servos.ino Encoders.ino UltrasonicSensors.ino
 
 all: verify upload_left upload_right
 

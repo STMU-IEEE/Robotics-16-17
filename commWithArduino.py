@@ -76,6 +76,8 @@ def command(x):
 		servo_bottom(data_in[1])
 		sleep(5)
 		servo_top(data_in[1])
+	if data_in[0] == '}':
+		pick_up_lid( int(data_in[1]),int(data_in[2]), int(data_in[3]) )#which_arduino, axes, direction
 	#Communicatin Command
 	if data_in[0] == 'R':
 		restart_comm()
@@ -133,12 +135,17 @@ print("Servo: FRONT = 1 BACK = 4 --> [up(t) or down(b) or pick_up(p)] [servo#]")
 print("Gyro: [direction (caps motor's keys)] [max_speed] [gryo_sensativity]")
 print("Communication Commands: [command (R or C)]")
 print("Ultrasonic Sensor: 'u' ")
-restart_comm()
+print('Flushing inputs...')
 clear_comm()
+print('Restarting communication...')
+restart_comm()
+print('Stopping motors...')
 stop()
+print('Checking if gyros initialized...')
 read_gyro_status()
+print('Assign IDs...')
 assign_side()
-sleep(0.1)
+print('Calibrating gyros...')
 gyro_cali()
 #servo_top()
 while(True):
