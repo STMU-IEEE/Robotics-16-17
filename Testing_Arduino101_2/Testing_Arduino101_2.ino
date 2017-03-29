@@ -198,23 +198,17 @@ void setup() {
         pinMode(TRIGGER_PIN2, OUTPUT);
         pinMode(ECHO_PIN2, INPUT);       
 
-        if(gyro.init()){
+        gyro_status = gyro.init();
           //report gyro not working
           //Serial.println("Gyro found");
-          gyro_status = 1;
-          
-        }
-        else{
-          gyro_status = 0;
-        }
+        
 
         //Don't speak when not spoken to
         //Serial.println(gyro_status);
         
         gyro.enableDefault();
-        //whoami_assignment();
+        //set_whoami();
 
-        delay(100);
         //Serial.println("End of Setup");
 }
 
@@ -253,7 +247,7 @@ void print_long_array(long ary[], int ary_size){
 }
 
 //Please only call this from corresponding command case '['
-void whoami_assignment(){
+void set_whoami(){
   
   //Serial.println("Waiting Assignment");
   while(Serial.available() < 1);
@@ -272,6 +266,10 @@ void whoami_assignment(){
   else{
     whoami = UNKNOWN_ARDUINO;
   }
+}
+
+void get_whoami(){
+  Serial.println(whoami);
 }
 
 void bubble_sort(long a[], int sizeofarray){

@@ -125,7 +125,7 @@ def command(x):
 
 	return
 
-#Here is the loop that recieves data_in from the user
+#Here is the loop that receives data_in from the user
 
 print("Welcome to The Raspberry Pi Controller HQ")
 print("FRONT: 1, LEFT: 2, RIGHT: 3, BACK: 4")
@@ -135,8 +135,8 @@ print("Servo: FRONT = 1 BACK = 4 --> [up(t) or down(b) or pick_up(p)] [servo#]")
 print("Gyro: [direction (caps motor's keys)] [max_speed] [gryo_sensativity]")
 print("Communication Commands: [command (R or C)]")
 print("Ultrasonic Sensor: 'u' ")
-print('Flushing inputs...')
-clear_comm()
+#print('Flushing inputs...')
+#clear_comm()
 print('Restarting communication...')
 restart_comm()
 print('Stopping motors...')

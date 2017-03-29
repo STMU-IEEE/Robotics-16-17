@@ -29,6 +29,17 @@ BAUD = 57600
 left = serial.Serial(LEFT_ARDUINO_PORT, BAUD)
 right = serial.Serial(RIGHT_ARDUINO_PORT, BAUD)
 
+left.reset_input_buffer()
+right.reset_input_buffer()
+left.reset_output_buffer()
+right.reset_output_buffer()
+
+#left.open()
+#right.open()
+# Arduinos require about 3 seconds before finishing setup()
+print('Wait for Arduinos to finish resetting...')
+sleep(5)
+
 #left.timeout = 0.1
 #right.timeout = 0.1
 
@@ -106,8 +117,8 @@ EMERGENCY_CHAR = '%'
 
 #-----------------GENERAL PURPOSE-------------------
 def assign_side():
-    left.write(']')
-    right.write(']')
+    left.write(b']')
+    right.write(b']')
     left.write(str(LEFT_ARDUINO_ID).encode())
     right.write(str(RIGHT_ARDUINO_ID).encode())
     return
@@ -168,8 +179,8 @@ def end():
 	left.close()
 	return
 def clear_comm():
-	left.flushInput()
-	right.flushInput()
+	left.reset_input_buffer()
+	right.reset_input_buffer()
 	return
 
 def clear_comm_absolute():
@@ -182,7 +193,14 @@ def clear_comm_absolute():
 def restart_comm():
 	left.write(b"R")
 	right.write(b"R")
-	
+	response = read_arduino(LEFT_ARDUINO_ID,no)
+	if(response[0] != 1):
+		print("Incorrect response '{A}' from left arduino". \
+        format(A=repr(response)))
+	response = read_arduino(RIGHT_ARDUINO_ID,no)
+	if(response[0] != 1):
+		print("Incorrect response '{A}' from right arduino". \
+        format(A=repr(response)))
 	return
 
 #Function that occurs when stop and/or start button are pressed
