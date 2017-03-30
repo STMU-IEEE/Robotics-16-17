@@ -33,35 +33,37 @@ from function import *
 
 import numpy as np
 # from heapq import *
-world_size = 7
-#TODO
-#blocked_vals = {-1}
-blocked_vals = [-1]  # this is a list of the possible blocked values for pathfinding purposes
-my_location = (0,0) # first val for vert, second for horiz (row, col)
-default_path = np.array([
-    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
-    [1,6],[1,5],[1,4],[1,3],[1,2],[1,1],[1,0],
-    [2,0],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],
-    [3,6],[3,5],[3,4],[3,3],[3,2],[3,1],[3,0],
-    [4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],
-    [5,6],[5,5],[5,4],[5,3],[5,2],[5,1],[5,0],
-    [6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6]])
-my_path=default_path
+def pathfinding_init():
+    world_size = 7
+    #TODO
+    #blocked_vals = {-1}
+    blocked_vals = np.array([-1])  # this is a list of the possible blocked values for default_Pathfinding purposes
+    my_location = (0,0) # first val for vert, second for horiz (row, col)
+    default_Path = np.array([
+        [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
+        [1,6],[1,5],[1,4],[1,3],[1,2],[1,1],[1,0],
+        [2,0],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],
+        [3,6],[3,5],[3,4],[3,3],[3,2],[3,1],[3,0],
+        [4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],
+        [5,6],[5,5],[5,4],[5,3],[5,2],[5,1],[5,0],
+        [6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6]])
 
-world_map = np.full((world_size,world_size), 8, dtype=np.int)
-# unexplored blocks will have a travel cost value of 8.
-# this travel cost will be reduced to 1 when the robot explores that region.
-flow_map = []
+    world_map = np.full((world_size,world_size), 8, dtype=np.int)
+    # unexplored blocks will have a travel cost value of 8.
+    # this travel cost will be reduced to 1 when the robot explores that region.
+    flow_map = []
 
-#Eduardo's Function Variables
-pos_direction = 0
-neg_direction = 0
+    #Eduardo's Function Variables
+    pos_direction = 0
+    neg_direction = 0
+
 
 def follow(path, globalPath):
 
-    while len(path) > 0:
-        if np.all(my_location == path[0]):
-            path = np.delete(path,0) # if we have reached the next location, remove it from the path.
+
+    while len(default_Path) > 0:
+        if np.all(my_location == default_Path[0]):
+            default_Path = np.delete(default_Path,0) # if we have reached the next location, remove it from the default_Path.
 
         if world_map[my_location[0]][my_location[1]]<1: #If we are above a obstacle, mark as non-obstacle
             world_map[my_location[0]][my_location[1]]=1
@@ -70,9 +72,10 @@ def follow(path, globalPath):
         #TODO
 		#error inside if statement
         get_sensors(my_location) # update surrounding nodes
-        if world_map[path[0][0]][path[0][1]] == blocked_vals[0]:
-            path = np.delete(path,0) # if my next point is blocked, move on to the next point in the path.
-        
+
+        if int(world_map[default_Path[0][0]][default_Path[0][1]]) in blocked_vals:
+            default_Path = np.delete(default_Path,0) # if my next point is blocked, move on to the next point in the default_Path.
+
         # update the map here
         #TODO LATER
         #When actually competing change function
@@ -198,13 +201,13 @@ def get_sensors(location):
     world_map[my_location[0]][my_location[1]] = max_index
 
     if(block_direction[0] == 1):#North
-        world_map[my_location[0]+1][my_location[1]] = -1;
+        world_map[my_location[0]+1][my_location[1]] = -1
     elif(block_direction[1] == 1):#South
-        world_map[my_location[0]-1][my_location[1]] = -1;
+        world_map[my_location[0]-1][my_location[1]] = -1
     elif(block_direction[2] == 1):#East
-        world_map[my_location[0]][my_location[1]+1] = -1;
+        world_map[my_location[0]][my_location[1]+1] = -1
     elif(block_direction[3] == 1):#West
-        world_map[my_location[0]][my_location[1]-1] = -1;
+        world_map[my_location[0]][my_location[1]-1] = -1
     return
 """
 follow(default_path, world_map)
