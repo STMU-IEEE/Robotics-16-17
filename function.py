@@ -665,7 +665,9 @@ def capacitor_hard_reset():
 def capacitor_trash_value():
 	flag = False
 	for i in range(4):
-		if(capacitor_data_current[i] > 100000 or capacitor_data_current[i] < 10000 or capacitor_data_current[i] == -2):
+		if(capacitor_data_current[i] > 100000 \
+		or capacitor_data_current[i] < 10000 \
+		or capacitor_data_current[i] == -2):
 			flag = True
 			print("Capacitor_trash_value found trash value")
 			break
