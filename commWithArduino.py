@@ -161,20 +161,25 @@ print("Ultrasonic Sensor: 'u' ")
 #clear_comm()
 debug_light_num = 0
 print('Restarting communication...')
-lightmatrix_debug(debug_light_num = debug_light_num+1)
+debug_light_num = debug_light_num+1
+lightmatrix_debug(debug_light_num)
 restart_comm()
 print('Stopping motors...')
 stop()
-lightmatrix_debug(debug_light_num = debug_light_num+1)
+debug_light_num = debug_light_num+1
+lightmatrix_debug(debug_light_num)
 print('Checking if gyros initialized...')
 read_gyro_status()
-lightmatrix_debug(debug_light_num = debug_light_num+1)
+debug_light_num = debug_light_num+1
+lightmatrix_debug(debug_light_num)
 print('Assign IDs...')
 assign_side()
-lightmatrix_debug(debug_light_num = debug_light_num+1)
+debug_light_num = debug_light_num+1
+lightmatrix_debug(debug_light_num)
 print('Calibrating gyros...')
 gyro_cali()
-lightmatrix_debug(debug_light_num = debug_light_num+1)
+debug_light_num = debug_light_num+1
+lightmatrix_debug(debug_light_num)
 
 print('Clearing the previous matrix...')
 lightmatrix_no_color()
