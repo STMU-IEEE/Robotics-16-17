@@ -3,10 +3,26 @@ from sense_hat import SenseHat
 sense = SenseHat()
 
 R = [255,0,0]#Red         Objective Tunnels
+M = [255,0,255]#Magenta
 B = [0,0,255]#Blue       DeadEnds
+C = [0,255,255]#Cyan
 G = [0,255,0]#Green		Insulation
 Y = [255,255,0]#		Ready Light
 E = [0,0,0]#Empty
+
+def lightmatrix_debug(x):
+	if x%5 == 0:
+		color = R
+	elif x%5 == 1:
+		color = M
+	elif x%5 == 2:
+		color = B
+	elif x%5 == 3:
+		color = C
+	elif x%5 == 4:
+		color = G
+	sense.clear(color)
+
 
 def lightmatrix_A7_yellow():
 	sense.set_rotation(270)

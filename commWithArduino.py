@@ -159,16 +159,23 @@ print("Communication Commands: [command (R or C)]")
 print("Ultrasonic Sensor: 'u' ")
 #print('Flushing inputs...')
 #clear_comm()
+debug_light_num = 0
 print('Restarting communication...')
+lightmatrix_debug(debug_light_num = debug_light_num+1)
 restart_comm()
 print('Stopping motors...')
 stop()
+lightmatrix_debug(debug_light_num = debug_light_num+1)
 print('Checking if gyros initialized...')
 read_gyro_status()
+lightmatrix_debug(debug_light_num = debug_light_num+1)
 print('Assign IDs...')
 assign_side()
+lightmatrix_debug(debug_light_num = debug_light_num+1)
 print('Calibrating gyros...')
 gyro_cali()
+lightmatrix_debug(debug_light_num = debug_light_num+1)
+
 print('Clearing the previous matrix...')
 lightmatrix_no_color()
 print('Enabling Yellow Ready Light')
@@ -181,6 +188,7 @@ while(True):
 		#on the first time through the loop, blank the LED screen
 		init_loop = False
 		lightmatrix_no_color();
+		lightmatrix_A7_yellow(); #does not clear array.
 	print(x)
 	if x == '1':
 		end()
