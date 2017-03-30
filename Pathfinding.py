@@ -36,9 +36,9 @@ import numpy as np
 world_size = 7
 #TODO
 #blocked_vals = {-1}
-blocked_vals = np.array([-1])  # this is a list of the possible blocked values for pathfinding purposes
+blocked_vals = np.array([-1])  # this is a list of the possible blocked values for default_Pathfinding purposes
 my_location = (0,0) # first val for vert, second for horiz (row, col)
-default_path = np.array([
+default_Path = np.array([
     [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
     [1,6],[1,5],[1,4],[1,3],[1,2],[1,1],[1,0],
     [2,0],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],
@@ -46,7 +46,6 @@ default_path = np.array([
     [4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],
     [5,6],[5,5],[5,4],[5,3],[5,2],[5,1],[5,0],
     [6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6]])
-my_path=default_path
 
 world_map = np.full((world_size,world_size), 8, dtype=np.int)
 # unexplored blocks will have a travel cost value of 8.
@@ -57,11 +56,11 @@ flow_map = []
 pos_direction = 0
 neg_direction = 0
 
-def follow(path, globalPath):
+def follow():
 
-    while len(path) > 0:
-        if np.all(my_location == path[0]):
-            path = np.delete(path,0); # if we have reached the next location, remove it from the path.
+    while len(default_Path) > 0:
+        if np.all(my_location == default_Path[0]):
+            default_Path = np.delete(default_Path,0); # if we have reached the next location, remove it from the default_Path.
 
         if world_map[my_location[0]][my_location[1]]<1: #If we are above a obstacle, mark as non-obstacle
             world_map[my_location[0]][my_location[1]]=1
@@ -70,11 +69,11 @@ def follow(path, globalPath):
         #TODO
 		#error inside if statement
         get_sensors(my_location) # update surrounding nodes
-        if int(world_map[path[0][0]][path[0][1]]) in blocked_vals:
-            path = np.delete(path,0); # if my next point is blocked, move on to the next point in the path.
+        if int(world_map[default_Path[0][0]][default_Path[0][1]]) in blocked_vals:
+            default_Path = np.delete(default_Path,0); # if my next point is blocked, move on to the next point in the default_Path.
 
         # update the map here
-        flow_map = flowField(world_map, path[0])
+        flow_map = flowField(world_map, default_Path[0])
         travel_direction = flow_map[my_location[0],my_location[1]]
         if travel_direction[0] > 0: # if we need to move north
             move_north()
@@ -200,7 +199,7 @@ def get_sensors(location):
         world_map[my_location[0]][my_location[1]-1] = -1;
     return
 """
-follow(default_path, world_map)
+follow(default_default_Path, world_map)
 print("Path Completed!")
 exit()
 """

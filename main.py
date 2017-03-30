@@ -42,15 +42,15 @@ lightmatrix_yellow()
 
 run_pres = 1
 #Using the variables from pathfinding
-global default_path
-global world_map
+# global default_path
+# global world_map
 
 while(run_pres == 0):#Waiting for the "GO"
 	sleep(0.01)
 #Initialize the Run
 lightmatrix_no_color()
 lightmatrix_A7_yellow()
-follow(default_path, world_map)
+follow()
 print("Path Completed!")
 run_pres = 0
 
