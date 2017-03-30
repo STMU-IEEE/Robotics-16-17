@@ -79,6 +79,10 @@ def command(x):
 		print(capacitor_block_identity())#0 wire, 1 no wire no insulation, 2 insulation
 	if data_in[0] == 'L':
 		capacitor_calibrate_move(int(data_in[1]), int(data_in[2]), int(data_in[3]))#1: block identity,2: quantity of data samples 3: use previous values?
+	if data_in[0] == '<':
+		capacitor_constant_diff_rewrite(int(data_in[1]))
+	if data_in[0] == ':':
+		capacitor_constant_rewrite(int(data_in[1]))
 	if data_in[0] == 'V':
 		cap_block_score = capacitor_block_multiple(int(data_in[1]))# # of test
 		print("X:\t{A}\tY:{B}".format(A = x_pos, B = y_pos))
@@ -132,16 +136,23 @@ def command(x):
 		north()
 	"""
 	#Arduino Gyro Commands
-
 	if data_in[0] == '=':
 		gyro_cali()
 	if data_in[0] == '?':
 		gyro_update_angle()
 		gyro_report_angle()
-	if data_in[0] == '[':
-		gyro_PID_test()
 	if data_in[0] == '>':
 		gyro_angle_test()
+	if data_in[0] == ',':
+		gyro_reset_angle()
+
+	#PID Commands
+	if data_in[0] == '[':
+		gyro_PID_test()
+	if data_in[0] == ';':
+		clear_gyro_PID()
+	if data_in[0] == 'Z':
+		gyro_PID_rotate()
 
 
 
@@ -192,8 +203,8 @@ while(True):
 	if(init_loop):
 		#on the first time through the loop, blank the LED screen
 		init_loop = False
-		lightmatrix_no_color();
-		lightmatrix_A7_yellow(); #does not clear array.
+		lightmatrix_no_color()
+		lightmatrix_A7_yellow() #does not clear array.
 	print(x)
 	if x == '1':
 		end()

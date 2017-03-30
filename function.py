@@ -1,7 +1,5 @@
-
-
 import serial   #This requires Pyserial 3 or later
-#import Pathfinding
+#from Pathfinding import *
 import sys
 import RPi.GPIO as GPIO
 import math
@@ -9,6 +7,7 @@ from sense_hat import SenseHat
 from time import sleep, time
 from colorama import Fore, Back, Style
 from statistics import mean, median, median_low, median_high
+from senseHat import *
 """
 install funsim's fork of ivPID from https://github.com/funsim/ivPID
 `sudo python3 setup.py install`
@@ -51,11 +50,15 @@ sleep(2)
 #left.timeout = 0.1
 #right.timeout = 0.1
 
-# PID object
-my_pid = PID(P=1.0, I=0.0, D=0.0) # only P term (-1.0 power per degree error); not really PID!
-my_pid.setSampleTime(1.0/30.0) #30Hz. Increase if "wobbling"; decrease if losing data
-old_output = 0.0 # initial value
+# gyro PID object (rotation)
+gyro_pid = PID(P=1.0, I=0.0, D=0.0) # only P term (-1.0 power per degree error); not really PID!
+gyro_pid.setSampleTime(1.0/30.0) #30Hz. Increase if "wobbling"; decrease if losing data
+gyro_pid_old_output = 0.0 # initial value
 
+# ultrasonic PID object (distance)
+us_pid = PID(P=1.0, I=0.0, D=0.0) # only P term
+us_pid.setSampleTime(1.0/30.0) # not relevant unless I or D terms are used
+us_pid_old_output = 0.0 # initial value
 
 #Direction and Arduino Variables
 FRONT = 1
@@ -76,11 +79,12 @@ yes = 1
 no = 0
 
 cali_pres = 0
+run_pres = 0
 
 #Encoder Variables
 encoder_value = [0,0,0,0] #left A, left B, right A, right B
 encoder_constant_x = [2850,2850,2850,2850] #value of encoders to reach one block
-encoder_constant_y = [3000,3000,3000,3000]
+encoder_constant_y = [2900,2900,2900,2900]
 encoder_constant = [encoder_constant_y, encoder_constant_x]
 
 #Movement Variables
@@ -100,11 +104,17 @@ move_speed = [move_y_speed, move_x_speed]
 capacitor_data_wire = [0,0,0,0]#max,median,min,average
 capacitor_data_iso = [0,0,0,0]
 capacitor_data_notiso = [0,0,0,0]
+
 capacitor_data_constant = [capacitor_data_wire, capacitor_data_notiso, capacitor_data_iso]
+capacitor_data_based_wire = [[0,0,0,0],[-250,-250,-280,-260],[-340,-340,-340,-340]]
+capacitor_data_based_iso = [[340,340,340,340],[35,40,33,11],[0,0,0,0]]
+capacitor_data_based_group = [capacitor_data_based_wire,[], capacitor_data_based_iso]
+
 
 capacitor_data_current = [0,0,0,0]#place holder for the newest data from the capacitor sensor
 
-capacitor_block_score = [0,0,0]#This will hold the scores of mutiple data samples from the capacitor_block_identity
+capacitor_block_score = [0,0,0]#This will hold the scores of mutiple 
+#data samples from the capacitor_block_identity
 
 #Gyro Variables
 gyro_angle = [0,0] #Left, Right
@@ -169,12 +179,15 @@ def read_arduino(side_arduino,with_confirmation):
 		return []
 	'''
 	if(EMERGENCY_CHAR in bline.decode()):#Emergency Char '%'
+		sleep(0.1)
 		print("FOUND EMERGENCY CHAR")
-		return []	
+		return []
+	#split() will remove '\r'
+	'''
 	if(bline == b'\r'):
 		print("Found backlash r")
 		return []
-
+	'''
 	trans_array = [float(s) for s in bline.decode().split()]
 	
 	return trans_array
@@ -223,7 +236,7 @@ def start_button_pressed(channel):
 	#TODO: Restart Comm is causing this function to fail
 	#restart_comm()
 
-
+	global run_pres
 	global cali_pres
 	global test_light
 	print("Button Pressed")
@@ -234,6 +247,7 @@ def start_button_pressed(channel):
 		print("Cali_pres returned to 0")
 		cali_pres = 0
 
+	run_pres = 1
 	return
 
 
@@ -474,7 +488,7 @@ def move_y(direction):
 	while(encoder_completion(Y) == 0): 
 		encoder_update()
 		print(update_PID())
-		new_motor_speed = obtain_new_motor_speeds(Y,direction, my_pid.output)
+		new_motor_speed = obtain_new_motor_speeds(Y,direction, gyro_pid.output)
 		update_motor_speed(Y,direction, new_motor_speed )
 	stop()
 
@@ -501,7 +515,7 @@ def move_x(direction):
 	while(encoder_completion(X) == 0):
 		encoder_update()
 		update_PID()
-		new_motor_speed = obtain_new_motor_speeds(X,direction, my_pid.output)
+		new_motor_speed = obtain_new_motor_speeds(X,direction, gyro_pid.output)
 		update_motor_speed(X,direction,new_motor_speed)
 	stop()
 
@@ -632,6 +646,7 @@ def capacitor_sensor():
 				print("F, ", end = '')
 				flag = 1
 				continue
+			#These cases should not happen. This means your sort is bad!
 			if(sensor_data[2] > sensor_data[1]):
 				print("B, ", end = '')
 				flag = 1
@@ -652,9 +667,39 @@ def capacitor_sensor():
 	return
 
 def capacitor_report():
-	print("Value of Capacitor Data Current now: ", end = '')
+	print("Value of Capacitor Data Current now:\t", end = '')
 	print(capacitor_data_current)
 	return
+
+def capacitor_constant_diff_rewrite(reference_block):
+	#To check the difference between the constanst respect to the insulated block
+	#The insulated block has been chosen to be the reference block 
+	#Since it is going to be the block at A7
+
+	print("Value of Capacitor Constants Data: ", end = '')
+	print(capacitor_data_constant)
+
+	for x in range(len(capacitor_data_constant)):
+		for y in range(len(capacitor_data_constant[x])):
+			capacitor_data_based_group[reference_block][x][y] = \
+			capacitor_data_constant[x][y] - capacitor_data_constant[reference_block][y]
+
+	print("Differences of the Capacitor Constants comparing to the Insulated Block:")
+	print(capacitor_data_based_group[reference_block])
+	return
+
+def capacitor_constant_rewrite(reference_block):
+
+	#This changes the values of the constant in respect to the 
+	#reference block, which could be either wire or insulated block
+
+	for x in range(len(capacitor_data_constant)):
+		for y in range(len(capacitor_data_constant[x])):
+			capacitor_data_constant[x][y] = \
+			capacitor_data_constant[reference_block][y] + capacitor_data_based_group[reference_block][x][y]
+	
+	return
+	
 
 def capacitor_hard_reset():
 	right.write(b"H")
@@ -749,6 +794,8 @@ def capacitor_calibrate_move(block_calibrate, data_sample, use_pre):
 		print("Isolated is now: ", end = '')
 	print(capacitor_data_constant[block_calibrate])
 
+"""
+This code appears to worsen sensor accuracy
 def capacitor_calibrate_update(block_calibrate):
 
 	print("Updating Block Data")
@@ -762,6 +809,7 @@ def capacitor_calibrate_update(block_calibrate):
 	print("After update Calibrate")
 
 	print(capacitor_data_constant[block_calibrate])
+"""
 
 def capacitor_block_identity():
 	#first check if calibration has been done
@@ -1153,10 +1201,14 @@ def gyro_report_angle():
        format(A = gyro_angle[LEFT_ARDUINO_ID], \
               B = gyro_angle[RIGHT_ARDUINO_ID]))
 	return
+def gyro_reset_angle():
+	left.write(b',')
+	right.write(b',')
+	return
 
 #-----------------PID-------------------
 def update_PID():
-	global old_output
+	global gyro_pid_old_output
 
 	gyro_update_angle()
 
@@ -1164,12 +1216,12 @@ def update_PID():
 		print("Right Gyro malfunction")
 		gyro_update_angle()
 
-	average_angle = (gyro_angle[RIGHT_ARDUINO_ID][0] + gyro_angle[LEFT_ARDUINO_ID][0]) / 2 
-	#used_angle = round(gyro_angle[RIGHT_ARDUINO_ID][0])
-	my_pid.update(average_angle) # for now, use 1 sensor
-	result = (my_pid.output != old_output)
-	old_output = my_pid.output
-	print("PID's OUTPUT: {A}".format(A = my_pid.output))
+	#used_angle = (gyro_angle[RIGHT_ARDUINO_ID][0] + gyro_angle[LEFT_ARDUINO_ID][0]) / 2 
+	used_angle = round(gyro_angle[RIGHT_ARDUINO_ID][0])
+	gyro_pid.update(used_angle) # for now, use 1 sensor
+	result = (gyro_pid.output != gyro_pid_old_output)
+	gyro_pid_old_output = gyro_pid.output
+	print("PID's OUTPUT: {A}".format(A = gyro_pid.output))
 	return result
 
 def obtain_new_motor_speeds(axes, direction, rotation_ratio):
@@ -1187,12 +1239,11 @@ def obtain_new_motor_speeds(axes, direction, rotation_ratio):
 	overall_shift_factor = [y_shift, x_shift]
 
 	#negative_compensation = []
-	#rotation_ratio = my_pid.output
+	#rotation_ratio = gyro_pid.output
 	for i in range(len(move_speed[axes][direction])):
 		new_motor_speed[i+1] = \
             str(move_speed[axes][direction][i] + \
-                overall_shift_factor[axes][direction][i] * 10 * round(rotation_ratio) \
-               )
+                overall_shift_factor[axes][direction][i] * 10 * round(rotation_ratio))
 	return new_motor_speed
 
 def update_motor_speed(axes,direction,motor_speed):
@@ -1216,19 +1267,34 @@ def gyro_PID_test():
 
 		print(update_PID())
 		sleep(0.3)
-		new_motor_speed = obtain_new_motor_speeds(Y,POS_DIRECTION, my_pid.output)
+		new_motor_speed = obtain_new_motor_speeds(Y,POS_DIRECTION, gyro_pid.output)
 		update_motor_speed(Y,POS_DIRECTION, new_motor_speed )
 
 	return
-"""
-def clear_reset_PID():
+
+def clear_gyro_PID():
 	#do the code here
+	gyro_pid.clear()
 	return
 
-def stationary_fix():
+def gyro_PID_rotate():
 	#Take the initial value of the gyros and try to match them with the values been received now
+	tolerance = 0.5
+	print(gyro_pid.output)
+
+	while(gyro_pid.output > 0):
+		print("Robot needs to turn ClockWise")
+		update_PID()
+		sleep(0.1)#Just to be able to read
+	while(gyro_pid.output < 0):
+		print("Robot needs to turn CounterClock Wise")
+		update_PID()
+		sleep(0.1)#Just to be able to read
+	print("Desired Orientation has been reached")
+		
+	
 	return 
-"""
+
 
 
 

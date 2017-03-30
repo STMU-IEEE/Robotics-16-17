@@ -34,16 +34,18 @@ from function import *
 import numpy as np
 # from heapq import *
 world_size = 7
-blocked_vals = {-1}  # this is a list of the possible blocked values for pathfinding purposes
+#TODO
+#blocked_vals = {-1}
+blocked_vals = [-1]  # this is a list of the possible blocked values for pathfinding purposes
 my_location = (0,0) # first val for vert, second for horiz (row, col)
-default_path = np.array(
+default_path = np.array([
     [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
     [1,6],[1,5],[1,4],[1,3],[1,2],[1,1],[1,0],
     [2,0],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],
     [3,6],[3,5],[3,4],[3,3],[3,2],[3,1],[3,0],
     [4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],
     [5,6],[5,5],[5,4],[5,3],[5,2],[5,1],[5,0],
-    [6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6])
+    [6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6]])
 my_path=default_path
 
 world_map = np.full((world_size,world_size), 8, dtype=np.int)
@@ -57,16 +59,20 @@ neg_direction = 0
 
 def follow(path, globalPath):
 
-    while path:
-        if my_location == path[0]:
+    while len(path) > 0:
+        if np.all(my_location == path[0]):
             path = np.delete(path,0); # if we have reached the next location, remove it from the path.
-        if world_map[my_location[0]][my_location[1]]<1:
-            world_map[my_location[0]][my_location[1]]=1
 
+        if world_map[my_location[0]][my_location[1]]<1: #If we are above a obstacle, mark as non-obstacle
+            world_map[my_location[0]][my_location[1]]=1
+        
         # run sensors and \
+        #TODO
+		#error inside if statement
         get_sensors(my_location) # update surrounding nodes
-        if world_map[path[0][0]][path[0][1]] in blocked_vals:
+        if int(world_map[path[0][0]][path[0][1]]) in blocked_vals:
             path = np.delete(path,0); # if my next point is blocked, move on to the next point in the path.
+        
         # update the map here
         flow_map = flowField(world_map, path[0])
         travel_direction = flow_map[my_location[0],my_location[1]]
@@ -92,15 +98,25 @@ def flowField(world, target):
     neighbor_dirs = [(0,1),(0,-1),(1,0),(-1,0)]
     closed_set = set()
     parents = {}
+    #TODO 
+    #Start is not defined, assuming start is meant to be equal zero
+    start = 0
     g_score = {start:0}
     open_set = set() # list of nodes to be explored
 
     open_set.add(target)
 
 
-    while open_set:
-        my_loc = open_set.pop(0)
+    while len(open_set) > 0:
+        #TODO
+        #open_set.pop should not have an argument
+        #my_loc = open_set.pop(0), only found on web openset.pop()
+        #openset.pop() is not defined
+        my_loc = open_set.pop()
         for i,j in neighbor_dirs:
+            #TODO
+			#my_loc is a scalar variable and does not take index
+            #Assuming my_loc was meant to say my_location
             neighbor = my_loc[0] + i, my_loc[1] + j
             if 0 <= neighbor[0] < world.shape[0]:
                 if 0 <= neighbor[1] <= world.shape[1]:
@@ -116,6 +132,9 @@ def flowField(world, target):
                 if y == world_size-1:
                     y_dir = min(g_score[(y-1,x)]-g_score[(y,x)],0)
                 elif y == 0:
+                    #TODO
+                    #y_dir = max(g_score[(y,x)]-g_score[(y+1,x)],0) ---> KeyError: (0, 0)
+
                     y_dir = max(g_score[(y,x)]-g_score[(y+1,x)],0)
                 else:
                     y_dir = g_score[(y-1,x)]-g_score[(y+1,x)]
@@ -134,12 +153,8 @@ def flowField(world, target):
                     x_dir = x_dir/abs(x_dir) # normalize the vector.
                 output_field[y][x]=(y_dir,x_dir)
 
-
-
-
-
-
     return output_field
+
 def move_north():
     move_y(pos_direction)
     return
@@ -155,8 +170,10 @@ def move_west():
 def get_sensors(location):
     block_direction = us_sensor()
     print(block_direction)
-    current_block_identity = capacitor_block_identity()
-    print(current_block_identity)
+    current_block_array = capacitor_block_multiple(3)
+
+    print("List Received from Function:")
+    print(current_block_array)
     #Ultrasonic function return values
     #0: no near by block
     # North 1000
@@ -169,7 +186,9 @@ def get_sensors(location):
     #0-> tunnel
     #1-> dead_ends
     #2-> Insulation
-    world_map[my_location[0]][my_location[1]] = current_block_identity
+    max_index = current_block_array.index(max(current_block_array))
+    print("max_index: {A}".format(A = max_index))
+    world_map[my_location[0]][my_location[1]] = max_index
 
     if(block_direction[0] == 1):#North
         world_map[my_location[0]+1][my_location[1]] = -1;
@@ -180,3 +199,8 @@ def get_sensors(location):
     elif(block_direction[3] == 1):#West
         world_map[my_location[0]][my_location[1]-1] = -1;
     return
+"""
+follow(default_path, world_map)
+print("Path Completed!")
+exit()
+"""
