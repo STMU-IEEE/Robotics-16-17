@@ -36,7 +36,7 @@ import numpy as np
 world_size = 7
 #TODO
 #blocked_vals = {-1}
-blocked_vals = [-1]  # this is a list of the possible blocked values for pathfinding purposes
+blocked_vals = np.array([-1])  # this is a list of the possible blocked values for pathfinding purposes
 my_location = (0,0) # first val for vert, second for horiz (row, col)
 default_path = np.array([
     [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
@@ -65,14 +65,14 @@ def follow(path, globalPath):
 
         if world_map[my_location[0]][my_location[1]]<1: #If we are above a obstacle, mark as non-obstacle
             world_map[my_location[0]][my_location[1]]=1
-        
+
         # run sensors and \
         #TODO
 		#error inside if statement
         get_sensors(my_location) # update surrounding nodes
         if int(world_map[path[0][0]][path[0][1]]) in blocked_vals:
             path = np.delete(path,0); # if my next point is blocked, move on to the next point in the path.
-        
+
         # update the map here
         flow_map = flowField(world_map, path[0])
         travel_direction = flow_map[my_location[0],my_location[1]]
@@ -98,7 +98,7 @@ def flowField(world, target):
     neighbor_dirs = [(0,1),(0,-1),(1,0),(-1,0)]
     closed_set = set()
     parents = {}
-    #TODO 
+    #TODO
     #Start is not defined, assuming start is meant to be equal zero
     start = 0
     g_score = {start:0}
