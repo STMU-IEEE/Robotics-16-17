@@ -271,7 +271,7 @@ void get_whoami(){
 void bubble_sort(long a[], int sizeofarray){
   //smallest ---- highest
   long holder = 0;
-    for(int i = 0; i < sizeofarray - i; i++){
+    for(int i = 0; i < sizeofarray; i++){
       for(int j = 0; j < sizeofarray - (i+1); j++){
         if(a[j] > a[j+1]){
           holder = a[j];
