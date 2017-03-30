@@ -14,21 +14,10 @@ def lightmatrix_A7_yellow():
 
 def lightmatrix_yellow():
 	# sense.set_rotation(270)
-	matrix = [
-	Y,Y,Y,Y,Y,Y,Y,Y,
-	Y,Y,Y,Y,Y,Y,Y,Y,
-	Y,Y,Y,Y,Y,Y,Y,Y,
-	Y,Y,Y,Y,Y,Y,Y,Y,
-
-	Y,Y,Y,Y,Y,Y,Y,Y,
-	Y,Y,Y,Y,Y,Y,Y,Y,
-	Y,Y,Y,Y,Y,Y,Y,Y,
-	Y,Y,Y,Y,Y,Y,Y,Y
-	]
-	sense.set_pixels(matrix)
+	sense.clear(Y)
 
 def lightmatrix_no_color():
-	sense.show_letter(' ', text_colour = [0,0,0], back_colour = E)
+	sense.clear()
 	return
 
 def lightmatrix_yellow_ready():

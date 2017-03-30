@@ -174,14 +174,20 @@ lightmatrix_no_color()
 print('Enabling Yellow Ready Light')
 lightmatrix_yellow()
 #servo_top()
+init_loop = True
 while(True):
 	x = input("Enter Command: ")
+	if(init_loop):
+		#on the first time through the loop, blank the LED screen
+		init_loop = False
+		lightmatrix_no_color();
 	print(x)
 	if x == '1':
 		end()
 		break
 	else:
 		command(x)
+# TODO: Make Sure that the arduinos are no longer sending any values. at all.
 print('Clearing LED Matrix and Quitting...')
 lightmatrix_no_color()
 GPIO.cleanup()
