@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from function import *
 from senseHat import *
 #from function import restart_comm
