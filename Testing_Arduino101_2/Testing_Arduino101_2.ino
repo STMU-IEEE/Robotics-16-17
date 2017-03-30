@@ -125,8 +125,8 @@ L3G gyro;
 //------------------VARIABLESs----------------
 //Communication Variables
 const char CONFIRM_CHAR = '@';
-const char TERM_CHAR = ' ';
-const char END_CHAR = '\n';
+const char DELIMITER_CHAR = ' ';
+const char CRLF[] = "\r\n";
 const char EMERGENCY_CHAR = '%';
 const char UNKNOWN_ARDUINO_CHAR = '^';
 char input, trash_input;
@@ -233,13 +233,9 @@ bool RPi_confirm(){
 void print_long_array(long ary[], int ary_size){
   for(int a = 0; a < ary_size; a++){
     Serial.print(capacitor_message[a]);
-    if(a < ary_size - 1){
-      Serial.print(TERM_CHAR);
-    }
-    else{
-      Serial.print(END_CHAR);
-    }
+    Serial.print(DELIMITER_CHAR);
   }
+  Serial.print(CRLF);
   if(!RPi_confirm()){
     Serial.print(EMERGENCY_CHAR);
   }

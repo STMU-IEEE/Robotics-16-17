@@ -1,10 +1,10 @@
 void servo_info(){
   Serial.print(myservo.read());
-  Serial.print(TERM_CHAR);
+  Serial.print(DELIMITER_CHAR);
   Serial.print(servoH_top);
-  Serial.print(TERM_CHAR);
+  Serial.print(DELIMITER_CHAR);
   Serial.print(servoH_bottom);
-  Serial.print(END_CHAR);
+  Serial.print(CRLF);
 }
 void servo_bottom(){
   myservo.write(servoH_bottom);

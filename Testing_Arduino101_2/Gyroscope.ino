@@ -12,7 +12,7 @@ void gyro_cali(){
   gyro_is_calibrated = 1;
   
 	Serial.print(dc_offset);
-	Serial.print(END_CHAR);
+	Serial.print(CRLF);
   digitalWrite(DEBUG_LED, LOW);
 }
 
@@ -35,7 +35,7 @@ void gyro_update_angle(){
 void gyro_report_angle(){
   //Serial.print("\n");
 	Serial.print(angle);
-	Serial.print(END_CHAR);
+	Serial.print(CRLF);
 }
 
 void gyro_reset_angle(){

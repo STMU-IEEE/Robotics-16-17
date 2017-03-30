@@ -11,7 +11,7 @@ void us_sensor(){
   ultrasonic2 = ave_us2;
 
   Serial.print(ultrasonic1);
-  Serial.print(TERM_CHAR);
+  Serial.print(DELIMITER_CHAR);
   Serial.print(ultrasonic2);
-  Serial.print(END_CHAR);
+  Serial.print(CRLF);
 }
