@@ -58,7 +58,7 @@ def pathfinding_init():
     neg_direction = 0
 
 
-def follow(path, globalPath):
+def follow():
 
 
     while len(default_Path) > 0:
@@ -67,7 +67,7 @@ def follow(path, globalPath):
 
         if world_map[my_location[0]][my_location[1]]<1: #If we are above a obstacle, mark as non-obstacle
             world_map[my_location[0]][my_location[1]]=1
-        
+
         # run sensors and \
         #TODO
 		#error inside if statement
@@ -108,7 +108,7 @@ def flowField(world, target):
     neighbor_dirs = [(0,1),(0,-1),(1,0),(-1,0)]
     closed_set = set()
     parents = {}
-    #TODO 
+    #TODO
     #Start is not defined, assuming start is meant to be equal zero
     start = 0
     g_score = {start:0}
