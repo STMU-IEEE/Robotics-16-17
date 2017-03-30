@@ -50,6 +50,7 @@ while(run_pres == 0):#Waiting for the "GO"
 #Initialize the Run
 lightmatrix_no_color()
 lightmatrix_A7_yellow()
+pathfinding_init()  #set up pathfinding variabless
 follow()
 print("Path Completed!")
 run_pres = 0
