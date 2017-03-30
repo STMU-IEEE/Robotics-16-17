@@ -12,7 +12,7 @@ RIGHT_C = 3
 BACK_C = 4
 
 #This are for testing the senseHat.py
-x_pos = 0 
+x_pos = 0
 y_pos = 0
 
 #Switch Case that selects the commands
@@ -81,7 +81,7 @@ def command(x):
 		capacitor_calibrate_move(int(data_in[1]), int(data_in[2]), int(data_in[3]))#1: block identity,2: quantity of data samples 3: use previous values?
 	if data_in[0] == 'V':
 		cap_block_score = capacitor_block_multiple(int(data_in[1]))# # of test
-		print("X:\t{A}\tY:{B}".format(A = x_pos, B = y_pos))		
+		print("X:\t{A}\tY:{B}".format(A = x_pos, B = y_pos))
 		lightmatrix_update(x_pos,y_pos,cap_block_score)
 	#Servo Command
 	if data_in[0] == 't':
@@ -132,7 +132,7 @@ def command(x):
 		north()
 	"""
 	#Arduino Gyro Commands
-	
+
 	if data_in[0] == '=':
 		gyro_cali()
 	if data_in[0] == '?':
@@ -143,7 +143,7 @@ def command(x):
 	if data_in[0] == '>':
 		gyro_angle_test()
 
-    
+
 
 	return
 
@@ -171,8 +171,8 @@ print('Calibrating gyros...')
 gyro_cali()
 print('Clearing the previous matrix...')
 lightmatrix_no_color()
-print('Marking on matrix tile A7...')
-lightmatrix_A7_yellow()
+print('Enabling Yellow Ready Light')
+lightmatrix_yellow()
 #servo_top()
 while(True):
 	x = input("Enter Command: ")
@@ -182,5 +182,6 @@ while(True):
 		break
 	else:
 		command(x)
-
+print('Clearing LED Matrix and Quitting...')
+lightmatrix_no_color()
 GPIO.cleanup()
