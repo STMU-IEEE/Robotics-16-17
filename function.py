@@ -15,10 +15,12 @@ install funsim's fork of ivPID from https://github.com/funsim/ivPID
 """
 from ivPID.pid import PID
 
-GPIO.setmode(GPIO.BCM)
+if GPIO.getmode() is not None:
+	GPIO.cleanup()
+GPIO.setmode(GPIO.BOARD)
 
 #Setting up the Interrupt
-GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(37, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 #Setting up communication between arduino and raspberry pi
 
@@ -137,11 +139,11 @@ ultra_ave = [0,0,0,0]
 
 #-----------------GENERAL PURPOSE-------------------
 def assign_side():
-    left.write(b']')
-    right.write(b']')
-    left.write(str(LEFT_ARDUINO_ID).encode())
-    right.write(str(RIGHT_ARDUINO_ID).encode())
-    return
+	left.write(b']')
+	right.write(b']')
+	left.write(str(LEFT_ARDUINO_ID).encode())
+	right.write(str(RIGHT_ARDUINO_ID).encode())
+	return
 
 def arduino_data_ready(side_arduino):
 	if(side_arduino == LEFT_ARDUINO_ID):
@@ -159,7 +161,7 @@ def read_arduino(side_arduino,with_confirmation):
 
 
 	if(side_arduino == LEFT_ARDUINO_ID and arduino_data_ready(LEFT_ARDUINO_ID)):
-        #TODO: What is the 25 argument for? readline() doesn't expect any arguments.
+			#TODO: What is the 25 argument for? readline() doesn't expect any arguments.
 		bline = left.readline()
 		if(with_confirmation):
 			left.write(CONFIRM_CHAR.encode())
@@ -209,11 +211,11 @@ def clear_comm():
 	return
 
 def clear_comm_absolute():
-        while(len(left.read()) == 0):
-                left.flushInput()
-        while(len(right.read()) == 0):
-                right.flushInput()
-        return
+	while(len(left.read()) == 0):
+		left.flushInput()
+	while(len(right.read()) == 0):
+		right.flushInput()
+	return
 
 def restart_comm():
 	left.write(b"R")
@@ -221,11 +223,11 @@ def restart_comm():
 	response = read_arduino(LEFT_ARDUINO_ID,no)
 	if(response[0] != 1):
 		print("Incorrect response '{A}' from left arduino". \
-        format(A=repr(response)))
+		format(A=repr(response)))
 	response = read_arduino(RIGHT_ARDUINO_ID,no)
 	if(response[0] != 1):
 		print("Incorrect response '{A}' from right arduino". \
-        format(A=repr(response)))
+		format(A=repr(response)))
 	return
 
 #Function that occurs when stop and/or start button are pressed
@@ -440,8 +442,8 @@ def encoder_current_value():
 	print("Current values of Encoders")
 	print("Encoder Values")
 	print("Left A: {A1} B: {B1} Right A: {A2} B: {B2}" \
-       .format(A1 = encoder_value[0], B1 = encoder_value[1], \
-               A2 = encoder_value[2], B2 = encoder_value[3] ) )
+		.format(A1 = encoder_value[0], B1 = encoder_value[1], \
+			A2 = encoder_value[2], B2 = encoder_value[3] ) )
 
 	return
 
@@ -450,12 +452,12 @@ def encoder_constant_value():
 	print("Constant values of Encoders")
 	print("Encoder Values for Y Axis")
 	print("Left A: {A1} B: {B1} Right A: {A2} B: {B2}" \
-       .format(A1 = encoder_constant_y[0], B1 = encoder_constant_y[1], \
-               A2 = encoder_constant_y[2], B2 = encoder_constant_y[3] ) )
+		.format(A1 = encoder_constant_y[0], B1 = encoder_constant_y[1], \
+			A2 = encoder_constant_y[2], B2 = encoder_constant_y[3] ) )
 	print("Encoder Values for X Axis")
 	print("Left A: {A1} B: {B1} Right A: {A2} B: {B2}" \
-       .format(A1 = encoder_constant_x[0], B1 = encoder_constant_x[1], \
-               A2 = encoder_constant_x[2], B2 = encoder_constant_x[3] ) )
+		.format(A1 = encoder_constant_x[0], B1 = encoder_constant_x[1], \
+			A2 = encoder_constant_x[2], B2 = encoder_constant_x[3] ) )
 	return
 
 def encoder_completion(axes):
@@ -485,7 +487,7 @@ def move_y(direction):
 		move_reverse(data_in)
 
 	#encoder_constant_value()
-    #if the function returns 0, that means that non of the encoders have reach the desired value
+	#if the function returns 0, that means that non of the encoders have reach the desired value
 	while(encoder_completion(Y) == 0):
 		encoder_update()
 		print(update_PID())
@@ -512,7 +514,7 @@ def move_x(direction):
 
 
 	#encoder_constant_value()
-    #if the function returns 0, that means that non of the encoders have reach the desired value
+	#if the function returns 0, that means that non of the encoders have reach the desired value
 	while(encoder_completion(X) == 0):
 		encoder_update()
 		update_PID()
@@ -575,13 +577,13 @@ def us_sensor():
 
 
 	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}" \
-       .format(B = left_back_ave,L = left_left_ave, \
-               F = right_front_ave, R = right_right_ave ) )
+		.format(B = left_back_ave,L = left_left_ave, \
+			F = right_front_ave, R = right_right_ave ) )
 
 	# North 1000
-	# South  100
-	# East    10
-	# West     1
+	# South 0100
+	# East	0010
+	# West	0001
 
 	ultra_ave = [right_front_ave, left_back_ave, right_right_ave, left_left_ave]
 
@@ -940,31 +942,6 @@ def capacitor_block_identity():
 	#if all tied 2-2
 	tied_check = 0
 
-	"""
-	for p in range(3):
-		if(diff_rating[p] == 2):
-			tied_check = tied_check + 1
-	if(tied_check == 2):
-		print("WARNING")
-		print("Tied in sensor catorgories")
-		print("Recommended to retake the values")
-		block_identity_message = -1
-	"""
-	#only recalibrate if difference between values is not too big
-
-	"""
-	for j in range(4):
-		if(diff_holder[j] > diff_tolerance):
-			diff_overpass_tolerace = 1
-
-	if(diff_overpass_tolerance == 0 \
-       and diff_rating[block_identity_message] == 7):
-		 capacitor_calibrate_update(block_identity_message)
-	else:
-		print("Diff Tolerance is surpassed and/or " + \
-               "diff_rating is not equal to 7")
-	"""
-
 	return block_identity_message
 
 
@@ -1061,12 +1038,12 @@ def servo_info():
 
 	print("Left Servo Information:")
 	print("Position: {P} Height Top: {T} Height Bottom: {B}" \
-       .format(P = left_servo_position, T = left_servo_height_top, \
-               B = left_servo_height_bottom) )
+		.format(P = left_servo_position, T = left_servo_height_top, \
+			B = left_servo_height_bottom) )
 	print("Right Servo Information:")
 	print("Position: {P} Height Top: {T} Height Bottom: {B}" \
-       .format(P = right_servo_position, T = right_servo_height_top, \
-               B = right_servo_height_bottom) )
+		.format(P = right_servo_position, T = right_servo_height_top, \
+			B = right_servo_height_bottom) )
 
 def encoder_completion_lid(axes):
 	completion = 0
@@ -1074,7 +1051,7 @@ def encoder_completion_lid(axes):
 	lid_distance_ratio = 6
 	encoder_constant_lid = [ [0], [0] ]
 	encoder_constant_lid[axes] = \
-        [x / lid_distance_ratio for x in encoder_constant[axes]]
+		[x / lid_distance_ratio for x in encoder_constant[axes]]
 
 	for i in range(4):
 		if(int(encoder_value[i]) >= mean(encoder_constant_lid[axes])):
@@ -1103,8 +1080,8 @@ def pick_up_lid(which_arduino,axes,direction):
 			move_right(data_in)
 		if(direction == NEG_DIRECTION):
 			move_left(data_in)
-    #if the function returns 0, that means that non of the encoders
-    #have reach the desired value
+	#if the function returns 0, that means that non of the encoders
+	#have reach the desired value
 	while(encoder_completion_lid(axes) == 0):
 		encoder_update()
 	stop()
@@ -1129,8 +1106,8 @@ def pick_up_lid(which_arduino,axes,direction):
 		if(direction == NEG_DIRECTION):
 			move_right(data_in)
 
-    #if the function returns 0, that means that non of the encoders
-    #have reach the desired value
+	#if the function returns 0, that means that non of the encoders
+	#have reach the desired value
 	while(encoder_completion_lid(axes) == 0):
 		encoder_update()
 		dice_read = dotCount()
@@ -1168,7 +1145,7 @@ def read_gyro_status():
 	gyro_status_left = read_arduino(LEFT_ARDUINO_ID, no)
 	gyro_status_right = read_arduino(RIGHT_ARDUINO_ID, no)
 	print("Left Gyro: {A}\tRight Gyro: {B}" \
-       .format(A = gyro_status_left, B = gyro_status_right))
+		.format(A = gyro_status_left, B = gyro_status_right))
 	return
 
 def gyro_cali():
@@ -1182,7 +1159,7 @@ def gyro_cali():
 	gyro_is_calibrated = yes
 	print("Gyro(s) are Calibrated")
 	print("Left:\t{A}\tRight:\t{B}" \
-       .format(A = left_confirmation, B = right_confirmation))
+		.format(A = left_confirmation, B = right_confirmation))
 
 	return
 
@@ -1190,7 +1167,7 @@ def gyro_update_angle():
 	clear_comm()
 	if(gyro_is_calibrated == no):
 		print("Angle was attempted to be read " + \
-               "but Gyro has not been Calibrated!")
+			"but Gyro has not been Calibrated!")
 		return
 	left.write(b'?')
 	right.write(b'?')
@@ -1206,8 +1183,8 @@ def gyro_update_angle():
 		gyro_angle[RIGHT_ARDUINO_ID] = read_arduino(RIGHT_ARDUINO_ID, no)
 
 	print("Left:\t{A}\tRight:{B}". \
-       format(A = gyro_angle[LEFT_ARDUINO_ID], \
-              B = gyro_angle[RIGHT_ARDUINO_ID]))
+		format(A = gyro_angle[LEFT_ARDUINO_ID], \
+			B = gyro_angle[RIGHT_ARDUINO_ID]))
 
 	return
 
@@ -1217,8 +1194,8 @@ def gyro_angle_test():
 
 def gyro_report_angle():
 	print("Left:\t{A}\tRight:\t{B}". \
-       format(A = gyro_angle[LEFT_ARDUINO_ID], \
-              B = gyro_angle[RIGHT_ARDUINO_ID]))
+		format(A = gyro_angle[LEFT_ARDUINO_ID], \
+			B = gyro_angle[RIGHT_ARDUINO_ID]))
 	return
 def gyro_reset_angle():
 	left.write(b',')
@@ -1261,8 +1238,8 @@ def obtain_new_motor_speeds(axes, direction, rotation_ratio):
 	#rotation_ratio = gyro_pid.output
 	for i in range(len(move_speed[axes][direction])):
 		new_motor_speed[i+1] = \
-            str(move_speed[axes][direction][i] + \
-                overall_shift_factor[axes][direction][i] * 10 * round(rotation_ratio))
+			str(move_speed[axes][direction][i] + \
+				overall_shift_factor[axes][direction][i] * 10 * round(rotation_ratio))
 	return new_motor_speed
 
 def update_motor_speed(axes,direction,motor_speed):
