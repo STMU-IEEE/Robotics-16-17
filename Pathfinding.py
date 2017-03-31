@@ -111,7 +111,7 @@ def follow():
     while len(default_Path) > 0:
 
         if np.all(my_location == default_Path[0]):
-            default_path = np.delete(default_Path,0, 0)  # if we have reached the next location, remove it from the default_Path.
+            default_Path = np.delete(default_Path,0, 0)  # if we have reached the next location, remove it from the default_Path.
 
         if world_map[my_location[0]][my_location[1]]<1: #If we are above a obstacle, mark as non-obstacle
             world_map[my_location[0]][my_location[1]]=1
@@ -128,7 +128,7 @@ def follow():
         print(blocked_vals)
 
         if world_map[default_Path[0][0]][default_Path[0][1]] in blocked_vals:
-            default_path = np.delete(default_Path,0, 0) # if my next point is blocked, move on to the next point in the default_Path.
+            default_Path = np.delete(default_Path,0, 0) # if my next point is blocked, move on to the next point in the default_Path.
 
         # update the map here
         #TODO LATER
@@ -264,7 +264,7 @@ def get_sensors(location):
         world_map[my_location[0]][my_location[1]-1] = -1
     return
 """
-follow(default_path, world_map)
+follow()
 print("Path Completed!")
 exit()
 """
