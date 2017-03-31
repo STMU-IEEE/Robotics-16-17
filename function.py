@@ -232,8 +232,7 @@ def start_button_pressed(channel):
 
 	#TODO: Restart Comm is causing this function to fail
 	#restart_comm()
-
-	global run_pres
+	
 	global cali_pres
 	global test_light
 	print("Button Pressed")

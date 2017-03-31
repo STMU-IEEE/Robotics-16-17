@@ -46,6 +46,7 @@ seven_seg_setup()
 print('Turning off seven segment display...')
 seven_seg_turn_off()
 
+global run_pres
 run_pres = 0
 #Using the variables from pathfinding
 # global default_path
