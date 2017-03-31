@@ -17,6 +17,7 @@ from ivPID.pid import PID
 
 if GPIO.getmode() is not None:
 	GPIO.cleanup()
+	
 GPIO.setmode(GPIO.BOARD)
 
 #Setting up the Interrupt
