@@ -14,7 +14,9 @@ Purpose of Pin	7Seg Pin --- RPi Pin ---
 import RPi.GPIO as GPIO
 
 def seven_seg_setup():
-	GPIO.setmode(GPIO.BOARD)
+	if GPIO.getmode() is None:
+		GPIO.cleanup
+		GPIO.setmode(GPIO.BOARD)
 	GPIO.setup(40, GPIO.OUT)
 	GPIO.setup(33, GPIO.OUT)
 	GPIO.setup(31, GPIO.OUT)
@@ -56,7 +58,7 @@ def seven_seg_turn_on(num):
 	else:
 		GPIO.output(33,GPIO.LOW)
 		print('0')
-	
+
 	if(int(two) == 1):
 		GPIO.output(40,GPIO.HIGH)
 		print('1')
