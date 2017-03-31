@@ -136,7 +136,7 @@ def follow():
         #TODO LATER
         #When actually competing change function
         #to lightmatrix_update_simple
-        lightmatrix_update_simple(my_location[0][0],my_location[0][1], \
+        lightmatrix_update_simple(my_location[0],my_location[1], \
         world_map[my_location[0]][my_location[1]])
 
 
