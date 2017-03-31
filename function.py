@@ -15,9 +15,9 @@ install funsim's fork of ivPID from https://github.com/funsim/ivPID
 """
 from ivPID.pid import PID
 
-if GPIO.getmode() is None:
+if GPIO.getmode() is not None:
 	GPIO.cleanup()
-	GPIO.setmode(GPIO.BOARD)
+GPIO.setmode(GPIO.BOARD)
 
 #Setting up the Interrupt
 GPIO.setup(37, GPIO.IN, pull_up_down=GPIO.PUD_UP)
