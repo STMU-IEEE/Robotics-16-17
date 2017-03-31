@@ -1132,7 +1132,7 @@ def get_dice_report():
 
 #Assigned the interrupt their functions
 if GPIO.getmode() is None:
-	GPIO.setMode(GPIO.BOARD)
+	GPIO.setmode(GPIO.BOARD)
 #Setting up the Interrupt
 GPIO.setup(37, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.add_event_detect(37, GPIO.RISING, callback = start_button_pressed, bouncetime = 300) # GPIO-26
