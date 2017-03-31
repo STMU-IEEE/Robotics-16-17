@@ -32,59 +32,115 @@ from function import *
 #   +-----+-----+-----+-----+-----+-----+-----+
 
 import numpy as np
-# from heapq import *
-def pathfinding_init():
+
+def follow():
+    global world_size
     world_size = 7
     #TODO
     #blocked_vals = {-1}
-    blocked_vals = np.array([-1])  # this is a list of the possible blocked values for default_Pathfinding purposes
+    global blocked_vals
+    blocked_vals= np.array([-1,-2222])  # this is a list of the possible blocked values for default_Pathfinding purposes
+    global my_location
     my_location = (0,0) # first val for vert, second for horiz (row, col)
+    global default_Path
     default_Path = np.array([
-        [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
-        [1,6],[1,5],[1,4],[1,3],[1,2],[1,1],[1,0],
-        [2,0],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],
-        [3,6],[3,5],[3,4],[3,3],[3,2],[3,1],[3,0],
-        [4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],
-        [5,6],[5,5],[5,4],[5,3],[5,2],[5,1],[5,0],
-        [6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6]])
+        [0,0],
+        [0,1],
+        [0,2],
+        [0,3],
+        [0,4],
+        [0,5],
+        [0,6],
+        [1,6],
+        [1,5],
+        [1,4],
+        [1,3],
+        [1,2],
+        [1,1],
+        [1,0],
+        [2,0],
+        [2,1],
+        [2,2],
+        [2,3],
+        [2,4],
+        [2,5],
+        [2,6],
+        [3,6],
+        [3,5],
+        [3,4],
+        [3,3],
+        [3,2],
+        [3,1],
+        [3,0],
+        [4,0],
+        [4,1],
+        [4,2],
+        [4,3],
+        [4,4],
+        [4,5],
+        [4,6],
+        [5,6],
+        [5,5],
+        [5,4],
+        [5,3],
+        [5,2],
+        [5,1],
+        [5,0],
+        [6,0],
+        [6,1],
+        [6,2],
+        [6,3],
+        [6,4],
+        [6,5],
+        [6,6]])
 
+    global world_map
     world_map = np.full((world_size,world_size), 8, dtype=np.int)
+    print (world_map)
     # unexplored blocks will have a travel cost value of 8.
     # this travel cost will be reduced to 1 when the robot explores that region.
+    global flow_map
     flow_map = []
 
     #Eduardo's Function Variables
+    global pos_direction
     pos_direction = 0
+    global neg_direction
     neg_direction = 0
 
-
-def follow(path, globalPath):
-
-
     while len(default_Path) > 0:
+
+
+
         if np.all(my_location == default_Path[0]):
-            default_Path = np.delete(default_Path,0) # if we have reached the next location, remove it from the default_Path.
+            default_Path = np.delete(default_Path,0, 0)  # if we have reached the next location, remove it from the default_Path.
 
         if world_map[my_location[0]][my_location[1]]<1: #If we are above a obstacle, mark as non-obstacle
             world_map[my_location[0]][my_location[1]]=1
-        
+
         # run sensors and \
         #TODO
 		#error inside if statement
         get_sensors(my_location) # update surrounding nodes
+        print("default_Path[0]: ")
+        print(default_Path[0])
+        print("default_Path[1]: ")
+        print(default_Path[1])
+        print(world_map[default_Path[0][0]][default_Path[0][1]])
+        print(blocked_vals)
 
-        if int(world_map[default_Path[0][0]][default_Path[0][1]]) in blocked_vals:
-            default_Path = np.delete(default_Path,0) # if my next point is blocked, move on to the next point in the default_Path.
+        if world_map[default_Path[0][0]][default_Path[0][1]] in blocked_vals:
+            default_Path = np.delete(default_Path,0, 0) # if my next point is blocked, move on to the next point in the default_Path.
 
         # update the map here
         #TODO LATER
         #When actually competing change function
         #to lightmatrix_update_simple
-        lightmatrix_update(path[0][1],path[0][0], \
+        lightmatrix_update_simple(my_location[0][0],my_location[0][1], \
         world_map[my_location[0]][my_location[1]])
 
 
-        flow_map = flowField(world_map, path[0])
+        flow_map = flowField(world_map, default_Path[0])
         travel_direction = flow_map[my_location[0],my_location[1]]
         if travel_direction[0] > 0: # if we need to move north
             move_north()
@@ -103,12 +159,13 @@ def you_are_here(): #for debug purposes
 def dist(a, b):
     return ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) **.5
 
-def flowField(world, target):
+def flowField(world, almost_target):
+    target = (almost_target[0],almost_target[1]) #casting the numpy array into a tuple
     output_field = np.zeros((7,7,2), dtype=np.int)
-    neighbor_dirs = [(0,1),(0,-1),(1,0),(-1,0)]
+    neighbor_dirs = tuple[(0,1),(0,-1),(1,0),(-1,0)]
     closed_set = set()
     parents = {}
-    #TODO 
+    #TODO
     #Start is not defined, assuming start is meant to be equal zero
     start = 0
     g_score = {start:0}
@@ -210,7 +267,7 @@ def get_sensors(location):
         world_map[my_location[0]][my_location[1]-1] = -1
     return
 """
-follow(default_path, world_map)
+follow()
 print("Path Completed!")
 exit()
 """
