@@ -77,7 +77,7 @@ seven_seg_turn_off()
 #Using the variables from pathfinding
 # global default_path
 # global world_map
-
+print('Waiting for button to be pressed...')
 while(run_pres == 0):#Waiting for the "GO"
 	sleep(0.01)
 #Initialize the Run

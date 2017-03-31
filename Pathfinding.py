@@ -167,7 +167,7 @@ def flowField(world, almost_target):
     parents = {}
     #TODO
     #Start is not defined, assuming start is meant to be equal zero
-    start = 0
+    start = my_location[0],my_location[1]
     g_score = {start:0}
     open_set = set() # list of nodes to be explored
 
@@ -184,7 +184,7 @@ def flowField(world, almost_target):
             #TODO
 			#my_loc is a scalar variable and does not take index
             #Assuming my_loc was meant to say my_location
-            neighbor = my_loc[0] + i, my_loc[1] + j
+            neighbor = (my_loc[0] + i, my_loc[1] + j)
             if 0 <= neighbor[0] < world.shape[0]:
                 if 0 <= neighbor[1] <= world.shape[1]:
                     if world[neighbor[0]][neighbor[1]] not in blocked_vals:
