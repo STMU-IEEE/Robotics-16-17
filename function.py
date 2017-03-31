@@ -1,5 +1,5 @@
 import serial   #This requires Pyserial 3 or later
-import sys 
+import sys
 import RPi.GPIO as GPIO
 import math
 from sense_hat import SenseHat
@@ -8,7 +8,7 @@ from colorama import Fore, Back, Style
 from statistics import mean, median, median_low, median_high
 from senseHat import *
 from img_proc import *
-from display import * 
+from display import *
 """
 install funsim's fork of ivPID from https://github.com/funsim/ivPID
 `sudo python3 setup.py install`
@@ -114,7 +114,7 @@ capacitor_data_based_group = [capacitor_data_based_wire,[], capacitor_data_based
 
 capacitor_data_current = [0,0,0,0]#place holder for the newest data from the capacitor sensor
 
-capacitor_block_score = [0,0,0]#This will hold the scores of mutiple 
+capacitor_block_score = [0,0,0]#This will hold the scores of mutiple
 #data samples from the capacitor_block_identity
 
 #Gyro Variables
@@ -157,7 +157,7 @@ def read_arduino(side_arduino,with_confirmation):
 	#TERM_CHAR separates values
 	#END_CHAR ends of transmition
 
-	
+
 	if(side_arduino == LEFT_ARDUINO_ID and arduino_data_ready(LEFT_ARDUINO_ID)):
         #TODO: What is the 25 argument for? readline() doesn't expect any arguments.
 		bline = left.readline()
@@ -169,7 +169,7 @@ def read_arduino(side_arduino,with_confirmation):
 			right.write(CONFIRM_CHAR.encode())
 
 	print(bline)
-	
+
 	#TODO: this should not happen/be necessary
 	'''
 	if('^' in bline.decode()):#Unknown Arduino
@@ -190,11 +190,11 @@ def read_arduino(side_arduino,with_confirmation):
 		return []
 	'''
 	trans_array = [float(s) for s in bline.decode().split()]
-	
+
 	return trans_array
-		
-		
-	
+
+
+
 
 #-----------------COMMUNICATION-------------------
 def end():
@@ -407,14 +407,14 @@ def encoder_calibration(axes,test_quantity):
 
 def encoder_update():#1 for Y, 2 for X
 #TODO: ???
-	#clear_comm() 
+	#clear_comm()
 
 	left.write(b"m")
 	right.write(b"m")
 
 	global encoder_value
 	encoder_holder = read_arduino(LEFT_ARDUINO_ID, no)
-	
+
 	encoder_value[0] = encoder_holder[0]
 	encoder_value[1] = encoder_holder[1]
 
@@ -486,7 +486,7 @@ def move_y(direction):
 
 	#encoder_constant_value()
     #if the function returns 0, that means that non of the encoders have reach the desired value
-	while(encoder_completion(Y) == 0): 
+	while(encoder_completion(Y) == 0):
 		encoder_update()
 		print(update_PID())
 		new_motor_speed = obtain_new_motor_speeds(Y,direction, gyro_pid.output)
@@ -544,11 +544,11 @@ def us_sensor():
 
 		sensor_holder_left = read_arduino(LEFT_ARDUINO_ID,no)
 		sensor_holder_right = read_arduino(RIGHT_ARDUINO_ID,no)
-		
+
 		if(len(sensor_holder_left) < 2 and len(sensor_holder_right) < 2):
 			print("*")
 			continue
-		
+
 		actual_sensor_collect_fre += 1
 		sensor_collect = sensor_holder_left + sensor_holder_right
 
@@ -558,7 +558,7 @@ def us_sensor():
 		for i in range(4):
 			if(sensor_collect[i] == 0):
 				sensor_collect[i] = 0
-					
+
 
 		sensor_total[0] += sensor_collect[0]
 		sensor_total[1] += sensor_collect[1]
@@ -586,7 +586,7 @@ def us_sensor():
 	ultra_ave = [right_front_ave, left_back_ave, right_right_ave, left_left_ave]
 
 	block_direction = [0,0,0,0]
-	
+
 	block_message = 0
 	for i in range(4):
 		if(ultra_ave[i] <= 12):
@@ -599,7 +599,7 @@ def us_sensor():
 
 	#print("Block Message: ", end = '')
 	#print(block_message)
-	
+
 	print("Block Direction : ", end = '')
 
 	return block_direction
@@ -674,7 +674,7 @@ def capacitor_report():
 
 def capacitor_constant_diff_rewrite(reference_block):
 	#To check the difference between the constanst respect to the insulated block
-	#The insulated block has been chosen to be the reference block 
+	#The insulated block has been chosen to be the reference block
 	#Since it is going to be the block at A7
 
 	print("Value of Capacitor Constants Data: ", end = '')
@@ -691,16 +691,16 @@ def capacitor_constant_diff_rewrite(reference_block):
 
 def capacitor_constant_rewrite(reference_block):
 
-	#This changes the values of the constant in respect to the 
+	#This changes the values of the constant in respect to the
 	#reference block, which could be either wire or insulated block
 
 	for x in range(len(capacitor_data_constant)):
 		for y in range(len(capacitor_data_constant[x])):
 			capacitor_data_constant[x][y] = \
 			capacitor_data_constant[reference_block][y] + capacitor_data_based_group[reference_block][x][y]
-	
+
 	return
-	
+
 
 def capacitor_hard_reset():
 	right.write(b"H")
@@ -934,7 +934,7 @@ def capacitor_block_identity():
 
 	diff_rating_max_index = diff_rating.index(max(diff_rating))
 	diff_rating_max = diff_rating[diff_rating_max_index]
-    
+
 	block_identity_message = diff_rating_max_index
 
 	#if all tied 2-2
@@ -1003,7 +1003,7 @@ def capacitor_block_multiple(data_sample):
 
 	#return block_identity_message
 	#For now I(Eduardo) would like to experiment how the robot would score
-	#Each block before deciding which identiy the block is. 
+	#Each block before deciding which identiy the block is.
 	return capacitor_block_score
 
 #-----------------SERVOS-------------------
@@ -1046,15 +1046,15 @@ def servo_change(data_in):
 def servo_info():
 	left.write(b"n")
 	right.write(b"n")
-	
+
 	servo_holder = read_arduino(LEFT_ARDUINO_ID, no)
-	
+
 	left_servo_position = servo_holder[0]
 	left_servo_height_top = servo_holder[1]
 	left_servo_height_bottom = servo_holder[2]
 
 	servo_holder = read_arduino(RIGHT_ARDUINO_ID , no)
-	
+
 	right_servo_position = servo_holder[0]
 	right_servo_height_top = servo_holder[1]
 	right_servo_height_bottom = servo_holder[2]
@@ -1072,7 +1072,7 @@ def encoder_completion_lid(axes):
 	completion = 0
 
 	lid_distance_ratio = 6
-	encoder_constant_lid = [ [0], [0] ] 
+	encoder_constant_lid = [ [0], [0] ]
 	encoder_constant_lid[axes] = \
         [x / lid_distance_ratio for x in encoder_constant[axes]]
 
@@ -1105,7 +1105,7 @@ def pick_up_lid(which_arduino,axes,direction):
 			move_left(data_in)
     #if the function returns 0, that means that non of the encoders
     #have reach the desired value
-	while(encoder_completion_lid(axes) == 0): 
+	while(encoder_completion_lid(axes) == 0):
 		encoder_update()
 	stop()
 	sleep(0.2)
@@ -1117,7 +1117,7 @@ def pick_up_lid(which_arduino,axes,direction):
 
 	encoder_reset()
 	sleep(0.5)
-	
+
 	if(axes == Y):
 		if(direction == POS_DIRECTION):
 			move_reverse(data_in)
@@ -1128,7 +1128,7 @@ def pick_up_lid(which_arduino,axes,direction):
 			move_left(data_in)
 		if(direction == NEG_DIRECTION):
 			move_right(data_in)
-            
+
     #if the function returns 0, that means that non of the encoders
     #have reach the desired value
 	while(encoder_completion_lid(axes) == 0):
@@ -1139,7 +1139,7 @@ def pick_up_lid(which_arduino,axes,direction):
 	stop()
 
 	dice_face_s = dotCount()
-	print("S: {B}".format(B = dice_face_s)
+	print("S: {B}".format(B = dice_face_s))
 
 	if(dice_face_s == dice_face_m):
 		seven_seg_turn_on(dice_face_s)
@@ -1147,11 +1147,11 @@ def pick_up_lid(which_arduino,axes,direction):
 		seven_seg_turn_on(dice_face_s)
 	elif(dice_face_m <= 6 and dice_face_m >= 1):
 		seven_seg_turn_on(dice_face_m)
-	else:	
+	else:
 		print("Dice not found")
 
 
-	return 
+	return
 
 #Assigned the interrupt their functions
 GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
@@ -1171,7 +1171,7 @@ def read_gyro_status():
 
 def gyro_cali():
 	global gyro_is_calibrated
-	
+
 	clear_comm()
 	left.write(b'=')
 	right.write(b'=')
@@ -1189,7 +1189,7 @@ def gyro_update_angle():
 	if(gyro_is_calibrated == no):
 		print("Angle was attempted to be read " + \
                "but Gyro has not been Calibrated!")
-		return 
+		return
 	left.write(b'?')
 	right.write(b'?')
 
@@ -1233,7 +1233,7 @@ def update_PID():
 		print("Right Gyro malfunction")
 		gyro_update_angle()
 
-	#used_angle = (gyro_angle[RIGHT_ARDUINO_ID][0] + gyro_angle[LEFT_ARDUINO_ID][0]) / 2 
+	#used_angle = (gyro_angle[RIGHT_ARDUINO_ID][0] + gyro_angle[LEFT_ARDUINO_ID][0]) / 2
 	used_angle = round(gyro_angle[RIGHT_ARDUINO_ID][0])
 	gyro_pid.update(used_angle) # for now, use 1 sensor
 	result = (gyro_pid.output != gyro_pid_old_output)
@@ -1308,11 +1308,6 @@ def gyro_PID_rotate():
 		update_PID()
 		sleep(0.1)#Just to be able to read
 	print("Desired Orientation has been reached")
-		
-	
-	return 
 
 
-
-
-
+	return
