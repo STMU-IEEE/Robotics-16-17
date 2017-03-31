@@ -15,10 +15,10 @@ install funsim's fork of ivPID from https://github.com/funsim/ivPID
 """
 from ivPID.pid import PID
 
-GPIO.setmode(GPIO.BCM)
+GPIO.setmode(GPIO.BOARD)
 
 #Setting up the Interrupt
-GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(37, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 #Setting up communication between arduino and raspberry pi
 
