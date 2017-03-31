@@ -2,7 +2,36 @@ from Pathfinding import *
 from function import *
 from senseHat import *
 from display import *
-global run_pres
+run_pres = 0
+
+#Function that occurs when stop and/or start button are pressed
+
+def start_button_pressed(channel):
+	#This is where the program to solve the "maze" would go
+	#for now it just makes the robot move foward
+
+	#TODO: Restart Comm is causing this function to fail
+	#restart_comm()
+	global run_pres
+	global cali_pres
+	global test_light
+	print("Button Pressed")
+	sleep(0.2)
+
+	if(cali_pres == 1):
+		print("Calibration detected")
+		print("Cali_pres returned to 0")
+		cali_pres = 0
+
+	run_pres = 1
+	return
+
+#Assigned the interrupt their functions
+if GPIO.getmode() is None:
+	GPIO.setmode(GPIO.BOARD)
+#Setting up the Interrupt
+GPIO.setup(37, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.add_event_detect(37, GPIO.RISING, callback = start_button_pressed, bouncetime = 300) # GPIO-26
 
 ##INITALIZATION
 
@@ -45,9 +74,6 @@ print('Setting up seven segment display...')
 seven_seg_setup()
 print('Turning off seven segment display...')
 seven_seg_turn_off()
-
-global run_pres
-run_pres = 0
 #Using the variables from pathfinding
 # global default_path
 # global world_map

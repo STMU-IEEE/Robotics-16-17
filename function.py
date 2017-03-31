@@ -224,27 +224,6 @@ def restart_comm():
 		format(A=repr(response)))
 	return
 
-#Function that occurs when stop and/or start button are pressed
-
-def start_button_pressed(channel):
-	#This is where the program to solve the "maze" would go
-	#for now it just makes the robot move foward
-
-	#TODO: Restart Comm is causing this function to fail
-	#restart_comm()
-	global run_pres
-	global cali_pres
-	global test_light
-	print("Button Pressed")
-	sleep(0.2)
-
-	if(cali_pres == 1):
-		print("Calibration detected")
-		print("Cali_pres returned to 0")
-		cali_pres = 0
-
-	run_pres = 1
-	return
 
 
 #-----------------MOVEMENT------------------------
@@ -1129,12 +1108,7 @@ def get_dice_report():
 	dice_read = dotCount()
 	print(dice_read)
 
-#Assigned the interrupt their functions
-if GPIO.getmode() is None:
-	GPIO.setmode(GPIO.BOARD)
-#Setting up the Interrupt
-GPIO.setup(37, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.add_event_detect(37, GPIO.RISING, callback = start_button_pressed, bouncetime = 300) # GPIO-26
+
 
 #-----------------GYROSCOPE-------------------
 """
