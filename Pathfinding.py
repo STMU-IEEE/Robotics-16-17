@@ -39,7 +39,7 @@ def follow():
     #TODO
     #blocked_vals = {-1}
     global blocked_vals
-    blocked_vals= np.array([-1])  # this is a list of the possible blocked values for default_Pathfinding purposes
+    blocked_vals= np.array([-1,-2222])  # this is a list of the possible blocked values for default_Pathfinding purposes
     global my_location
     my_location = (0,0) # first val for vert, second for horiz (row, col)
     global default_Path
@@ -54,6 +54,7 @@ def follow():
 
     global world_map
     world_map = np.full((world_size,world_size), 8, dtype=np.int)
+    print (world_map)
     # unexplored blocks will have a travel cost value of 8.
     # this travel cost will be reduced to 1 when the robot explores that region.
     global flow_map
@@ -77,7 +78,10 @@ def follow():
 		#error inside if statement
         get_sensors(my_location) # update surrounding nodes
 
-        if int(world_map[default_Path[0][0]][default_Path[0][1]]) in blocked_vals:
+        print(world_map[default_Path[0][0]][default_Path[0][1]])
+        print(blocked_vals)
+
+        if world_map[default_Path[0][0]][default_Path[0][1]] in blocked_vals:
             default_Path = np.delete(default_Path,0) # if my next point is blocked, move on to the next point in the default_Path.
 
         # update the map here
