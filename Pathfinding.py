@@ -122,7 +122,8 @@ def follow():
         get_sensors(my_location) # update surrounding nodes
         print("default_Path[0]: ")
         print(default_Path[0])
-        print("default_Path[1]: " + default_Path[1])
+        print("default_Path[1]: ")
+        print(default_Path[1])
         print(world_map[default_Path[0][0]][default_Path[0][1]])
         print(blocked_vals)
 
