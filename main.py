@@ -1,6 +1,7 @@
 from Pathfinding import *
 from function import *
 from senseHat import *
+from display import *
 global run_pres
 
 ##INITALIZATION
@@ -39,6 +40,11 @@ print('Clearing the previous matrix...')
 lightmatrix_no_color()
 print('Enabling Yellow Ready Light')
 lightmatrix_yellow()
+
+print('Setting up seven segment display...')
+seven_seg_setup()
+print('Turning off seven segment display...')
+seven_seg_turn_off()
 
 run_pres = 1
 #Using the variables from pathfinding
