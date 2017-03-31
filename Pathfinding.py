@@ -162,7 +162,7 @@ def dist(a, b):
 def flowField(world, almost_target):
     target = (almost_target[0],almost_target[1]) #casting the numpy array into a tuple
     output_field = np.zeros((7,7,2), dtype=np.int)
-    neighbor_dirs = tuple[(0,1),(0,-1),(1,0),(-1,0)]
+    neighbor_dirs = tuple((0,1),(0,-1),(1,0),(-1,0))
     closed_set = set()
     parents = {}
     #TODO
