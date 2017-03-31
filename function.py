@@ -15,13 +15,6 @@ install funsim's fork of ivPID from https://github.com/funsim/ivPID
 """
 from ivPID.pid import PID
 
-if GPIO.getmode() is not None:
-	GPIO.cleanup()
-	
-GPIO.setmode(GPIO.BOARD)
-
-#Setting up the Interrupt
-GPIO.setup(37, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 #Setting up communication between arduino and raspberry pi
 
@@ -1133,8 +1126,14 @@ def pick_up_lid(which_arduino,axes,direction):
 
 	return
 
+
+
 #Assigned the interrupt their functions
-GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
+if GPIO.getmode() is None:
+	GPIO.setMode(GPIO.BOARD)
+#Setting up the Interrupt
+GPIO.setup(37, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.add_event_detect(37, GPIO.RISING, callback = start_button_pressed, bouncetime = 300) # GPIO-26
 
 #-----------------GYROSCOPE-------------------
 """
