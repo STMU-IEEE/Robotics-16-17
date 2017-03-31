@@ -1133,6 +1133,10 @@ def pick_up_lid(which_arduino,axes,direction):
 
 	return
 
+def get_dice_report():
+	dice_read = dotCount()
+	print(dice_read)
+
 #Assigned the interrupt their functions
 GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
 

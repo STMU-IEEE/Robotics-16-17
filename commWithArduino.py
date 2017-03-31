@@ -100,8 +100,13 @@ def command(x):
 		servo_bottom(data_in[1])
 		sleep(5)
 		servo_top(data_in[1])
+
+	#Image Processing
 	if data_in[0] == '}':
 		pick_up_lid( int(data_in[1]),int(data_in[2]), int(data_in[3]) )#which_arduino, axes, direction
+	if data_in[0] == '{':
+		get_dice_report()
+		
 	#Communicatin Command
 	if data_in[0] == 'R':
 		restart_comm()
