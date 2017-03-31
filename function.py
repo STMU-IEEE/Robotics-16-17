@@ -1111,7 +1111,9 @@ def pick_up_lid(which_arduino,axes,direction):
 	#have reach the desired value
 	while(encoder_completion_lid(axes) == 0):
 		encoder_update()
-		dice_face_m = dotCount()
+		dice_read = dotCount()
+		if(dice_read != 0):
+			dice_face_m = dice_read
 		print("M: {A}".format(A = dice_face_m))
 
 	stop()
