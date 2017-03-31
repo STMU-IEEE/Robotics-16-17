@@ -110,6 +110,8 @@ def follow():
 
     while len(default_Path) > 0:
 
+
+
         if np.all(my_location == default_Path[0]):
             default_Path = np.delete(default_Path,0, 0)  # if we have reached the next location, remove it from the default_Path.
 
@@ -134,7 +136,7 @@ def follow():
         #TODO LATER
         #When actually competing change function
         #to lightmatrix_update_simple
-        lightmatrix_update_simple(default_Path[0][1],default_Path[0][0], \
+        lightmatrix_update_simple(my_location[0][0],my_location[0][1], \
         world_map[my_location[0]][my_location[1]])
 
 
@@ -157,9 +159,10 @@ def you_are_here(): #for debug purposes
 def dist(a, b):
     return ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) **.5
 
-def flowField(world, target):
+def flowField(world, almost_target):
+    target = (almost_target[0],almost_target[1]) #casting the numpy array into a tuple
     output_field = np.zeros((7,7,2), dtype=np.int)
-    neighbor_dirs = [(0,1),(0,-1),(1,0),(-1,0)]
+    neighbor_dirs = tuple[(0,1),(0,-1),(1,0),(-1,0)]
     closed_set = set()
     parents = {}
     #TODO
