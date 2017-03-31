@@ -1,6 +1,5 @@
 import serial   #This requires Pyserial 3 or later
-#from Pathfinding import *
-import sys
+import sys 
 import RPi.GPIO as GPIO
 import math
 from sense_hat import SenseHat
@@ -8,6 +7,8 @@ from time import sleep, time
 from colorama import Fore, Back, Style
 from statistics import mean, median, median_low, median_high
 from senseHat import *
+from img_proc import *
+from display import * 
 """
 install funsim's fork of ivPID from https://github.com/funsim/ivPID
 `sudo python3 setup.py install`
@@ -1109,13 +1110,13 @@ def pick_up_lid(which_arduino,axes,direction):
 	stop()
 	sleep(0.2)
 	servo_bottom(which_arduino)
-	sleep(1)
+	sleep(0.9)
 	servo_top(which_arduino)
 
 	#Now the robot must return to its previous place
 
 	encoder_reset()
-	sleep(1)
+	sleep(0.5)
 	
 	if(axes == Y):
 		if(direction == POS_DIRECTION):
@@ -1132,7 +1133,23 @@ def pick_up_lid(which_arduino,axes,direction):
     #have reach the desired value
 	while(encoder_completion_lid(axes) == 0):
 		encoder_update()
+		dice_face_m = dotCount()
+		print("M: {A}".format(A = dice_face_m))
+
 	stop()
+
+	dice_face_s = dotCount()
+	print("S: {B}".format(B = dice_face_s)
+
+	if(dice_face_s == dice_face_m):
+		seven_seg_turn_on(dice_face_s)
+	elif(dice_face_s <= 6 and dice_face_s >= 1):
+		seven_seg_turn_on(dice_face_s)
+	elif(dice_face_m <= 6 and dice_face_m >= 1):
+		seven_seg_turn_on(dice_face_m)
+	else:	
+		print("Dice not found")
+
 
 	return 
 
