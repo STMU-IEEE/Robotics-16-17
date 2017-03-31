@@ -10,7 +10,7 @@ import numpy as np
 def nothing(x):
     pass
 
-def dotCount
+def dotCount():
 
     # initialize the camera and grab a reference to the raw camera capture
     WIDTH = 1024

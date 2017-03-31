@@ -32,14 +32,14 @@ from function import *
 #   +-----+-----+-----+-----+-----+-----+-----+
 
 import numpy as np
-# from heapq import *
-def pathfinding_init():
-    world_size = 7
+
+def follow():
+    global world_size = 7
     #TODO
     #blocked_vals = {-1}
-    blocked_vals = np.array([-1])  # this is a list of the possible blocked values for default_Pathfinding purposes
-    my_location = (0,0) # first val for vert, second for horiz (row, col)
-    default_Path = np.array([
+    global blocked_vals = np.array([-1])  # this is a list of the possible blocked values for default_Pathfinding purposes
+    global my_location = (0,0) # first val for vert, second for horiz (row, col)
+    global default_Path = np.array([
         [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
         [1,6],[1,5],[1,4],[1,3],[1,2],[1,1],[1,0],
         [2,0],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],
@@ -48,18 +48,14 @@ def pathfinding_init():
         [5,6],[5,5],[5,4],[5,3],[5,2],[5,1],[5,0],
         [6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6]])
 
-    world_map = np.full((world_size,world_size), 8, dtype=np.int)
+    global world_map = np.full((world_size,world_size), 8, dtype=np.int)
     # unexplored blocks will have a travel cost value of 8.
     # this travel cost will be reduced to 1 when the robot explores that region.
-    flow_map = []
+    global flow_map = []
 
     #Eduardo's Function Variables
-    pos_direction = 0
-    neg_direction = 0
-
-
-def follow():
-
+    global pos_direction = 0
+    global neg_direction = 0
 
     while len(default_Path) > 0:
         if np.all(my_location == default_Path[0]):
