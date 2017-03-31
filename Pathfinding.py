@@ -134,11 +134,11 @@ def follow():
         #TODO LATER
         #When actually competing change function
         #to lightmatrix_update_simple
-        lightmatrix_update(path[0][1],path[0][0], \
+        lightmatrix_update(default_Path[0][1],default_Path[0][0], \
         world_map[my_location[0]][my_location[1]])
 
 
-        flow_map = flowField(world_map, path[0])
+        flow_map = flowField(world_map, default_Path[0])
         travel_direction = flow_map[my_location[0],my_location[1]]
         if travel_direction[0] > 0: # if we need to move north
             move_north()
