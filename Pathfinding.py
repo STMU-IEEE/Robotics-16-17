@@ -36,10 +36,11 @@ import numpy as np
 def follow():
     global world_size
     world_size = 7
+
     #TODO
     #blocked_vals = {-1}
     global blocked_vals
-    blocked_vals= np.array([-1,-2222])  # this is a list of the possible blocked values for default_Pathfinding purposes
+    blocked_vals= np.array([99999])  # this is a list of the possible blocked values for default_Pathfinding purposes
     global my_location
     my_location = (0,0) # first val for vert, second for horiz (row, col)
     global default_Path
@@ -106,12 +107,10 @@ def follow():
     global pos_direction
     pos_direction = 0
     global neg_direction
-    neg_direction = 0
+    neg_direction = 1
 
     while len(default_Path) > 0:
-
-
-
+        print ("Current Target: (x:" + str(default_Path[0][0]) + ", y: "+str(default_Path[0][1]) + ")")
         if np.all(my_location == default_Path[0]):
             default_Path = np.delete(default_Path,0, 0)  # if we have reached the next location, remove it from the default_Path.
 
@@ -141,12 +140,17 @@ def follow():
 
 
         flow_map = flowField(world_map, default_Path[0])
+        print("Flow Map: \n" + str(flow_map))
+        print("Cost Map: \n" + str(cost_map))
+        print("World Map: \n" + str(world_map))
         travel_direction = flow_map[my_location[0],my_location[1]]
+        print("Travel Direction: " +str(travel_direction))
+        input("Press Enter to continue...")
         if travel_direction[0] > 0: # if we need to move north
             move_north()
         elif travel_direction[0] < 0: # if we need to move south
             move_south()
-        elif travel_direction[1] > 0: # if we need to move west
+        elif travel_direction[1] < 0: # if we need to move west
             move_west()
         else:   # else move east
             move_east()
@@ -160,16 +164,20 @@ def dist(a, b):
     return ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) **.5
 
 def flowField(world, almost_target):
+    global cost_map
+    cost_map = np.full((world_size,world_size), 0,dtype = np.int)
     target = (almost_target[0],almost_target[1]) #casting the numpy array into a tuple
-    output_field = np.zeros((7,7,2), dtype=np.int)
+    output_field = np.zeros((world_size,world_size,2), dtype=np.int)
     neighbor_dirs = ((0,1),(0,-1),(1,0),(-1,0))
-    closed_set = set()
     parents = {}
     #TODO
     #Start is not defined, assuming start is meant to be equal zero
-    start = my_location[0],my_location[1]
-    g_score = {start:0}
+    g_score = {}
+    for x in range(0,world_size):
+        for y in range(0,world_size):
+            g_score[(x,y)] = 99999
     open_set = set() # list of nodes to be explored
+    g_score[target] = 0
 
     open_set.add(target)
 
@@ -181,45 +189,76 @@ def flowField(world, almost_target):
         #openset.pop() is not defined
         my_loc = open_set.pop()
         for i,j in neighbor_dirs:
+            # print("Neighbor Dir: ("+str(i)+","+str(j)+" )")
             #TODO
 			#my_loc is a scalar variable and does not take index
             #Assuming my_loc was meant to say my_location
             neighbor = (my_loc[0] + i, my_loc[1] + j)
-            if 0 <= neighbor[0] < world.shape[0]:
-                if 0 <= neighbor[1] <= world.shape[1]:
-                    if world[neighbor[0]][neighbor[1]] not in blocked_vals:
-                        open_set.add(neighbor)
-                        g_score[neighbor] = g_score[my_loc] + world[neighbor[0]][neighbor[1]]
-                    else: continue
-                    g_score[neighbor] = -1
-                else: continue
+            # print("Node Loc: ("+str(neighbor[0])+","+str(neighbor[1])+" )")
+            if 0 <= neighbor[0] and neighbor [0]<  world.shape[0] and 0 <= neighbor[1] and neighbor[1] < world.shape[1] :
+                # print ("Location in world!")
+                # print(world[neighbor[0]][neighbor[1]])
+                if world[neighbor[0]][neighbor[1]] not in blocked_vals:
+                    # print("Not blocked!")
+                    # print("My G Score: " + str(g_score[my_loc]))
+                    # print("My cost: " + str(world_map[my_loc[0]][my_loc[1]] + g_score[my_loc]))
+                    if g_score[neighbor] > g_score[my_loc] + world_map[my_loc[0]][my_loc[1]]:
+                        # print("In the other thing!")
+                        if(neighbor not in open_set):
+                            open_set.add(neighbor)
+                        print(neighbor)
+                        print(my_loc)
+                        cost_map[neighbor[0]][neighbor[1]]= g_score[my_loc] + world[my_loc[0]][my_loc[1]]
+                        g_score[neighbor] = g_score[my_loc] + world[my_loc[0]][my_loc[1]]
             else: continue
+
+    for x in range(0,world_size):
         for y in range(0,world_size):
-            for x in range(0,world_size):
-                if y == world_size-1:
-                    y_dir = min(g_score[(y-1,x)]-g_score[(y,x)],0)
-                elif y == 0:
-                    #TODO
-                    #y_dir = max(g_score[(y,x)]-g_score[(y+1,x)],0) ---> KeyError: (0, 0)
-
-                    y_dir = max(g_score[(y,x)]-g_score[(y+1,x)],0)
+            if(world_map[x][y] not in blocked_vals):
+                # print ("Processing Directions for ("+str(x)+","+str(y)+")")
+                top_bounded = False
+                bot_bounded = False
+                if y == world_size-1 or world_map[x][y+1] in blocked_vals:
+                    top = g_score[(x,y)]
+                    top_bounded = True
                 else:
-                    y_dir = g_score[(y-1,x)]-g_score[(y+1,x)]
-
-                if(y_dir != 0):
+                    top = g_score[(x,y+1)]
+                if y == 0 or world_map[x][y-1] in blocked_vals:
+                    bot = g_score[(x,y)]
+                    bot_bounded = True
+                else:
+                    bot = g_score[(x,y-1)]
+                y_dir = top - bot
+                if top_bounded :
+                    y_dir = max(y_dir, 0)
+                if bot_bounded :
+                    y_dir = min(y_dir, 0)
+                if y_dir != 0 :
                     y_dir = y_dir/abs(y_dir) # normalize the vector.
 
-                if (x == world_size-1) or (world_map[y][x+1] in blocked_vals):
-                    x_dir = min(g_score[(y,x-1)]-g_score[(y,x)],0)
-                elif x == 0 or world_map[y][x-1] in blocked_vals:
-                    x_dir = max(g_score[(y,x)]-g_score[(y,x+1)],0)
-                else:
-                    x_dir = g_score[(y,x-1)]-g_score[(y,x+1)]
+                top_bounded = False
+                bot_bounded = False
 
+                if x == world_size-1 or world_map[x+1][y] in blocked_vals:
+                    top = g_score[(x,y)]
+                    top_bounded = True
+                else:
+                    top = g_score[(x+1,y)]
+
+                if x == 0 or world_map[x-1][y] in blocked_vals:
+                    bot = g_score[(x,y)]
+                    bot_bounded = True
+                else:
+                    bot = g_score[(x-1,y)]
+                    # x_dir = max(g_score[(x-1,y)]-g_score[(x,y)],0)
+                x_dir = top - bot
+                if top_bounded :
+                    y_dir = max(y_dir, 0)
+                if bot_bounded :
+                    y_dir = min(y_dir, 0)
                 if(x_dir != 0):
                     x_dir = x_dir/abs(x_dir) # normalize the vector.
-                output_field[y][x]=(y_dir,x_dir)
-
+                output_field[x][y]=(x_dir,y_dir)
     return output_field
 
 def move_north():
@@ -232,7 +271,7 @@ def move_east():
     move_x(pos_direction)
     return
 def move_west():
-    move_x(pos_direction)
+    move_x(neg_direction)
     return
 def get_sensors(location):
     block_direction = us_sensor()
@@ -254,6 +293,7 @@ def get_sensors(location):
     #1-> dead_ends
     #2-> Insulation
     max_index = current_block_array.index(max(current_block_array))
+    
     print("max_index: {A}".format(A = max_index))
     world_map[my_location[0]][my_location[1]] = max_index
 

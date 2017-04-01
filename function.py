@@ -178,7 +178,7 @@ def read_arduino(side_arduino,with_confirmation):
 	if(EMERGENCY_CHAR in bline.decode()):#Emergency Char '%'
 		sleep(0.1)
 		print("FOUND EMERGENCY CHAR")
-		return []
+		return None
 	#split() will remove '\r'
 	'''
 	if(bline == b'\r'):
@@ -602,7 +602,7 @@ def capacitor_sensor():
 		sensor_data = read_arduino(RIGHT_ARDUINO_ID, yes)
 		print(sensor_data)
 
-		if(len(sensor_data) == 0):
+		if(sensor_data is None or len(sensor_data) == 0):
 			continue
 
 		for i in range(len(sensor_data)):#If any of the values is a trash value
@@ -636,7 +636,8 @@ def capacitor_sensor():
 		break
 
 	for i in range(4):
-		capacitor_data_current[i] = sensor_data[i]
+		if(sensor_data is not None):
+			capacitor_data_current[i] = sensor_data[i]
 
 	clear_comm()
 	return

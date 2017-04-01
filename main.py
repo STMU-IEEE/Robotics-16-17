@@ -15,7 +15,7 @@ def start_button_pressed(channel):
 	global run_pres
 	global cali_pres
 	global test_light
-	print("Button Pressed")
+	print("GO Button Pressed")
 	sleep(0.2)
 
 	if(cali_pres == 1):
@@ -26,12 +26,18 @@ def start_button_pressed(channel):
 	run_pres = 1
 	return
 
+def stop_button_pressed(channel):
+	print("STOP Button Pressed")
+	exit()
+
 #Assigned the interrupt their functions
 if GPIO.getmode() is None:
 	GPIO.setmode(GPIO.BOARD)
 #Setting up the Interrupt
 GPIO.setup(37, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.add_event_detect(37, GPIO.RISING, callback = start_button_pressed, bouncetime = 300) # GPIO-26
+# GPIO.setup(36, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+# GPIO.add_event_detect(36, GPIO.FALLING, callback = stop_button_pressed, bouncetime = 300) # GPIO-26
 
 ##INITALIZATION
 
