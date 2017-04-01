@@ -232,7 +232,7 @@ def move_east():
     move_x(pos_direction)
     return
 def move_west():
-    move_x(pos_direction)
+    move_x(neg_direction)
     return
 def get_sensors(location):
     block_direction = us_sensor()

@@ -55,7 +55,7 @@ def lightmatrix_update(x,y,block_score):
 
 def lightmatrix_update_simple(x,y,block_score):
 	block_identity = block_score
-	#The x and y were exchnage explicitly
+	#The x and y were exchange explicitly
 	if(block_identity == 0):
 		sense.set_pixel(y,x,R)
 	if(block_identity == 1):
