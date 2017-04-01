@@ -1,241 +1,198 @@
-import serial
-#import Pathfinding
+import serial   #This requires Pyserial 3 or later
 import sys
 import RPi.GPIO as GPIO
 import math
 from sense_hat import SenseHat
 from time import sleep, time
-import colorama
 from colorama import Fore, Back, Style
+from statistics import mean, median, median_low, median_high
+from senseHat import *
+from img_proc import *
+from display import *
+"""
+install funsim's fork of ivPID from https://github.com/funsim/ivPID
+`sudo python3 setup.py install`
+"""
+from ivPID.pid import PID
 
-
-GPIO.setmode(GPIO.BCM)
-
-#Setting up the Interrupt
-GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 #Setting up communication between arduino and raspberry pi
 
 
-left_ard='/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_6493833393235151C131-if00'
-right_ard='/dev/serial/by-id/usb-Arduino_LLC__www.arduino.cc__Genuino_Uno_85531303631351112162-if00'
-left = serial.Serial(left_ard, 9600)
-right = serial.Serial(right_ard, 9600)
+LEFT_ARDUINO_PORT='/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_6493833393235151C131-if00'
+RIGHT_ARDUINO_PORT='/dev/serial/by-id/usb-Arduino_LLC__www.arduino.cc__Genuino_Uno_85531303631351112162-if00'
+BAUD = 57600
+left = serial.Serial(LEFT_ARDUINO_PORT, BAUD)
+right = serial.Serial(RIGHT_ARDUINO_PORT, BAUD)
 
-left.timeout = 0.1
-right.timeout = 0.1
+left.reset_input_buffer()
+right.reset_input_buffer()
+left.reset_output_buffer()
+right.reset_output_buffer()
+
+# manually reset Arduino by toggling DTR
+left.dtr = False
+right.dtr = False
+sleep(0.01)
+left.dtr = True
+right.dtr = True
 
 
+#left.open()
+#right.open()
+# Arduinos require about 3 seconds before finishing setup()
+print('Wait for Arduinos to finish resetting...')
+sleep(2)
+
+#left.timeout = 0.1
+#right.timeout = 0.1
+
+# gyro PID object (rotation)
+gyro_pid = PID(P=1.0, I=0.0, D=0.0) # only P term (-1.0 power per degree error); not really PID!
+gyro_pid.setSampleTime(1.0/30.0) #30Hz. Increase if "wobbling"; decrease if losing data
+gyro_pid_old_output = 0.0 # initial value
+
+# ultrasonic PID object (distance)
+us_pid = PID(P=1.0, I=0.0, D=0.0) # only P term
+us_pid.setSampleTime(1.0/30.0) # not relevant unless I or D terms are used
+us_pid_old_output = 0.0 # initial value
+
+#Direction and Arduino Variables
 FRONT = 1
 LEFT = 2
 RIGHT = 3
 BACK = 4
 
-Y = 1
-X = 2
+Y = 0
+X = 1
 
-left_arduino = 0
-right_arduino = 1
+LEFT_ARDUINO_ID = 0
+RIGHT_ARDUINO_ID = 1
 
-pos_direction = 1
-neg_direction = 2
+POS_DIRECTION = 0
+NEG_DIRECTION = 1
+
+yes = 1
+no = 0
 
 cali_pres = 0
+run_pres = 0
 
+#Encoder Variables
 encoder_value = [0,0,0,0] #left A, left B, right A, right B
+encoder_constant_x = [2850,2850,2850,2850] #value of encoders to reach one block
+encoder_constant_y = [2900,2900,2900,2900]
+encoder_constant = [encoder_constant_y, encoder_constant_x]
 
-encoder_constant_x = [3246,3382,3246,3155] #value of encoders to reach one block
-encoder_constant_y = [2863,2850,2859,2792]
-
-encoder_constant = [encoder_constant_y encoder_constant_x]
-
-#This are the variables that hold a rough estimate of the speed required to make the robot move straight
-
+#Movement Variables
 move_x_speed_p = [215,190,200,205]
 move_x_speed_n = [210,185,210,185]
 move_y_speed_p = [165,165,200,200]
 move_y_speed_n = [180,180,200,200]
 
-move_x_speed = [move_x_speed_p move_x_speed_n]
-move_y_speed = [move_y_speed_p move_y_speed_n]
+current_speed = [0,0,0,0]
 
-#This are the variables that will be holding the latest recorded values from the capacitive sensor respect to their designation
-#Such as wire, iso, and notiso
+move_x_speed = [move_x_speed_p, move_x_speed_n]
+move_y_speed = [move_y_speed_p, move_y_speed_n]
 
+move_speed = [move_y_speed, move_x_speed]
+
+#Capacitor Variables
 capacitor_data_wire = [0,0,0,0]#max,median,min,average
 capacitor_data_iso = [0,0,0,0]
 capacitor_data_notiso = [0,0,0,0]
-capacitor_data_constant = [capacitor_data_wire capacitor_data_iso capacitor_data_notiso]
+
+capacitor_data_constant = [capacitor_data_wire, capacitor_data_notiso, capacitor_data_iso]
+#capacitor_data_based_wire = [[0,0,0,0],[-250,-250,-280,-260],[-340,-340,-340,-340]]
+#capacitor_data_based_iso = [[340,340,340,340],[35,40,33,11],[0,0,0,0]]
+capacitor_data_based_wire = [[0,0,0,0],[-50,-50,-50,-50],[-61,-68,-59,-60]]
+capacitor_data_based_iso = [[61,68,59,60],[37,44,40,39],[0,0,0,0]]
+capacitor_data_based_group = [capacitor_data_based_wire,[], capacitor_data_based_iso]
+
 
 capacitor_data_current = [0,0,0,0]#place holder for the newest data from the capacitor sensor
-capacitor_block_score = [0,0,0]#This will hold the scores of mutiple data samples from the capacitor_block_identity
 
-neg_char_b = b'-'
-term_char = '#'
-end_char = '&'
-end_char_b = b'&'
-confirm_char = b'@'
-emergency_char = b'%'
+capacitor_block_score = [0,0,0]#This will hold the scores of mutiple
+#data samples from the capacitor_block_identity
+
+#Gyro Variables
+gyro_angle = [0,0] #Left, Right
+gyro_cali_b = b'='
+gyro_update_angle_b = b'?'
+gyro_is_calibrated = no
+
+#Communication Constants
+TERM_CHAR = ' '
+END_CHAR = '\n'
+CONFIRM_CHAR = '@'
+EMERGENCY_CHAR = '%'
+
+#Ultrasonic Variables
+ultra_ave = [0,0,0,0]
 
 
 #functions that control the arduino
 
 #-----------------GENERAL PURPOSE-------------------
 def assign_side():
-    left.write(b'0')
-    right.write(b'1')
-    return
+	left.write(b']')
+	right.write(b']')
+	left.write(str(LEFT_ARDUINO_ID).encode())
+	right.write(str(RIGHT_ARDUINO_ID).encode())
+	return
 
-def average(list):
-	total = 0
-	for i in range(len(list)):
-		total = total + list[i]
-	return round( total / len(list) )
+def arduino_data_ready(side_arduino):
+	if(side_arduino == LEFT_ARDUINO_ID):
+		while(left.in_waiting == 0):
+			sleep(0.001)
+	if(side_arduino == RIGHT_ARDUINO_ID):
+		while(right.in_waiting == 0):
+			sleep(0.001)
+	return True
 
-def find_min_index(given_list,size_list):
-	min_value = 99999999
-	index = 0
-
-	for i in range(size_list):
-		if(given_list[i] < min_value):
-			index = i
-			min_value = given_list[i]
-	return index
-
-def find_min_value(given_list,size_list):
-	min_value = 99999999
-	index = 0
-
-	for i in range(size_list):
-		if(given_list[i] < min_value):
-			index = i
-			min_value = given_list[i]
-	return min_value
-
-def find_max_index(given_list,size_list):
-	max_value = 0
-	index = 0
-
-	for i in range(size_list):
-		if(given_list[i] > max_value):
-			index = i
-			max_value = given_list[i]
-	return index
-
-def find_max_index(given_list,size_list):
-	max_value = 0
-	index = 0
-
-	for i in range(size_list):
-		if(given_list[i] > max_value):
-			index = i
-			max_value = given_list[i]
-	return max_value
-
-def int_speed(bytes):
-	bytes_integer = [0,0,0,0,0]
-	for i in range(len(bytes)):
-		if i == 0:
-			continue
-		bytes_integer[i] = eval(bytes[i])
-		bytes_integer[i] = int(bytes_integer[i])
-		bytes[i] = str( bytes_integer[i] )
-	return bytes
-
-def read_integer_serial(terminating_char, side):
+def read_arduino(side_arduino,with_confirmation):
 	#side if 1 means left and 2 means right
-	#term_char separates values
-	#end_char ends of transmition
-
-	transmitted_value = 0
-	counter = 1
-	new_char = 0
-	char_is_negative = 1
+	#TERM_CHAR separates values
+	#END_CHAR ends of transmition
 
 
-	while(counter < 15):
+	if(side_arduino == LEFT_ARDUINO_ID and arduino_data_ready(LEFT_ARDUINO_ID)):
+			#TODO: What is the 25 argument for? readline() doesn't expect any arguments.
+		bline = left.readline()
+		if(with_confirmation):
+			left.write(CONFIRM_CHAR.encode())
+	if(side_arduino == RIGHT_ARDUINO_ID and arduino_data_ready(RIGHT_ARDUINO_ID)):
+		bline = right.readline()
+		if(with_confirmation):
+			right.write(CONFIRM_CHAR.encode())
 
-		if(side == left_arduino):#Left
-			new_char = left.read()
-		if(side == right_arduino):#Right
-			new_char = right.read()
+	#print(bline)
 
-		#sleep(1)
-		#print("Character Received: {A}".format(A = new_char))
+	#TODO: this should not happen/be necessary
+	'''
+	if('^' in bline.decode()):#Unknown Arduino
+		print("Found ^")
+		restart_comm()
+		read_gyro_status()
+		assign_side()
+		return []
+	'''
+	if(EMERGENCY_CHAR in bline.decode()):#Emergency Char '%'
+		sleep(0.1)
+		print("FOUND EMERGENCY CHAR")
+		return []
+	#split() will remove '\r'
+	'''
+	if(bline == b'\r'):
+		print("Found backlash r")
+		return []
+	'''
+	trans_array = [float(s) for s in bline.decode().split()]
 
-		if len(new_char) == 0:
-			return -2
-
-		if(new_char == b'\r'):
-			#print("Identified b(r)")
-			break
-		if(new_char == b'\n'):
-			#print("Identified b(n)")
-			#new_char = terminating_char
-			break
-		if(new_char == neg_char_b):
-			char_is_negative = -1
-			continue
-
-		new_char = ord(new_char) - 48
-
-		if new_char == ord(terminating_char) - 48:
-			break
-
-		transmitted_value = transmitted_value * 10 + int(new_char)
-		counter = counter + 1
-
-	return(transmitted_value * char_is_negative)
-
-def read_integer_serial_long(side,terminating_char):
-		#side if 1 means left and 2 means right
-	#term_char separates values
-	#end_char ends of transmition
-
-	transmitted_value = 0
-	counter = 1
-	new_char = 0
-	char_is_negative = 1
+	return trans_array
 
 
-	while(counter < 15):
 
-		if(side == left_arduino):#Left
-			new_char = left.read()
-		if(side == right_arduino):#Right
-			new_char = right.read()
-
-		#sleep(1)
-		#print("Character Received: {A}".format(A = new_char))
-
-		if len(new_char) == 0:
-			return -2
-
-		if(new_char == b'\r'):
-			#print("Identified b(r)")
-			break
-		if(new_char == b'\n'):
-			#print("Identified b(n)")
-			#new_char = terminating_char
-			break
-		if(new_char == neg_char_b):
-			char_is_negative = -1
-			continue
-
-		new_char = ord(new_char) - 48
-
-		if new_char == ord(terminating_char) - 48:
-			break
-
-		transmitted_value = transmitted_value * 10 + int(new_char)
-		counter = counter + 1
-
-		if(side == 1):#Left
-			left.write(b"@")
-		if(side == 2):#Right
-			right.write(b"@")
-
-	return(transmitted_value * char_is_negative)
 
 #-----------------COMMUNICATION-------------------
 def end():
@@ -245,39 +202,30 @@ def end():
 	left.close()
 	return
 def clear_comm():
-	left.flushInput()
-	right.flushInput()
+	left.reset_input_buffer()
+	right.reset_input_buffer()
 	return
 
 def clear_comm_absolute():
-        while(len(left.read()) != 0):
-                left.flushInput()
-        while(len(right.read()) != 0):
-                right.flushInput()
-        returndef restart_comm():
-	left.write(b"R")
-	right.write(b"R")
+	while(len(left.read()) == 0):
+		left.flushInput()
+	while(len(right.read()) == 0):
+		right.flushInput()
 	return
 
 def restart_comm():
 	left.write(b"R")
 	right.write(b"R")
+	response = read_arduino(LEFT_ARDUINO_ID,no)
+	if(response[0] != 1):
+		print("Incorrect response '{A}' from left arduino". \
+		format(A=repr(response)))
+	response = read_arduino(RIGHT_ARDUINO_ID,no)
+	if(response[0] != 1):
+		print("Incorrect response '{A}' from right arduino". \
+		format(A=repr(response)))
 	return
 
-#Function that occurs when stop and/or start button are pressed
-
-def start_button_pressed(channel):
-	#This is where the program to solve the "maze" would go
-	#for now it just makes the robot move foward
-	restart_comm()
-	global cali_pres
-
-	if(cali_pres == 1):
-		print("Calibration detected")
-		print("Cali_pres returned to 0")
-		cali_pres = 0
-
-	return
 
 
 #-----------------MOVEMENT------------------------
@@ -286,101 +234,94 @@ def stop():
 	left.write(b"x")
 	return
 
-def move_right(bytes):
-	bytes = int_speed(bytes)
+def move_right(data_in):
 	left.write(b"i")
-	left.write(bytes[1].encode() )
-	left.write(end_char_b)#separator char
-	left.write(bytes[2].encode() )
-	left.write(end_char_b)
+	left.write(data_in[1].encode() )
+	left.write(END_CHAR.encode())#separator char
+	left.write(data_in[2].encode() )
+	left.write(END_CHAR.encode())
 
 	right.write(b"o")
-	right.write(bytes[3].encode() )
-	right.write(end_char_b)#separator char
-	right.write(bytes[4].encode() )
-	right.write(end_char_b)
+	right.write(data_in[3].encode() )
+	right.write(END_CHAR.encode())#separator char
+	right.write(data_in[4].encode() )
+	right.write(END_CHAR.encode())
 	return
 
-def move_left(bytes):
-	bytes = int_speed(bytes)
+def move_left(data_in):
 	left.write(b"o")
-	left.write(bytes[1].encode() )
-	left.write(end_char_b)#Separator Char
-	left.write(bytes[2].encode() )
-	left.write(end_char_b)
+	left.write(data_in[1].encode() )
+	left.write(END_CHAR.encode())#Separator Char
+	left.write(data_in[2].encode() )
+	left.write(END_CHAR.encode())
 
 	right.write(b"i")
-	right.write(bytes[3].encode() )
-	right.write(end_char_b)#Separator Char
-	right.write(bytes[4].encode() )
-	right.write(end_char_b)
+	right.write(data_in[3].encode() )
+	right.write(END_CHAR.encode())#Separator Char
+	right.write(data_in[4].encode() )
+	right.write(END_CHAR.encode())
 	return
 ##LINE 40
 
-def move_forward(bytes):
-	bytes = int_speed(bytes)
-
-	print("FORWARD_FUNCTION")
-	print(bytes)
-
+def move_forward(data_in):
+	#print("Forward Function")
+	#print(data_in)
 	left.write(b"w")
-	left.write(bytes[1].encode() )
-	left.write(end_char_b)#Separator Char
-	left.write(bytes[2].encode() )
-	left.write(end_char_b)
+	left.write(data_in[1].encode() )
+	left.write(END_CHAR.encode())#Separator Char
+	left.write(data_in[2].encode() )
+	left.write(END_CHAR.encode())
 	#sleep(1)
 	right.write(b"w")
-	right.write(bytes[3].encode() )
-	right.write(end_char_b)#Separator Char
-	right.write(bytes[4].encode() )
-	right.write(end_char_b)
+	right.write(data_in[3].encode() )
+	right.write(END_CHAR.encode())#Separator Char
+	right.write(data_in[4].encode() )
+	right.write(END_CHAR.encode())
 	return
 
-def move_reverse(bytes):
-	bytes = int_speed(bytes)
+def move_reverse(data_in):
+
 	left.write(b"r")
-	left.write(bytes[1].encode() )
-	left.write(end_char_b)#Separator Char
-	left.write(bytes[2].encode() )
-	left.write(end_char_b)
+	left.write(data_in[1].encode() )
+	left.write(END_CHAR.encode())#Separator Char
+	left.write(data_in[2].encode() )
+	left.write(END_CHAR.encode())
 
 	right.write(b"r")
-	right.write(bytes[3].encode() )
-	right.write(end_char_b)#Separator Char
-	right.write(bytes[4].encode() )
-	right.write(end_char_b)
+	right.write(data_in[3].encode() )
+	right.write(END_CHAR.encode())#Separator Char
+	right.write(data_in[4].encode() )
+	right.write(END_CHAR.encode())
 	return
 
-def rotate_counter(bytes):
+def rotate_counter(data_in):
 	#counter clockwise --> left reverse, right forward
-	bytes = int_speed(bytes)
 	left.write(b"r")
-	left.write(bytes[1].encode() )
-	left.write(end_char_b)
-	left.write(bytes[1].encode() )
-	left.write(end_char_b)
+	left.write(data_in[1].encode() )
+	left.write(END_CHAR.encode())
+	left.write(data_in[1].encode() )
+	left.write(END_CHAR.encode())
 
 	right.write(b"w")
-	right.write(bytes[1].encode() )
-	right.write(end_char_b)
-	right.write(bytes[1].encode() )
-	right.write(end_char_b)
+	right.write(data_in[1].encode() )
+	right.write(END_CHAR.encode())
+	right.write(data_in[1].encode() )
+	right.write(END_CHAR.encode())
 	return
 
-def rotate_clockwise(bytes):
+def rotate_clockwise(data_in):
 	#counter clockwise --> left forward, right reverse
-	bytes = int_speed(bytes)
 	left.write(b"w")
-	left.write(bytes[1].encode() )
-	left.write(end_char_b)
-	left.write(bytes[1].encode() )
-	left.write(end_char_b)
+	left.write(data_in[1].encode() )
+	left.write(END_CHAR.encode())
+	left.write(data_in[1].encode() )
+	left.write(END_CHAR.encode())
 
 	right.write(b"r")
-	right.write(bytes[1].encode() )
-	right.write(end_char_b)
-	right.write(bytes[1].encode() )
-	right.write(end_char_b)
+	right.write(data_in[1].encode() )
+	right.write(END_CHAR.encode())
+	right.write(data_in[1].encode() )
+	right.write(END_CHAR.encode())
 
 	return
 
@@ -389,9 +330,9 @@ def encoder_calibration(axes,test_quantity):
 	test_sample = [0,0,0,0]
 
 	print("Calibration Iniciated")
-	if axes == 1:
+	if axes == Y:
 		print("Y axis selected")
-	if axes == 2:
+	if axes == X:
 		print("X axis selected")
 	print("Quantity of test: {A}".format(A = test_quantity))
 
@@ -400,34 +341,22 @@ def encoder_calibration(axes,test_quantity):
 	for i in range(test_quantity):
 
 		encoder_reset()
-
-		sleep(1)
-
 		print("Beginning test {A}".format(A = i+1))
 
 		cali_pres = 1
 
-		bytes = ['@','@', '@', '@', '@']
-		bytes[1] = str( 250 )
-		bytes[2] = str( 250 )
-		bytes[3] = str( 250 )
-		bytes[4] = str( 250 )
+		data_in = ['@','@', '@', '@', '@']
 
-		#print("250 to all motors")
-
-
-		if(axes == 1):#Y Calibration
+		if(axes == Y):#Y Calibration
 			for i in range(4):
 				print("Motor speed changed to Y+ default")
-				bytes[i + 1] = str(move_y_speed_p[i])
-			move_forward(bytes)
-		if(axes == 2):#X Calibration
+				data_in[i + 1] = str(move_y_speed_p[i])
+			move_forward(data_in)
+		if(axes == X):#X Calibration
 			for i in range(4):
 				print("Motor speed changed to X+ default")
-				bytes[i + 1] = str(move_x_speed_p[i])
-			move_right(bytes)
-
-		sleep(2)
+				data_in[i + 1] = str(move_x_speed_p[i])
+			move_right(data_in)
 
 		while(cali_pres == 1):
 			sleep(0.001)
@@ -436,37 +365,40 @@ def encoder_calibration(axes,test_quantity):
 		encoder_update()
 		for i in range(4):
 			test_sample[i] = test_sample[i] + encoder_value[i]
+		stop()
 
 	for i in range(4):
 			test_sample[i] = test_sample[i] / test_quantity
 
 	for i in range(4):#Transferring average to constant variable
-		if axes == 1:#Y
+		if axes == Y:#Y
 			encoder_constant_y[i] = test_sample[i]
 			print("{A}: {B}".format(A = i, B = encoder_constant_y[i]))
-		if axes == 2:#X
+		if axes == X:#X
 			encoder_constant_x[i] = test_sample[i]
 			print("{A}: {B}".format(A = i, B = encoder_constant_x[i]))
-
+	stop()
 	return
 
 
 def encoder_update():#1 for Y, 2 for X
-
-	clear_comm_absolute()
+#TODO: ???
+	#clear_comm()
 
 	left.write(b"m")
 	right.write(b"m")
 
 	global encoder_value
+	encoder_holder = read_arduino(LEFT_ARDUINO_ID, no)
 
-	encoder_value[0] = read_integer_serial(term_char,1)#A1
-	encoder_value[1] = read_integer_serial(end_char,1)#B1
+	encoder_value[0] = encoder_holder[0]
+	encoder_value[1] = encoder_holder[1]
 
-	encoder_value[2] = read_integer_serial(term_char,2)#A2
-	encoder_value[3] = read_integer_serial(end_char,2)#B2
+	encoder_holder = read_arduino(RIGHT_ARDUINO_ID, no)
+	encoder_value[2] = encoder_holder[0]
+	encoder_value[3] = encoder_holder[1]
 
-	print(encoder_value)
+	#print(encoder_value)
 
 	return
 
@@ -483,7 +415,9 @@ def encoder_current_value():
 	encoder_update()
 	print("Current values of Encoders")
 	print("Encoder Values")
-	print("Left A: {A1} B: {B1} Right A: {A2} B: {B2}".format(A1 = encoder_value[0], B1 = encoder_value[1],A2 = encoder_value[2], B2 = encoder_value[3] ) )
+	print("Left A: {A1} B: {B1} Right A: {A2} B: {B2}" \
+		.format(A1 = encoder_value[0], B1 = encoder_value[1], \
+			A2 = encoder_value[2], B2 = encoder_value[3] ) )
 
 	return
 
@@ -491,108 +425,75 @@ def encoder_current_value():
 def encoder_constant_value():
 	print("Constant values of Encoders")
 	print("Encoder Values for Y Axis")
-	print("Left A: {A1} B: {B1} Right A: {A2} B: {B2}".format(A1 = encoder_constant_y[0], B1 = encoder_constant_y[1],A2 = encoder_constant_y[2], B2 = encoder_constant_y[3] ) )
+	print("Left A: {A1} B: {B1} Right A: {A2} B: {B2}" \
+		.format(A1 = encoder_constant_y[0], B1 = encoder_constant_y[1], \
+			A2 = encoder_constant_y[2], B2 = encoder_constant_y[3] ) )
 	print("Encoder Values for X Axis")
-	print("Left A: {A1} B: {B1} Right A: {A2} B: {B2}".format(A1 = encoder_constant_x[0], B1 = encoder_constant_x[1],A2 = encoder_constant_x[2], B2 = encoder_constant_x[3] ) )
+	print("Left A: {A1} B: {B1} Right A: {A2} B: {B2}" \
+		.format(A1 = encoder_constant_x[0], B1 = encoder_constant_x[1], \
+			A2 = encoder_constant_x[2], B2 = encoder_constant_x[3] ) )
 	return
 
 def encoder_completion(axes):
-	"""
 	completion = 0
-	if(axes == 1):#Y
-		for i in range(4):
-			if(int(encoder_value[i]) >= average(encoder_constant_y)):
-				completion = completion + 1
-
-	if(axes == 2):#X
-		for i in range(4):
-			if(int(encoder_value[i]) >= average(encoder_constant_x)):
-				completion = completion + 1
-	"""
 	for i in range(4):
-		if(int(encoder_value[i]) >= average(encoder_constant[axes][i])):
+		if(int(encoder_value[i]) >= mean(encoder_constant[axes])):
 			completion = completion + 1
 
-	if(completion >= 4):
+	if(completion >= 3):
 		return 1
 
 	return 0
 
-def move_y(direction, speed):
+def move_y(direction):
 	direction = int(direction)
-	print("Axes: Y Side:{A} Speed: {B}".format(A = direction, B = speed))
+	print("Axes: Y Side:{A}".format(A = direction))
 
 	encoder_reset()
-	bytes = ['$','$', '$', '$', '$']
+	data_in = ['0','0','0','0','0']
 
-	bytes[1] = str( speed )
-	bytes[2] = str( int(speed))
-	bytes[3] = str( speed )
-	bytes[4] = str( speed )
-	"""
-	if(int(speed) == 1):
-		if(side == 1):
-			for i in range(4):
-				bytes[i + 1] = str(move_y_speed_p[i])
-			move_forward(bytes)
-			print("Forward")
-		if(side == 2):
-			for i in range(4):
-				bytes[i + 1] = str(move_y_speed_n[i])
-			move_reverse(bytes)
-			print("Backward")
-	"""
 	for i in range(4):
-		bytes[i+1] = str(move_speed[direction][i])
+		data_in[i+1] = str(move_y_speed[direction][i])
 
-	if(direction == pos_direction):
-		move_forward(bytes)
-	if(direction == neg_direction):
-		move_reverse(bytes)
+	if(direction == POS_DIRECTION):
+		move_forward(data_in)
+	if(direction == NEG_DIRECTION):
+		move_reverse(data_in)
 
 	#encoder_constant_value()
-	counter = 0
-	while(encoder_completion(1) == 0): #if the function returns 0, that means that non of the encoders have reach the desired value
-		if(counter >= 30):
-			print(".", end = '')
-			counter = 0
-		counter = counter + 1
+	#if the function returns 0, that means that non of the encoders have reach the desired value
+	while(encoder_completion(Y) == 0):
 		encoder_update()
-		sleep(0.01)
+		#print(update_PID())
+		new_motor_speed = obtain_new_motor_speeds(Y,direction, gyro_pid.output)
+		update_motor_speed(Y,direction, new_motor_speed )
 	stop()
 
 	return
 
-def move_x(side, speed):
-	side = int(side)
-	print("Axes: X Side:{A} Speed: {B}".format(A = side, B = speed))
+def move_x(direction):
+	direction = int(direction)
+	print("Axes: X Side:{A}".format(A = direction))
 
 	encoder_reset()
-	bytes = ['@','@', '@', '@', '@']
-
-	bytes[1] = str( speed )
-	bytes[2] = str( speed)
-	bytes[3] = str( speed )
-	bytes[4] = str( speed )
+	data_in = ['0','0','0','0','0']
 
 	for i in range(4):
-		bytes[i+1] = str(move_speed[direction][i])
+		data_in[i+1] = str(move_x_speed[direction][i])
 
-	if(direction == pos_direction):
-		move_right(bytes)
-	if(direction == neg_direction):
-		move_left(bytes)
+	if(direction == POS_DIRECTION):
+		move_right(data_in)
+	if(direction == NEG_DIRECTION):
+		move_left(data_in)
 
 
 	#encoder_constant_value()
-	counter = 0
-	while(encoder_completion(2) == 0): #if the function returns 0, that means that non of the encoders have reach the desired value
-		if(counter >= 30):
-			print(".", end = '')
-			counter = 0
-		counter = counter + 1
+	#if the function returns 0, that means that non of the encoders have reach the desired value
+	while(encoder_completion(X) == 0):
 		encoder_update()
-		sleep(0.01)
+		update_PID()
+		new_motor_speed = obtain_new_motor_speeds(X,direction, gyro_pid.output)
+		update_motor_speed(X,direction,new_motor_speed)
 	stop()
 
 	return
@@ -602,42 +503,38 @@ def move_x(side, speed):
 
 #-----------------ULTRASONIC----------------
 def us_sensor():
+	actual_sensor_collect_fre = 0
 	sensor_collect_fre = 5
-	clear_comm_absolute()
-	left.write(b"u")
-	right.write(b"u")
+	clear_comm()
 
 	sensor_total = [0,0,0,0]#left_back, left_left, right_front, right_right
 	sensor_collect = [0,0,0,0]
 	trash_value = 0
+	sensor_holder_right = [0,0]
+	sensor_holder_left = [0,0]
 
 	for i in range(sensor_collect_fre):
 
-		sensor_collect[0] = read_integer_serial(term_char, left_arduino)#1 means left, 2 means right
-		while(sensor_collect[0] == -2):
-			clear_comm()
-			left.write(b"u")
-			sensor_collect[0] = read_integer_serial(term_char, left_arduino)
+		left.write(b"u")
+		right.write(b"u")
 
-		sensor_collect[1] = read_integer_serial(end_char, left_arduino)
-		while(sensor_collect[1] == -2):
-			clear_comm()
-			left.write(b"u")
-			trash_value = read_integer_serial(term_char, left_arduino)
-			sensor_collect[1] = read_integer_serial(end_char, left_arduino)
+		sensor_holder_left = read_arduino(LEFT_ARDUINO_ID,no)
+		sensor_holder_right = read_arduino(RIGHT_ARDUINO_ID,no)
 
-		sensor_collect[2] = read_integer_serial(term_char, right_arduino)
-		while(sensor_collect[2] == -2):
-			clear_comm()
-			right.write(b"u")
-			sensor_collect[2] = read_integer_serial(term_char, right_arduino)
+		if(len(sensor_holder_left) < 2 and len(sensor_holder_right) < 2):
+			print("*")
+			continue
 
-		sensor_collect[3] = read_integer_serial(end_char , right_arduino)
-		while(sensor_collect[3] == -2):
-			clear_comm()
-			right.write(b"u")
-			trash_value = read_integer_serial(term_char, right_arduino)
-			sensor_collect[3] = read_integer_serial(end_char , right_arduino)
+		actual_sensor_collect_fre += 1
+		sensor_collect = sensor_holder_left + sensor_holder_right
+
+		#The ultrasonic sensor will return 0 if max(200) if reached
+		#Still debating whether to make it equal to zero or max
+		#Sometime max can be misread when the sensor might be too close to a wall
+		for i in range(4):
+			if(sensor_collect[i] == 0):
+				sensor_collect[i] = 100
+
 
 		sensor_total[0] += sensor_collect[0]
 		sensor_total[1] += sensor_collect[1]
@@ -646,25 +543,29 @@ def us_sensor():
 		sensor_total[3] += sensor_collect[3]
 
 
-	left_back_ave = sensor_total[0] / sensor_collect_fre
-	left_left_ave = sensor_total[1] / sensor_collect_fre
+	left_back_ave = sensor_total[0] / actual_sensor_collect_fre
+	left_left_ave = sensor_total[1] / actual_sensor_collect_fre
 
-	right_front_ave = sensor_total[2] / sensor_collect_fre
-	right_right_ave = sensor_total[3] / sensor_collect_fre
+	right_front_ave = sensor_total[2] / actual_sensor_collect_fre
+	right_right_ave = sensor_total[3] / actual_sensor_collect_fre
 
 
-	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}".format(B = left_back_ave,L = left_left_ave,F = right_front_ave, R = right_right_ave) )
+	print("LEFT: B:{B}	L:{L}	RIGHT: F:{F}	R:{R}" \
+		.format(B = left_back_ave,L = left_left_ave, \
+			F = right_front_ave, R = right_right_ave ) )
 
 	# North 1000
-	# South  100
-	# East    10
-	# West     1
+	# South 0100
+	# East	0010
+	# West	0001
 
 	ultra_ave = [right_front_ave, left_back_ave, right_right_ave, left_left_ave]
+
 	block_direction = [0,0,0,0]
+
 	block_message = 0
 	for i in range(4):
-		if(ultra_ave[i] <= 8):
+		if(ultra_ave[i] <= 12):
 			block_direction[i] = 1
 
 	#print(block_direction)
@@ -675,42 +576,44 @@ def us_sensor():
 	#print("Block Message: ", end = '')
 	#print(block_message)
 
+	#print("Block Direction : ", end = '')
 
 	return block_direction
+"""
+we can use the data of the ultrasonic sensor to get more reliable data
+def wall_calibration()
 
+"""
 #-----------------CAPACITOR-------------------
 
 def capacitor_sensor():
 	#The right arduino is the only arduino with a capacitive sensor
-	capacitor_hard_reset()
+	#capacitor_hard_reset()
 	sensor_data = [-2,-2,-2,-2] #Highest, median, lowest, average
-	clear_comm()
+	#clear_comm()
 	flag = 0
 
-	print("Collecting data from Capacitive Sensor")
+	#print("Collecting data from Capacitive Sensor")
 
-	for i in range(20):#This is the amount of attempts the Raspberry has to recieve the information
+	for i in range(20):#This is the amount of attempts the Raspberry has to receive the information
 		flag = 0
-		clear_comm_absolute()
+		#clear_comm()
 		right.write(b"C")
 		#sleep(0.5)
-		capacitor_hard_reset()
-		sensor_data[0] = read_integer_serial_long(term_char, right_arduino)
-		print(sensor_data[0])
-		sensor_data[1] = read_integer_serial_long(term_char, right_arduino)
-		print(sensor_data[1])
-		sensor_data[2] = read_integer_serial_long(term_char, right_arduino)
-		print(sensor_data[2])
-		sensor_data[3] = read_integer_serial_long(end_char, right_arduino)
-		print(sensor_data[3])
+		#capacitor_hard_reset()
+		sensor_data = read_arduino(RIGHT_ARDUINO_ID, yes)
+		#print(sensor_data)
 
-		for i in range(4):#If any of the values is a trash value
+		if(sensor_data is None or len(sensor_data) == 0):
+			continue
+
+		for i in range(len(sensor_data)):#If any of the values is a trash value
 			if(sensor_data[i] < 10000 and sensor_data[i] > -2):#To small
 				#print("Trash Value Detected: Cut off")
 				print("C, ", end = '')
 				flag = 1
 				continue
-			if(sensor_data[i] > 100000):#To big
+			if(sensor_data[i] > 100000):#Too big
 				#print("Trash Value Detected: Run on")
 				print("R, ", end = '')
 				flag = 1
@@ -720,6 +623,7 @@ def capacitor_sensor():
 				print("F, ", end = '')
 				flag = 1
 				continue
+			#These cases should not happen. This means your sort is bad!
 			if(sensor_data[2] > sensor_data[1]):
 				print("B, ", end = '')
 				flag = 1
@@ -733,27 +637,60 @@ def capacitor_sensor():
 			continue
 		break
 
-	if(sensor_data[0] != -2 and sensor_data[1] != -2 and sensor_data[2] != -2 and sensor_data[3] != -2):
-		#print("Communication Success")
-		print("")
-		print(sensor_data)
+	for i in range(4):
+		if(sensor_data is not None):
+			capacitor_data_current[i] = sensor_data[i]
 
-		for i in range(4):
-			capacitor_data_current[i] = sensor_data[i]#data transfer
-
-	clear_comm_absolute()
+	clear_comm()
 	return
+
+def capacitor_report():
+	print("Value of Capacitor Data Current now:\t", end = '')
+	print(capacitor_data_current)
+	return
+
+def capacitor_constant_diff_rewrite(reference_block):
+	#To check the difference between the constanst respect to the insulated block
+	#The insulated block has been chosen to be the reference block
+	#Since it is going to be the block at A7
+
+	print("Value of Capacitor Constants Data: ", end = '')
+	print(capacitor_data_constant)
+
+	for x in range(len(capacitor_data_constant)):
+		for y in range(len(capacitor_data_constant[x])):
+			capacitor_data_based_group[reference_block][x][y] = \
+			capacitor_data_constant[x][y] - capacitor_data_constant[reference_block][y]
+
+	print("Differences of the Capacitor Constants comparing to the Insulated Block:")
+	print(capacitor_data_based_group[reference_block])
+	return
+
+def capacitor_constant_rewrite(reference_block):
+
+	#This changes the values of the constant in respect to the
+	#reference block, which could be either wire or insulated block
+
+	for x in range(len(capacitor_data_constant)):
+		for y in range(len(capacitor_data_constant[x])):
+			capacitor_data_constant[x][y] = \
+			capacitor_data_constant[reference_block][y] + capacitor_data_based_group[reference_block][x][y]
+
+	return
+
 
 def capacitor_hard_reset():
 	right.write(b"H")
-	print("Capacitor sensor reset")
+	#print("Capacitor sensor reset")
 	#This lets the capacitor reset
 	return
 
 def capacitor_trash_value():
 	flag = False
 	for i in range(4):
-		if(capacitor_data_current[i] > 100000 or capacitor_data_current[i] < 10000 or capacitor_data_current[i] == -2):
+		if(capacitor_data_current[i] > 100000 \
+		or capacitor_data_current[i] < 10000 \
+		or capacitor_data_current[i] == -2):
 			flag = True
 			print("Capacitor_trash_value found trash value")
 			break
@@ -762,7 +699,7 @@ def capacitor_trash_value():
 
 def capacitor_fix_value():
 	while(capacitor_trash_value == True):
-		print("Recalculating values")
+		#print("Recalculating values")
 		capacitor_sensor()
 	return
 
@@ -775,36 +712,6 @@ def capacitor_calibration():
 	print("\tIsolated")
 
 	global cali_pres
-	"""
-	for i in range(3):
-		cali_pres = 1
-
-		print("Step {A}".format(A = i + 1))
-
-		if(i == 0):#Wire
-			print("Place on non-Isolated Block with Wire")
-		if(i == 1):#Not isolated with no wire
-			print("Place on non-Isolated Block without Wire")
-		if(i == 2):#Isolated
-			print("Place on Isolated Block")
-
-		while(cali_pres == 1):
-			sleep(0.02)
-
-		capacitor_sensor()
-
-		if(i == 0):#Wire test
-			for j in range(4):
-				capacitor_data_wire[j] = capacitor_data_current[j]
-
-		if(i == 1):#Not Isolated with no wire
-			for j in range(4):
-				capacitor_data_notiso[j] = capacitor_data_current[j]
-
-		if(i == 2):#Isolated
-			for j in range(4):
-				capacitor_data_iso[j] = capacitor_data_current[j]
-	"""
 	for i in range(3):
 		cali_pres = 1
 
@@ -832,17 +739,7 @@ def capacitor_calibrate_move(block_calibrate, data_sample, use_pre):
 	divider = data_sample
 	data_holder = [0,0,0,0]
 
-	"""
-	if(use_pre == 1):
-		divider = divider + 1
-		for u in range(4):
-			if(block_calibrate == 0):
-				data_holder[u] = capacitor_data_wire[u]
-			if(block_calibrate == 1):
-				data_holder[u] = capacitor_data_notiso[u]
-			if(block_calibrate == 2):
-				data_holder[u] = capacitor_data_iso[u]
-	"""
+
 	if(use_pre == 1):
 		divider = divider + 1
 		for u in range(4):
@@ -851,136 +748,46 @@ def capacitor_calibrate_move(block_calibrate, data_sample, use_pre):
 	print("Using this as the pre_value: ", end = '')
 	print(data_holder)
 
-	"""
-	if(block_calibrate == 0):#Wire test
-		print("Not Isolated with Wire")
 
-		#Collecting multiple samples and finding the average
+	for i in range(data_sample):
+		capacitor_sensor()
+		capacitor_fix_value()
+		for h in range(4):
+			data_holder[h] = int(capacitor_data_current[h]) + data_holder[h]
 
-		for i in range(data_sample):
-			sleep(0.7)
-			capacitor_sensor()
-			capacitor_fix_value()
-			for h in range(4):
-				data_holder[h] = capacitor_data_current[h] + data_holder[h]
+	#print("Total: ", end = '')
+	#print(data_holder)
 
-		#print("Total: ", end = '')
-		#print(data_holder)
+	for k in range(4):
+		data_holder[k] /= divider
 
-		for k in range(4):
-			data_holder[k] /= divider
+	for j in range(4):
+		capacitor_data_constant[block_calibrate][j] = round(data_holder[j])
 
-		for j in range(4):
-			capacitor_data_wire[j] = round(data_holder[j])
+	if(block_calibrate == 0):
+		print("Not Isolated with Wire is now: ", end = '')
+	if(block_calibrate == 1):
+		print("Not Isolated without Wire is now: ", end = '')
+	if(block_calibrate == 2):
+		print("Isolated is now: ", end = '')
+	print(capacitor_data_constant[block_calibrate])
 
-		print("Wire Data is now: ", end = '')
-		print(capacitor_data_wire)
-
-	if(block_calibrate == 1):#No Wire test
-		print("Not Isolated without Wire")
-
-		#Collecting multiple samples and finding the average
-
-		for i in range(data_sample):
-			capacitor_sensor()
-			capacitor_fix_value()
-			for h in range(4):
-				data_holder[h] = capacitor_data_current[h] + data_holder[h]
-
-		#print("Total: ", end = '')
-		#print(data_holder)
-
-		for k in range(4):
-			data_holder[k] /= divider
-
-		for j in range(4):
-			capacitor_data_notiso[j] = round(data_holder[j])
-
-		print("Wire Data is now: ", end = '')
-		print(capacitor_data_notiso)
-
-	if(block_calibrate == 2):#Isolated test
-		print("Isolated")
-
-		#Collecting multiple samples and finding the average
-
-		for i in range(data_sample):
-			capacitor_sensor()
-			capacitor_fix_value()
-			for h in range(4):
-				data_holder[h] = capacitor_data_current[h] + data_holder[h]
-
-		#print("Total: ", end = '')
-		#print(data_holder)
-
-		for k in range(4):
-			data_holder[k] /= divider
-
-		for j in range(4):
-			capacitor_data_iso[j] = round(data_holder[j])
-
-		print("Wire Data is now: ", end = '')
-		print(capacitor_data_iso)
-	"""
-		for i in range(data_sample):
-			capacitor_sensor()
-			capacitor_fix_value()
-			for h in range(4):
-				data_holder[h] = capacitor_data_current[h] + data_holder[h]
-
-		#print("Total: ", end = '')
-		#print(data_holder)
-
-		for k in range(4):
-			data_holder[k] /= divider
-
-		for j in range(4):
-			capacitor_data_constant[block_calibrate][j] = round(data_holder[j])
-
-		if(block_calibrate = 0):
-			print("Not Isolated with Wire is now: ", end = '')
-		if(block_calibrate = 1):
-			print("Not Isolated without Wire is now: ", end = '')
-		if(block_calibrate = 2):
-			print("Isolated is now: ", end = '')
-		print(capacitor_data_constant[block_calibrate])
-
+"""
+This code appears to worsen sensor accuracy
 def capacitor_calibrate_update(block_calibrate):
 
 	print("Updating Block Data")
 	print("Before update Calibrate")
-	"""
-	if(block_calibrate == 0):
-		print(capacitor_data_wire)
-	if(block_calibrate == 1):
-		print(capacitor_data_notiso)
-	if(block_calibrate == 2):
-		print(capacitor_data_iso)
-	"""
+
 	print(capacitor_data_constant[block_calibrate])
 
-	"""
 	for u in range(4):
-		if(block_calibrate == 0):#Wire
-			capacitor_data_wire[u] = round((capacitor_data_current[u]+capacitor_data_wire[u])/2)
-		if(block_calibrate == 1):#No Wire
-			capacitor_data_notiso[u] = round((capacitor_data_current[u]+capacitor_data_notiso[u])/2)
-		if(block_calibrate == 2):#Wire
-			capacitor_data_iso[u] = round((capacitor_data_current[u]+capacitor_data_iso[u])/2)
-	"""
-	for u in range(4):
-		capacitor_constant_data[u] = round((capacitor_data_current[u] + capacitor_constant_data[u])/2)
+		capacitor_data_constant[block_calibrate][u] = round((capacitor_data_current[u] + capacitor_data_constant[block_calibrate][u])/2)
 
 	print("After update Calibrate")
-	"""
-	if(block_calibrate == 0):
-		print(capacitor_data_wire)
-	if(block_calibrate == 1):
-		print(capacitor_data_notiso)
-	if(block_calibrate == 2):
-		print(capacitor_data_iso)
-	"""
-	print(capacitor_data_current[block_calibrate])
+
+	print(capacitor_data_constant[block_calibrate])
+"""
 
 def capacitor_block_identity():
 	#first check if calibration has been done
@@ -993,14 +800,69 @@ def capacitor_block_identity():
 	diff_wire_total = 0
 	diff_notiso_total = 0
 	diff_iso_total = 0
+	"""
+	if(capacitor_data_wire[0] == 0):
+		print("WARNING")
+		print("Recommended recalibration of the Capacitor Sensor")
 
-	diff_max = [diff_wire[0] diff_notiso[0] diff_iso[0]]
-	diff_median = [diff_wire[1] diff_notiso[1] diff_iso[2]]
-	diff_min = [diff_wire[2] diff_notiso[2] diff_iso[2]]
-	diff_ave = [diff_wire[3] diff_notiso[3] diff_iso[3]]
-	diff_total = [diff_wire_total diff_notiso_total diff_iso_total]
+	print("\nValues of the Constants for each block")
 
-	diff_all = [diff_max diff_median diff_min diff_ave diff_total]
+	print("Not Isolated with Wire")
+	print("\t", end = '')
+	print(capacitor_data_constant[0])
+
+	print("Not Isolated without Wire")
+	print("\t", end = '')
+	print(capacitor_data_constant[1])
+
+	print("Isolated")
+	print("\t", end = '')
+	print(capacitor_data_constant[2])
+	"""
+
+	capacitor_sensor()
+
+	#Compare the current values of the sensor with the constants of each block
+	for i in range(4):
+		diff_wire[i] = abs(capacitor_data_current[i] - capacitor_data_wire[i])
+		diff_notiso[i] = abs(capacitor_data_current[i] - capacitor_data_notiso[i])
+		diff_iso[i] = abs(capacitor_data_current[i] - capacitor_data_iso[i])
+		#print("{A}\t{B}\t{C}".format(A = diff_wire[i],B = diff_notiso[i],C = diff_iso[i]))
+
+	
+	#print("Differences")
+
+	#print("\tWire")
+	#print("\t\t", end = '')
+	print(diff_wire)
+	for j in range(4):
+		diff_wire_total = diff_wire_total + diff_wire[j]
+	#print("\t\t\t",end = '')
+	#print(diff_wire_total)
+
+	#print("\tNot Isolated Without Wire")
+	#print("\t\t", end = '')
+	#print(diff_notiso)
+	for j in range(4):
+		diff_notiso_total = diff_notiso_total + diff_notiso[j]
+	#print("\t\t\t",end = '')
+	#print(diff_notiso_total)
+
+	#print("\tIsolated")
+	#print("\t\t", end = '')
+	#print(diff_iso)
+	for j in range(4):
+		diff_iso_total = diff_iso_total + diff_iso[j]
+	#print("\t\t\t",end = '')
+	#print(diff_iso_total)
+
+	diff_max = [diff_wire[0], diff_notiso[0], diff_iso[0]]
+	diff_median = [diff_wire[1], diff_notiso[1], diff_iso[2]]
+	diff_min = [diff_wire[2], diff_notiso[2], diff_iso[2]]
+	diff_ave = [diff_wire[3], diff_notiso[3], diff_iso[3]]
+	diff_total = [diff_wire_total, diff_notiso_total, diff_iso_total]
+
+	diff_all = [diff_max, diff_median, diff_min, diff_ave, diff_total]
 
 	diff_index_min = [0,0,0,0,0]#max,median,min,ave,overall index
 	diff_value_min = [0,0,0,0,0]#max,median,min,ave,overall values
@@ -1013,225 +875,28 @@ def capacitor_block_identity():
 	diff_tolerance = 100
 	diff_overpass_tolerance = 0
 
-	if(capacitor_data_wire[0] == 0):
-		print("WARNING")
-		print("Recommended recalibration of the Capacitor Sensor")
-
-	print("\nValues of the Constants for each block")
-
-	print("Not Isolated with Wire")
-	print("\t", end = '')
-	print(capacitor_data_wire)
-
-	print("Not Isolated without Wire")
-	print("\t", end = '')
-	print(capacitor_data_notiso)
-
-	print("Isolated")
-	print("\t", end = '')
-	print(capacitor_data_iso)
-
-	capacitor_sensor()
-
-	#Compare the current values of the sensor with the constants of each block
-	for i in range(4):
-		diff_wire[i] = abs(capacitor_data_current[i] - capacitor_data_wire[i])
-		diff_notiso[i] = abs(capacitor_data_current[i] - capacitor_data_notiso[i])
-		diff_iso[i] = abs(capacitor_data_current[i] - capacitor_data_iso[i])
-
-	print("Differences")
-
-	print("\tWire")
-	print("\t\t", end = '')
-	print(diff_wire)
-	for j in range(4):
-		diff_wire_total = diff_wire_total + diff_wire[j]
-	print("\t\t\t",end = '')
-	print(diff_wire_total)
-
-	print("\tNot Isolated Without Wire")
-	print("\t\t", end = '')
-	print(diff_notiso)
-	for j in range(4):
-		diff_notiso_total = diff_notiso_total + diff_notiso[j]
-	print("\t\t\t",end = '')
-	print(diff_notiso_total)
-
-	print("\tIsolated")
-	print("\t\t", end = '')
-	print(diff_iso)
-	for j in range(4):
-		diff_iso_total = diff_iso_total + diff_iso[j]
-	print("\t\t\t",end = '')
-	print(diff_iso_total)
-
+	"""
+	print("Max")
+	print(diff_max)
+	print("Median")
+	print(diff_median)
+	print("Min")
+	print(diff_min)
+	print("Average")
+	print(diff_ave)
+	print("Total")
+	print(diff_total)
+	print("All")
+	print(diff_all)
 	"""
 
-	diff = [diff_wire_total, diff_notiso_total, diff_iso_total]
-	diff_min = 9999
-	min_index = 0
+	for j in range(5):
+		diff_index_min[j] = diff_all[j].index(min(diff_all[j]))
+		diff_value_min[j] = diff_all[j][diff_index_min[j]]
 
-	for k in range(3):
-		if(diff[k] < diff_min):
-			min_index = k
-			diff_min = diff[k]
-
-	diff_holder[4] = diff_min
-
-	#If we go over the overall difference between all three variables
-	print("\nUsing the overall difference")
-
-	print("Block Identity: ", end = '')
-
-	if(min_index == 0):
-		print("Not Isolated with Wire")
-	if(min_index == 1):
-		print("Not Isolated without Wire")
-	if(min_index == 2):
-		print("Isolated")
-	print("Difference: {A}".format(A = diff_min))
-
-
-	#If we use only with the median difference
-	print("\nUsing the Median difference")
-
-	diff_median = [diff_wire[1], diff_notiso[1], diff_iso[1]]
-	diff_median_min = 99999
-	min_index_median = 0
-
-	for h in range(3):
-		if(diff_median[h] < diff_median_min):
-			min_index_median = h
-			diff_median_min = diff_median[h]
-
-	diff_holder[1] = diff_median_min
-
-	print("Block Identity: ", end = '')
-	if(min_index_median == 0):
-		print("Not Isolated with Wire")
-	if(min_index_median == 1):
-		print("Not Isolated without Wire")
-	if(min_index_median == 2):
-		print("Isolated")
-	print("Difference: {A}".format(A = diff_median_min))
-
-	#If we use only the min difference
-	print("\nUsing the Minimun difference")
-
-	#This finds the min difference in the lowest value
-	diff_min = [diff_wire[2], diff_notiso[2], diff_iso[2]]
-	diff_min_min = 99999
-	min_index_min = 0
-
-	for r in range(3):
-		if(diff_min[r] < diff_min_min):
-			min_index_min = r
-			diff_min_min = diff_min[r]
-
-	diff_holder[2] = diff_min_min
-
-	print("Block Identity: ", end = '')
-	if(min_index_min == 0):
-		print("Not Isolated with Wire")
-	if(min_index_min == 1):
-		print("Not Isolated without Wire")
-	if(min_index_min == 2):
-		print("Isolated")
-	print("Difference: {A}".format(A = diff_min_min))
-
-	#If we only use the max difference
-	print("\nUsing the maximum difference")
-
-	diff_max = [diff_wire[0],diff_notiso[0], diff_iso[0]]
-	diff_max_min = 999999
-	min_index_max = 0
-
-	for k in range(3):
-		if(diff_max[k] < diff_max_min):
-			min_index_max = k
-			diff_max_min = diff_max[k]
-
-	diff_holder[0] = diff_max_min
-
-	print("Block Identity: ", end = '')
-	if(min_index_max == 0):
-		print("Not Isolated with Wire")
-	if(min_index_max == 1):
-		print("Not Isolated without Wire")
-	if(min_index_max == 2):
-		print("Isolated")
-	print("Difference: {A}".format(A = diff_max_min))
-
-	#If we over the difference individually
-
-	print("\nUsing the average differences")
-
-	diff_ave = [diff_wire[3],diff_notiso[3], diff_iso[3]]
-	diff_ave_min = 9999999
-	min_index_ave = 0
-
-	for y in range(3):
-		if(diff_ave[y] < diff_ave_min):
-			min_index_ave = y
-			diff_ave_min = diff_ave[y]
-
-	diff_holder[3] = diff_ave_min
-
-	print("Block Identity: ", end = '')
-	if(min_index_max == 0):
-		print("Not Isolated with Wire")
-	if(min_index_max == 1):
-		print("Not Isolated without Wire")
-	if(min_index_max == 2):
-		print("Isolated")
-	print("Difference: {A}".format(A = diff_ave_min))
-
-
-	#Here are the rating for each block
-	#Average and Median should have a greater weight when
-	#it comes down to which block should be picked
-
-	diff_rating = [0,0,0]
-	diff_rating[min_index_max] = diff_rating[min_index_max] + 1
-	diff_rating[min_index_median] = diff_rating[min_index_median] + 2
-	diff_rating[min_index_min] = diff_rating[min_index_min] + 1
-	diff_rating[min_index_ave] = diff_rating[min_index_ave] + 2
-	diff_rating[min_index] = diff_rating[min_index] + 1
-
-	#Passing over the scores of a data samples
-	for s in range(3):
-		capacitor_block_score[s] += diff_rating[s]
-
-
-	print(diff_rating)
-
-	diff_rating_max = 0
-	diff_rating_max_index = 0
-
-	for u in range(3):
-		if(diff_rating[u] > diff_rating_max):
-			diff_rating_max = diff_rating[u]
-			diff_rating_max_index = u
-
-	if(diff_rating_max_index == 0):
-		print("Not Isolated with Wire")
-		block_identity_message = 0
-	if(diff_rating_max_index == 1):
-		print("Not Isolated without Wire")
-		block_identity_message = 1
-	if(diff_rating_max_index == 2):
-		print("Isolated")
-		block_identity_message = 2
-
-	"""
-	for i in range(3):
-		for j in range(5):
-			diff_index_min[j] = find_min_index(diff_all[j], len(diff_all[j]) )
-			diff_value_min[j] = find_min_index(diff_all[j], len(diff_all[j]) )
-
-	print("General Min Results")
-	print(diff_index_min)
-	print(diff_value_min)
+	#print("General Min Results")
+	#print(diff_index_min)
+	#print(diff_value_min)
 
 	diff_rating[diff_index_min[0]] = diff_rating[diff_index_min[0]] + 1
 	diff_rating[diff_index_min[1]] = diff_rating[diff_index_min[1]] + 2
@@ -1246,35 +911,13 @@ def capacitor_block_identity():
 	print("Difference Rating")
 	print(diff_rating)
 
-	diff_rating_max_index = find_max_index(diff_rating, len(diff_rating))
-	diff_rating_max = find_max_index(diff_rating, len(diff_rating))
+	diff_rating_max_index = diff_rating.index(max(diff_rating))
+	diff_rating_max = diff_rating[diff_rating_max_index]
 
 	block_identity_message = diff_rating_max_index
 
 	#if all tied 2-2
 	tied_check = 0
-
-	"""
-	for p in range(3):
-		if(diff_rating[p] == 2):
-			tied_check = tied_check + 1
-	if(tied_check == 2):
-		print("WARNING")
-		print("Tied in sensor catorgories")
-		print("Recommended to retake the values")
-		block_identity_message = -1
-	"""
-	#only recalibrate if difference between values is not too big
-
-
-	for j in range(4):
-		if(diff_holder[j] > diff_tolerance):
-			diff_overpass_tolerace = 1
-
-	if(diff_overpass_tolerance == 0 and diff_rating[block_identity_message] == 7):
-		 capacitor_calibrate_update(block_identity_message)
-	else:
-		print("Diff Tolerance is surpassed or/and diff_rating is not equal to 7")
 
 	return block_identity_message
 
@@ -1312,556 +955,318 @@ def capacitor_block_multiple(data_sample):
 		print("Isolated")
 		block_identity_message = 2
 
-	return block_identity_message
+	#return block_identity_message
+	#For now I(Eduardo) would like to experiment how the robot would score
+	#Each block before deciding which identiy the block is.
+	return capacitor_block_score
 
 #-----------------SERVOS-------------------
 
 def servo_top(servo_location):
 	servo_location = int(servo_location)
 
-	if servo_location == FRONT:
+	if servo_location == RIGHT_ARDUINO_ID:
 		right.write(b"t")
-	if servo_location == BACK:
+	if servo_location == LEFT_ARDUINO_ID:
 		left.write(b"t")
 	return
 
 def servo_bottom(servo_location):
 	servo_location = int(servo_location)
 
-	if servo_location == FRONT:
+	if servo_location == RIGHT_ARDUINO_ID:
 		right.write(b"b")
-	if servo_location == BACK:
+	if servo_location == LEFT_ARDUINO_ID:
 		left.write(b"b")
 	return
 
-def servo_change(bytes):
-	#bytes[1] = servoH_top
-	#bytes[2] = servoH_bottom
-	#Sending bytes to the left arduino
-	left.write(bytes[0].encode() )
-	left.write(bytes[1].encode() )
-	left.write(end_char_b)#Separator Char
-	left.write(bytes[2].encode() )
-	left.write(end_char_b)
-	#Sending bytes to the right arduino
-	right.write(bytes[0].encode() )
-	right.write(bytes[1].encode() )
-	right.write(end_char_b)#Separator Char
-	right.write(bytes[2].encode() )
-	right.write(end_char_b)
+def servo_change(data_in):
+	#data_in[1] = servoH_top
+	#data_in[2] = servoH_bottom
+	#Sending data_in to the left arduino
+	left.write(data_in[0].encode() )
+	left.write(data_in[1].encode() )
+	left.write(END_CHAR.encode())#Separator Char
+	left.write(data_in[2].encode() )
+	left.write(END_CHAR.encode())
+	#Sending data_in to the right arduino
+	right.write(data_in[0].encode() )
+	right.write(data_in[1].encode() )
+	right.write(END_CHAR.encode())#Separator Char
+	right.write(data_in[2].encode() )
+	right.write(END_CHAR.encode())
 	return
 
 def servo_info():
 	left.write(b"n")
 	right.write(b"n")
 
-	left_servo_position = read_integer_serial(term_char , 1)
-	left_servo_height_top = read_integer_serial(term_char, 1)
-	left_servo_height_bottom = read_integer_serial(end_char, 1)
+	servo_holder = read_arduino(LEFT_ARDUINO_ID, no)
 
-	right_servo_position = read_integer_serial(term_char, 2)
-	right_servo_height_top = read_integer_serial(term_char, 2)
-	right_servo_height_bottom = read_integer_serial(end_char , 2)
+	left_servo_position = servo_holder[0]
+	left_servo_height_top = servo_holder[1]
+	left_servo_height_bottom = servo_holder[2]
+
+	servo_holder = read_arduino(RIGHT_ARDUINO_ID , no)
+
+	right_servo_position = servo_holder[0]
+	right_servo_height_top = servo_holder[1]
+	right_servo_height_bottom = servo_holder[2]
 
 	print("Left Servo Information:")
-	print("Position: {P} Height Top: {T} Height Bottom: {B}".format(P = left_servo_position, T = left_servo_height_top, B = left_servo_height_bottom) )
+	print("Position: {P} Height Top: {T} Height Bottom: {B}" \
+		.format(P = left_servo_position, T = left_servo_height_top, \
+			B = left_servo_height_bottom) )
 	print("Right Servo Information:")
-	print("Position: {P} Height Top: {T} Height Bottom: {B}".format(P = right_servo_position, T = right_servo_height_top, B = right_servo_height_bottom) )
+	print("Position: {P} Height Top: {T} Height Bottom: {B}" \
+		.format(P = right_servo_position, T = right_servo_height_top, \
+			B = right_servo_height_bottom) )
 
-#Assigned the interrupt their functions
-GPIO.add_event_detect(26, GPIO.RISING, callback = start_button_pressed, bouncetime = 300)
+def encoder_completion_lid(axes):
+	completion = 0
 
+	lid_distance_ratio = 6
+	encoder_constant_lid = [ [0], [0] ]
+	encoder_constant_lid[axes] = \
+		[x / lid_distance_ratio for x in encoder_constant[axes]]
 
-"""Raspberry Gyro Code Ahead
-
-
-Information Here
-positive increase means clockwise rotation
-negative increase means counter-clockwise rotation
-
-Direction is reference with the following numbers
-
-					1
-					^
-					|
-					|
-
-       fro_left []----[] fro_right
-		|  w   |
-       2<---    | a  d |    --->3
-		|   s  |
-       bac_left []----[] bac_right
-
-					|
-					|
-					V
-					4
-
-
-
-#Setting up gyro sensitive variables [defaults]
-sense = SenseHat()
-
-FRONT_LEFT = "front_left"
-FRONT_RIGHT = "front_right"
-BACK_LEFT = "back_left"
-BACK_RIGHT = "back_right"
-
-pre_value = 0
-new_value = 0
-
-
-motor_speed = {'front_left': 255, 'front_right': 255, 'back_left': 255, 'back_right': 255}
-motor_change = [0,0,0,0]
-
-direction = 0
-max_speed = 250
-sensativity = 1
-fre = 10
-diff = 0
-fix_bias = 15
-lowest_speed = 70
-gyro_raw = 0
-
-
-def get_gyro_reading():
-
-	global gyro_raw
-
-	motion = sense.get_gyroscope()
-	gyro_raw = motion["yaw"] - 180
-	return gyro_raw #change gyro reading system from 0 - 360 to -180 - 180
-
-
-def ave_gyro():
-	total = 0
-	for i in range(fre):
-		new_value_raw = get_gyro_reading()
-		total = total + new_value_raw
-		sleep(0.02)
-	ave = total / (fre)
-	return ave
-
-def update_diff():
-	global new_value
-	global diff
-
-	new_value = ave_gyro()
-	diff = new_value - pre_value
-
-	if abs(diff) > 182:#If the gyro value passes the 180 -180 border
-		diff = 360 - (abs (pre_value) + abs(new_value) )
-	return
-
-def rotate_counter_gyro():
-	inital_diff = 0
-	pre_fre = fre
-
-	for i in range(3):
-		update_diff()
-
-	redefine_fre(20)
-	print(diff)
-	inital_diff = diff
-
-	while(abs(diff) > sensativity + 1):
-		update_diff()
-		print(diff)
-
-		if abs(diff) > sensativity * 10:
-			rotation_speed = 150
-		if abs(diff) > sensativity * 9:
-			rotation_speed = 120
-		if abs(diff) > sensativity * 8:
-			rotation_speed = 100
-		if abs(diff) > sensativity * 7:
-			rotation_speed = 90
-		if abs(diff) > sensativity * 6:
-			rotation_speed = 80
-		if abs(diff) > sensativity * 5:
-			rotation_speed = 75
-		if abs(diff) > sensativity * 4:
-			rotation_speed = 70
-		if abs(diff) > sensativity * 3:
-			rotation_speed = 60
-		else:
-			rotation_speed = 60
-
-		if(abs(diff) > abs(inital_diff) + 10):
-			stop()
-			rotate_clockwise_gyro()
-			return
-
-		rotation_speed = round(rotation_speed)
-		rotation_comm = ['@','@']
-		rotation_comm[1] = str(rotation_speed)
-		rotate_counter(rotation_comm)
-
-	redefine_fre(pre_fre)
-	stop()
-	return
-
-def rotate_clockwise_gyro():
-	pre_fre = fre
-
-	for i in range(3):
-		update_diff()
-
-	redefine_fre(20)
-	print(diff)
-	inital_diff = diff
-
-	while(abs(diff) > sensativity + 1):
-		update_diff()
-		print(diff)
-
-		if abs(diff) > sensativity * 10:
-			rotation_speed = 150
-		if abs(diff) > sensativity * 9:
-			rotation_speed = 120
-		if abs(diff) > sensativity * 8:
-			rotation_speed = 100
-		if abs(diff) > sensativity * 7:
-			rotation_speed = 97
-		if abs(diff) > sensativity * 6:
-			rotation_speed = 95
-		if abs(diff) > sensativity * 5:
-			rotation_speed = 90
-		if abs(diff) > sensativity * 4:
-			rotation_speed = 85
-		if abs(diff) > sensativity * 3:
-			rotation_speed = 80
-		else:
-			rotation_speed = 60
-
-		if(abs(diff) > abs(inital_diff) + 10):
-			stop()
-			rotate_counter_gyro()
-			return
-
-		rotation_speed = round(rotation_speed)
-		rotation_comm = ['@','@']
-		rotation_comm[1] = str(rotation_speed)
-		rotate_clockwise(rotation_comm)
-
-	redefine_fre(pre_fre)
-	stop()
-	return
-
-
-
-#creates the new motor speeds to correct leaning
-def change_speed():
-	largest_value = 0
-	factor = 1
-
-	global motor_speed
-	global diff
-	global motor_speed
-
-
-	if abs(diff) < sensativity:
-		print("Going straight")
-		print("Difference of {diffe}".format(diffe = str(diff) ) )
-		if motor_speed[FRONT_LEFT] > largest_value:
-			largest_value = motor_speed[FRONT_LEFT]
-		if motor_speed[BACK_LEFT] > largest_value:
-			largest_value = motor_speed[BACK_LEFT]
-		if motor_speed[FRONT_RIGHT] > largest_value:
-			largest_value = motor_speed[FRONT_RIGHT]
-		if motor_speed[BACK_RIGHT] > largest_value:
-			largest_value = motor_speed[BACK_RIGHT]
-
-		motor_speed[FRONT_LEFT] = largest_value + 5
-		motor_speed[FRONT_RIGHT] = largest_value + 5
-		motor_speed[BACK_LEFT] = largest_value + 5
-		motor_speed[BACK_RIGHT] = largest_value + 5
-
-		motor_change[0] = 0
-		motor_change[1] = 0
-		motor_change[2] = 0
-		motor_change[3] = 0
-
-	if diff > sensativity and diff < 50:
-		print("Clockwise and go")
-		print("Difference of {diffe}".format(diffe = str(diff)))
-
-		if direction == FRONT:
-
-			if motor_speed[FRONT_RIGHT] + abs(diff) < max_speed and motor_speed[FRONT_RIGHT] + abs(diff) < max_speed:
-				motor_speed[FRONT_RIGHT] += abs(diff) * factor
-				motor_speed[BACK_RIGHT] += abs(diff) * factor
-
-				motor_change[0] = 0
-				motor_change[1] = 0
-				motor_change[2] = 1
-				motor_change[3] = 1
-
-			else:
-				motor_speed[FRONT_LEFT] -= abs(diff) * factor
-				motor_speed[BACK_LEFT] -= abs(diff) * factor
-
-				motor_change[2] = 0
-				motor_change[3] = 0
-				motor_change[0] = 2
-				motor_change[1] = 2
-		if direction == RIGHT:
-			print("HelloR")
-		if direction == LEFT:
-			print("HelloL")
-		if direction == BACK:
-			print("HelloB")
-
-	if diff > sensativity and diff > 50:
-		print("Clockwise and stop")
-
-		rotate_counter_gyro()
-
-		motor_change[2] = 3
-		motor_change[3] = 3
-		motor_change[0] = 3
-		motor_change[1] = 3
-
-		stop()
-
-	if diff < (sensativity * -1) and diff > -50:
-		print("Counter-ClockWise and go")
-		print("Difference of {diffe}".format(diffe = str(diff) ) )
-
-		if direction == FRONT:
-
-			if motor_speed[FRONT_LEFT] + abs(diff) < max_speed and motor_speed[BACK_LEFT] + abs(diff) < max_speed:
-				motor_speed[FRONT_LEFT] += abs(diff) * factor
-				motor_speed[BACK_LEFT] += abs(diff) * factor
-
-				motor_change[2] = 0
-				motor_change[3] = 0
-				motor_change[0] = 1
-				motor_change[1] = 1
-
-			else:
-				motor_speed[FRONT_RIGHT] -= abs(diff) * factor
-				motor_speed[BACK_RIGHT] -= abs(diff) * factor
-
-				motor_change[0] = 0
-				motor_change[1] = 0
-				motor_change[2] = 2
-				motor_change[3] = 2
-
-		if direction == RIGHT:
-			print("HelloR")
-		if direction == LEFT:
-			print("HelloL")
-		if direction == BACK:
-			print("HelloB")
-
-	if diff < (sensativity * -1) and diff < -50:
-		print("Counter-ClockWise and stop")
-
-		rotate_clockwise_gyro()
-
-		motor_change[2] = 3
-		motor_change[3] = 3
-		motor_change[0] = 3
-		motor_change[1] = 3
-
-		stop()
-
-	return
-
-def speed_constraint():
-	global motor_speed
-	#speed Restrictions
-
-	if motor_speed[FRONT_LEFT] > max_speed:
-		motor_speed[FRONT_LEFT] = max_speed
-	if motor_speed[FRONT_LEFT] < lowest_speed:
-		motor_speed[FRONT_LEFT] = lowest_speed
-
-	if motor_speed[FRONT_RIGHT] > max_speed:
-		motor_speed[FRONT_RIGHT] = max_speed
-	if motor_speed[FRONT_RIGHT] < lowest_speed:
-		motor_speed[FRONT_RIGHT] = lowest_speed
-
-	if motor_speed[BACK_LEFT] > max_speed - fix_bias:
-		motor_speed[BACK_LEFT] = max_speed - fix_bias
-	if motor_speed[BACK_LEFT] < lowest_speed - fix_bias :
-		motor_speed[BACK_LEFT] = lowest_speed - fix_bias
-
-	if motor_speed[BACK_RIGHT] > max_speed:
-		motor_speed[BACK_RIGHT] = max_speed
-	if motor_speed[BACK_RIGHT] < lowest_speed:
-		motor_speed[BACK_RIGHT] = lowest_speed
-	return
-
-def speed_display():
-	#1 means green, 2 means red and 0 means white
-	#printing the speeds with the corresponding color
-	if motor_change[0] == 1: #green
-		print(Fore.GREEN + ' {f_L} '.format(f_L = str(motor_speed[FRONT_LEFT])), end = "" )
-	if motor_change[0] == 2: #red
-		print(Fore.RED + ' {f_L} '.format(f_L = str(motor_speed[FRONT_LEFT])), end = "" )
-	if motor_change[0] == 0: #white
-		print(Style.RESET_ALL + ' {f_L} '.format(f_L = str(motor_speed[FRONT_LEFT])), end = "" )
-	if motor_change[0] == 3: #yellow for rotation
-		print(Fore.YELLOW + ' {f_L} '.format(f_L = str(motor_speed[FRONT_LEFT])), end = "" )
-
-
-	if motor_change[2] == 1: #green
-		print(Fore.GREEN + ' {f_R} '.format(f_R = str(motor_speed[FRONT_RIGHT])), end = "" )
-	if motor_change[2] == 2: #red
-		print(Fore.RED + ' {f_R} '.format(f_R = str(motor_speed[FRONT_RIGHT])), end = "" )
-	if motor_change[2] == 0: #white
-		print(Style.RESET_ALL + ' {f_R} '.format(f_R = str(motor_speed[FRONT_RIGHT])), end = "" )
-	if motor_change[2] == 3: #yellow
-		print(Fore.YELLOW + ' {f_R} '.format(f_R = str(motor_speed[FRONT_RIGHT])), end = "" )
-
-	print("\n")
-
-	if motor_change[1] == 1: #green
-		print(Fore.GREEN + ' {b_L} '.format(b_L = str(motor_speed[BACK_LEFT])), end = "" )
-	if motor_change[1] == 2: #red
-		print(Fore.RED + ' {b_L} '.format(b_L = str(motor_speed[BACK_LEFT])), end = "" )
-	if motor_change[1] == 0: #white
-		print(Style.RESET_ALL + ' {b_L} '.format(b_L = str(motor_speed[BACK_LEFT])), end = "" )
-	if motor_change[1] == 3: #yellow
-		print(Fore.YELLOW + ' {b_L} '.format(b_L = str(motor_speed[BACK_LEFT])), end = "" )
-
-	if motor_change[3] == 1: #green
-		print(Fore.GREEN + ' {b_R} '.format(b_R = str(motor_speed[BACK_RIGHT])), end = "" )
-	if motor_change[3] == 2: #red
-		print(Fore.RED + ' {b_R} '.format(b_R = str(motor_speed[BACK_RIGHT])), end = "" )
-	if motor_change[3] == 0: #white
-		print(Style.RESET_ALL + ' {b_R} '.format(b_R = str(motor_speed[BACK_RIGHT])), end = "" )
-	if motor_change[3] == 3: #yellow
-		print(Fore.YELLOW + ' {b_R} '.format(b_R = str(motor_speed[BACK_RIGHT])), end = "" )
-
-	print(Style.RESET_ALL + "\n")
-	return
-
-
-def send_speed():
-	bytes = ['@','@', '@', '@', '@']
-	bytes[1] = str( round( motor_speed[FRONT_LEFT] ) )
-	bytes[2] = str( round( motor_speed[BACK_LEFT] - fix_bias ) )
-	bytes[3] = str( round( motor_speed[FRONT_RIGHT] ) )
-	bytes[4] = str( round( motor_speed[BACK_RIGHT] ) )
-
-	print(bytes)
-
-	if direction == FRONT:
-		move_forward(bytes)
-	if direction == LEFT:
-		move_left(bytes)
-	if direction == RIGHT:
-		move_right(bytes)
-	if direction == BACK:
-		move_reverse(bytes)
-
-	return
-
-def rotation():
-	A = ave_gyro()
-	B = ave_gyro()
-	if B - A > 0.6:
-		print("ClockWise: {diff}".format(diff = (B-A) ) )
-	if B - A < -0.6:
-		print("CounterClockWise: {diff}".format(diff = (B-A) ) )
-	if abs( B - A ) <  0.6 :
-		print("Stationary")
-
-def move_gyro(direct, starting_speed, sense_gyro):
-	#Code to make the robot move straight
-	global sensativity
-	global motor_speed
-	global max_speed
-	global direction
-
-	sensativity = int(sense_gyro)
-
-	motor_speed[FRONT_LEFT] = int(starting_speed)
-	motor_speed[BACK_LEFT] = int(starting_speed)
-	motor_speed[FRONT_RIGHT] = int(starting_speed)
-	motor_speed[BACK_RIGHT] = int(starting_speed)
-
-	max_speed = int(starting_speed)
-
-	direction = direct#making a local variable a global variable
-
-	for j in range(3):#makig sure that the sensor works
-		redefine_pre()
-
-
-	while(True):
-		update_diff()
-		change_speed()
-		speed_constraint()
-		speed_display()
-		#send_speed()
-	return
-
-
-def gyro_main():
-	global direction
-	direction = 1
-	for i in range(20):
-		#send_speed()
-		sleep(0.5)
-		update_diff()
-		print("Pre: {P} New: {N} Diff: {D}".format(P = pre_value,N = new_value, D = diff))
-		#print(get_gyro_reading() )
-	return
-
-def redefine_pre():
-	global pre_value
 	for i in range(4):
-		pre_value  = ave_gyro()
-	print("Now the value of Pre is {Pre}".format(Pre = pre_value) )
+		if(int(encoder_value[i]) >= mean(encoder_constant_lid[axes])):
+			completion = completion + 1
+
+	if(completion >= 3):
+		return 1
+
+	return 0
+
+def pick_up_lid(which_arduino,axes,direction):
+
+	encoder_reset()
+	data_in = ['0','0','0','0','0']
+
+	for i in range(4):
+		data_in[i+1] = str(round(move_speed[axes][direction][i]/2))
+
+	if(axes == Y):
+		if(direction == POS_DIRECTION):
+			move_forward(data_in)
+		if(direction == NEG_DIRECTION):
+			move_reverse(data_in)
+	if(axes == X):
+		if(direction == POS_DIRECTION):
+			move_right(data_in)
+		if(direction == NEG_DIRECTION):
+			move_left(data_in)
+	#if the function returns 0, that means that non of the encoders
+	#have reach the desired value
+	while(encoder_completion_lid(axes) == 0):
+		encoder_update()
+	stop()
+	sleep(0.2)
+	servo_bottom(which_arduino)
+	sleep(0.9)
+	servo_top(which_arduino)
+
+	#Now the robot must return to its previous place
+
+	encoder_reset()
+	sleep(0.5)
+
+	if(axes == Y):
+		if(direction == POS_DIRECTION):
+			move_reverse(data_in)
+		if(direction == NEG_DIRECTION):
+			move_forward(data_in)
+	if(axes == X):
+		if(direction == POS_DIRECTION):
+			move_left(data_in)
+		if(direction == NEG_DIRECTION):
+			move_right(data_in)
+
+	#if the function returns 0, that means that non of the encoders
+	#have reach the desired value
+	while(encoder_completion_lid(axes) == 0):
+		encoder_update()
+		dice_read = dotCount()
+		if(dice_read != 0):
+			dice_face_m = dice_read
+		print("M: {A}".format(A = dice_face_m))
+
+	stop()
+
+	dice_face_s = dotCount()
+	print("S: {B}".format(B = dice_face_s))
+
+	if(dice_face_s == dice_face_m):
+		seven_seg_turn_on(dice_face_s)
+	elif(dice_face_s <= 6 and dice_face_s >= 1):
+		seven_seg_turn_on(dice_face_s)
+	elif(dice_face_m <= 6 and dice_face_m >= 1):
+		seven_seg_turn_on(dice_face_m)
+	else:
+		print("Dice not found")
+
+
 	return
 
-def redefine_fre(new_value_fre):
-	global fre
-	fre = int(new_value_fre)
-	print("Now the value of fre is {FRE}". format(FRE = fre) )
-	return
+def get_dice_report():
+	dice_read = dotCount()
+	print(dice_read)
 
-def redefine_sensa(new_value_sen):
-	global sensativity
-	sensativity = int(new_value_sen)
-	print("Now the value of sensativity is {SE}".format(SE = sensativity) )
-	return
 
-def north():
-	north = sense.get_compass()
-	print("North: %s" % north)
-	return
 
-"""
-
+#-----------------GYROSCOPE-------------------
 """
 Arduino Gyro Code Ahead
 """
-
-gyro_angle = [0,0] #Left, Right
-gyro_cali_b = b'='
-gyro_update_angle_b = b'?'
+def read_gyro_status():
+	left.write(b'_')
+	right.write(b'_')
+	gyro_status_left = read_arduino(LEFT_ARDUINO_ID, no)
+	gyro_status_right = read_arduino(RIGHT_ARDUINO_ID, no)
+	print("Left Gyro: {A}\tRight Gyro: {B}" \
+		.format(A = gyro_status_left, B = gyro_status_right))
+	return
 
 def gyro_cali():
-    clear_comm()
-    left.write(b'=')
-    right.write(b'=')
-    return
+	global gyro_is_calibrated
+
+	clear_comm()
+	left.write(b'=')
+	right.write(b'=')
+	left_confirmation = read_arduino(LEFT_ARDUINO_ID, no)
+	right_confirmation = read_arduino(RIGHT_ARDUINO_ID, no)
+	gyro_is_calibrated = yes
+	print("Gyro(s) are Calibrated")
+	print("Left:\t{A}\tRight:\t{B}" \
+		.format(A = left_confirmation, B = right_confirmation))
+
+	return
 
 def gyro_update_angle():
-    clear_comm()
-    left.write(b'?')
-    right.write(b'?')
+	clear_comm()
+	if(gyro_is_calibrated == no):
+		print("Angle was attempted to be read " + \
+			"but Gyro has not been Calibrated!")
+		return
+	left.write(b'?')
+	right.write(b'?')
 
-    gyro_angle[0] = read_integer_serial(end_char, arduino_left)
-    gyro_angle[1] = read_integer_serial(end_char, arduino_right)
+	gyro_angle[LEFT_ARDUINO_ID] = read_arduino(LEFT_ARDUINO_ID, no)
+	gyro_angle[RIGHT_ARDUINO_ID] = read_arduino(RIGHT_ARDUINO_ID, no)
 
-    return
+	while(len(gyro_angle[LEFT_ARDUINO_ID]) == 0):
+		left.write(b'?')
+		gyro_angle[LEFT_ARDUINO_ID] = read_arduino(LEFT_ARDUINO_ID,no)
+	while(len(gyro_angle[RIGHT_ARDUINO_ID]) == 0):
+		right.write(b'?')
+		gyro_angle[RIGHT_ARDUINO_ID] = read_arduino(RIGHT_ARDUINO_ID, no)
+
+	#print("Left:\t{A}\tRight:{B}". \
+	#	format(A = gyro_angle[LEFT_ARDUINO_ID], \
+	#		B = gyro_angle[RIGHT_ARDUINO_ID]))
+
+	return
+
+def gyro_angle_test():
+	while(True):
+		gyro_update_angle()
 
 def gyro_report_angle():
-    print("Left:\t{A}\tRight:\t{B}".format(A = gyro_angle[0], B = gyro_angle[1]))
-    return
+	print("Left:\t{A}\tRight:\t{B}". \
+		format(A = gyro_angle[LEFT_ARDUINO_ID], \
+			B = gyro_angle[RIGHT_ARDUINO_ID]))
+	return
+def gyro_reset_angle():
+	left.write(b',')
+	right.write(b',')
+	return
+
+#-----------------PID-------------------
+def update_PID():
+	global gyro_pid_old_output
+
+	gyro_update_angle()
+
+	while(len(gyro_angle[RIGHT_ARDUINO_ID]) == 0):
+		print("Right Gyro malfunction")
+		gyro_update_angle()
+
+	#used_angle = (gyro_angle[RIGHT_ARDUINO_ID][0] + gyro_angle[LEFT_ARDUINO_ID][0]) / 2
+	used_angle = round(gyro_angle[RIGHT_ARDUINO_ID][0])
+	gyro_pid.update(used_angle) # for now, use 1 sensor
+	result = (gyro_pid.output != gyro_pid_old_output)
+	gyro_pid_old_output = gyro_pid.output
+	print("PID's OUTPUT: {A}".format(A = gyro_pid.output))
+	return result
+
+def obtain_new_motor_speeds(axes, direction, rotation_ratio):
+	new_motor_speed = ['100','100','100','100','100']
+	#counterclockwise = positive, clockwise = negative
+	#motor_set up [left_front, left_back, right_front, right_back]
+	y_pos = [1,1,-1,-1]
+	y_neg = [-1,-1,1,1]
+	x_pos = [1,-1,1,-1]
+	x_neg = [-1,1,-1,1]
+
+	y_shift = [y_pos, y_neg]
+	x_shift = [x_pos, x_neg]
+
+	overall_shift_factor = [y_shift, x_shift]
+
+	#negative_compensation = []
+	#rotation_ratio = gyro_pid.output
+	for i in range(len(move_speed[axes][direction])):
+		new_motor_speed[i+1] = \
+			str(move_speed[axes][direction][i] + \
+				overall_shift_factor[axes][direction][i] * 12 * round(rotation_ratio))
+	return new_motor_speed
+
+def update_motor_speed(axes,direction,motor_speed):
+	#print("New Speed: ", end = '')
+	#print(motor_speed)
+
+	if(axes == Y):
+		if(direction == POS_DIRECTION):
+			move_forward(motor_speed)
+		if(direction == NEG_DIRECTION):
+			move_reverse(motor_speed)
+	if(axes == X):
+		if(direction == POS_DIRECTION):
+			move_right(motor_speed)
+		if(direction == NEG_DIRECTION):
+			move_left(motor_speed)
+	return
+
+def gyro_PID_test():
+	while(True):
+
+		print(update_PID())
+		sleep(0.3)
+		new_motor_speed = obtain_new_motor_speeds(Y,POS_DIRECTION, gyro_pid.output)
+		update_motor_speed(Y,POS_DIRECTION, new_motor_speed )
+
+	return
+
+def clear_gyro_PID():
+	#do the code here
+	gyro_pid.clear()
+	return
+
+def gyro_PID_rotate():
+	#Take the initial value of the gyros and try to match them with the values been received now
+	tolerance = 0.5
+	print(gyro_pid.output)
+
+	while(gyro_pid.output > 0):
+		print("Robot needs to turn ClockWise")
+		update_PID()
+		sleep(0.1)#Just to be able to read
+	while(gyro_pid.output < 0):
+		print("Robot needs to turn CounterClock Wise")
+		update_PID()
+		sleep(0.1)#Just to be able to read
+	print("Desired Orientation has been reached")
+
+
+	return
