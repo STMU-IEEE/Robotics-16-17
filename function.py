@@ -103,8 +103,10 @@ capacitor_data_iso = [0,0,0,0]
 capacitor_data_notiso = [0,0,0,0]
 
 capacitor_data_constant = [capacitor_data_wire, capacitor_data_notiso, capacitor_data_iso]
-capacitor_data_based_wire = [[0,0,0,0],[-250,-250,-280,-260],[-340,-340,-340,-340]]
-capacitor_data_based_iso = [[340,340,340,340],[35,40,33,11],[0,0,0,0]]
+#capacitor_data_based_wire = [[0,0,0,0],[-250,-250,-280,-260],[-340,-340,-340,-340]]
+#capacitor_data_based_iso = [[340,340,340,340],[35,40,33,11],[0,0,0,0]]
+capacitor_data_based_wire = [[0,0,0,0],[-50,-50,-50,-50],[-61,-68,-59,-60]]
+capacitor_data_based_iso = [[61,68,59,60],[37,44,40,39],[0,0,0,0]]
 capacitor_data_based_group = [capacitor_data_based_wire,[], capacitor_data_based_iso]
 
 
@@ -164,7 +166,7 @@ def read_arduino(side_arduino,with_confirmation):
 		if(with_confirmation):
 			right.write(CONFIRM_CHAR.encode())
 
-	print(bline)
+	#print(bline)
 
 	#TODO: this should not happen/be necessary
 	'''
@@ -178,7 +180,7 @@ def read_arduino(side_arduino,with_confirmation):
 	if(EMERGENCY_CHAR in bline.decode()):#Emergency Char '%'
 		sleep(0.1)
 		print("FOUND EMERGENCY CHAR")
-		return None
+		return []
 	#split() will remove '\r'
 	'''
 	if(bline == b'\r'):
@@ -262,8 +264,8 @@ def move_left(data_in):
 ##LINE 40
 
 def move_forward(data_in):
-	print("Forward Function")
-	print(data_in)
+	#print("Forward Function")
+	#print(data_in)
 	left.write(b"w")
 	left.write(data_in[1].encode() )
 	left.write(END_CHAR.encode())#Separator Char
@@ -396,7 +398,7 @@ def encoder_update():#1 for Y, 2 for X
 	encoder_value[2] = encoder_holder[0]
 	encoder_value[3] = encoder_holder[1]
 
-	print(encoder_value)
+	#print(encoder_value)
 
 	return
 
@@ -462,7 +464,7 @@ def move_y(direction):
 	#if the function returns 0, that means that non of the encoders have reach the desired value
 	while(encoder_completion(Y) == 0):
 		encoder_update()
-		print(update_PID())
+		#print(update_PID())
 		new_motor_speed = obtain_new_motor_speeds(Y,direction, gyro_pid.output)
 		update_motor_speed(Y,direction, new_motor_speed )
 	stop()
@@ -574,7 +576,7 @@ def us_sensor():
 	#print("Block Message: ", end = '')
 	#print(block_message)
 
-	print("Block Direction : ", end = '')
+	#print("Block Direction : ", end = '')
 
 	return block_direction
 """
@@ -591,7 +593,7 @@ def capacitor_sensor():
 	#clear_comm()
 	flag = 0
 
-	print("Collecting data from Capacitive Sensor")
+	#print("Collecting data from Capacitive Sensor")
 
 	for i in range(20):#This is the amount of attempts the Raspberry has to receive the information
 		flag = 0
@@ -600,7 +602,7 @@ def capacitor_sensor():
 		#sleep(0.5)
 		#capacitor_hard_reset()
 		sensor_data = read_arduino(RIGHT_ARDUINO_ID, yes)
-		print(sensor_data)
+		#print(sensor_data)
 
 		if(sensor_data is None or len(sensor_data) == 0):
 			continue
@@ -679,7 +681,7 @@ def capacitor_constant_rewrite(reference_block):
 
 def capacitor_hard_reset():
 	right.write(b"H")
-	print("Capacitor sensor reset")
+	#print("Capacitor sensor reset")
 	#This lets the capacitor reset
 	return
 
@@ -697,7 +699,7 @@ def capacitor_trash_value():
 
 def capacitor_fix_value():
 	while(capacitor_trash_value == True):
-		print("Recalculating values")
+		#print("Recalculating values")
 		capacitor_sensor()
 	return
 
@@ -798,7 +800,7 @@ def capacitor_block_identity():
 	diff_wire_total = 0
 	diff_notiso_total = 0
 	diff_iso_total = 0
-
+	"""
 	if(capacitor_data_wire[0] == 0):
 		print("WARNING")
 		print("Recommended recalibration of the Capacitor Sensor")
@@ -816,41 +818,43 @@ def capacitor_block_identity():
 	print("Isolated")
 	print("\t", end = '')
 	print(capacitor_data_constant[2])
+	"""
 
 	capacitor_sensor()
 
 	#Compare the current values of the sensor with the constants of each block
-	print("")
 	for i in range(4):
 		diff_wire[i] = abs(capacitor_data_current[i] - capacitor_data_wire[i])
 		diff_notiso[i] = abs(capacitor_data_current[i] - capacitor_data_notiso[i])
 		diff_iso[i] = abs(capacitor_data_current[i] - capacitor_data_iso[i])
 		#print("{A}\t{B}\t{C}".format(A = diff_wire[i],B = diff_notiso[i],C = diff_iso[i]))
-	print("Differences")
 
-	print("\tWire")
-	print("\t\t", end = '')
+	
+	#print("Differences")
+
+	#print("\tWire")
+	#print("\t\t", end = '')
 	print(diff_wire)
 	for j in range(4):
 		diff_wire_total = diff_wire_total + diff_wire[j]
-	print("\t\t\t",end = '')
-	print(diff_wire_total)
+	#print("\t\t\t",end = '')
+	#print(diff_wire_total)
 
-	print("\tNot Isolated Without Wire")
-	print("\t\t", end = '')
-	print(diff_notiso)
+	#print("\tNot Isolated Without Wire")
+	#print("\t\t", end = '')
+	#print(diff_notiso)
 	for j in range(4):
 		diff_notiso_total = diff_notiso_total + diff_notiso[j]
-	print("\t\t\t",end = '')
-	print(diff_notiso_total)
+	#print("\t\t\t",end = '')
+	#print(diff_notiso_total)
 
-	print("\tIsolated")
-	print("\t\t", end = '')
-	print(diff_iso)
+	#print("\tIsolated")
+	#print("\t\t", end = '')
+	#print(diff_iso)
 	for j in range(4):
 		diff_iso_total = diff_iso_total + diff_iso[j]
-	print("\t\t\t",end = '')
-	print(diff_iso_total)
+	#print("\t\t\t",end = '')
+	#print(diff_iso_total)
 
 	diff_max = [diff_wire[0], diff_notiso[0], diff_iso[0]]
 	diff_median = [diff_wire[1], diff_notiso[1], diff_iso[2]]
@@ -890,9 +894,9 @@ def capacitor_block_identity():
 		diff_index_min[j] = diff_all[j].index(min(diff_all[j]))
 		diff_value_min[j] = diff_all[j][diff_index_min[j]]
 
-	print("General Min Results")
-	print(diff_index_min)
-	print(diff_value_min)
+	#print("General Min Results")
+	#print(diff_index_min)
+	#print(diff_value_min)
 
 	diff_rating[diff_index_min[0]] = diff_rating[diff_index_min[0]] + 1
 	diff_rating[diff_index_min[1]] = diff_rating[diff_index_min[1]] + 2
@@ -1158,9 +1162,9 @@ def gyro_update_angle():
 		right.write(b'?')
 		gyro_angle[RIGHT_ARDUINO_ID] = read_arduino(RIGHT_ARDUINO_ID, no)
 
-	print("Left:\t{A}\tRight:{B}". \
-		format(A = gyro_angle[LEFT_ARDUINO_ID], \
-			B = gyro_angle[RIGHT_ARDUINO_ID]))
+	#print("Left:\t{A}\tRight:{B}". \
+	#	format(A = gyro_angle[LEFT_ARDUINO_ID], \
+	#		B = gyro_angle[RIGHT_ARDUINO_ID]))
 
 	return
 
@@ -1215,12 +1219,12 @@ def obtain_new_motor_speeds(axes, direction, rotation_ratio):
 	for i in range(len(move_speed[axes][direction])):
 		new_motor_speed[i+1] = \
 			str(move_speed[axes][direction][i] + \
-				overall_shift_factor[axes][direction][i] * 10 * round(rotation_ratio))
+				overall_shift_factor[axes][direction][i] * 12 * round(rotation_ratio))
 	return new_motor_speed
 
 def update_motor_speed(axes,direction,motor_speed):
-	print("New Speed: ", end = '')
-	print(motor_speed)
+	#print("New Speed: ", end = '')
+	#print(motor_speed)
 
 	if(axes == Y):
 		if(direction == POS_DIRECTION):

@@ -35,6 +35,11 @@ if GPIO.getmode() is None:
 	GPIO.setmode(GPIO.BOARD)
 #Setting up the Interrupt
 GPIO.setup(37, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+sleep(1) # DO NOT DELETE!
+ # This delay must be present for proper functioning.
+ # Without the delay, the pull-up resistor connecting
+ # will raise the level, causing an interrupt
+ # as soon as the interrupt is enabled.
 GPIO.add_event_detect(37, GPIO.RISING, callback = start_button_pressed, bouncetime = 300) # GPIO-26
 # GPIO.setup(36, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 # GPIO.add_event_detect(36, GPIO.FALLING, callback = stop_button_pressed, bouncetime = 300) # GPIO-26
@@ -89,6 +94,7 @@ while(run_pres == 0):#Waiting for the "GO"
 #Initialize the Run
 lightmatrix_no_color()
 lightmatrix_A7_yellow()
+
 follow()
 print("Path Completed!")
 run_pres = 0

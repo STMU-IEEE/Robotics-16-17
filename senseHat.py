@@ -42,6 +42,11 @@ def lightmatrix_yellow_ready():
 
 def lightmatrix_update(x,y,block_score):
 	total = 0
+	if block_score != -1:
+		block_score = block_score - 80
+	else:
+		sense.set_pixel(y,x, B)
+		return
 	print(block_score)
 	for z in range(3):
 		total += block_score[z]

@@ -32,7 +32,7 @@ from senseHat import *
 #   |HE RE|     |     |     |     |     |     |
 #   +-----+-----+-----+-----+-----+-----+-----+
 
-default_Path = [
+default_path = [
 [0,1],
 [0,2],
 [0,3],
@@ -96,6 +96,7 @@ obstacle_present = -1
 
 current_location = [0,0]
 target_location = [0,0]
+max_capacitor_index = 0
 
 NORTH = 0
 SOUTH = 1
@@ -108,37 +109,48 @@ target_location_obstacle = 0
 yes = 1
 no = 0
 
-world_map = [[],[],[],[],[],[],[]]
+world_map = [[8,8,8,8,8,8,8],
+             [8,8,8,8,8,8,8],
+             [8,8,8,8,8,8,8],
+             [8,8,8,8,8,8,8],
+             [8,8,8,8,8,8,8],
+             [8,8,8,8,8,8,8],
+             [8,8,8,8,8,8,8]]
+wire = 0
+dead_end = 1
+insulation = 2
+
+"""
 for i in range(len(world_map)):
 	for j in range(len(world_map[i])):
 		world_map[i][j] = 8
+"""
 print (world_map)
 
 
-def scan_field():
 
+def scan_field():
+    global target_location
     while len(default_path) > 0:
-        #set destination
         target_location = default_path[0]
-        #collect data
+        print("Target Location:\t", end = '')
+        print(target_location, end = '')
+        print("\tCurrent Location:\t", end = '')
+        print(current_location)
         get_sensor()
-        #display found capacitor data
         display_capacitor_reading()
-        #marked field and list with known data
         mark_obstacle()
-        #check if the target is adjacent and safe
         check_target_location()
         if(target_location_obstacle == yes):
             remove_target_block()
             continue
-        #get list of movements
         list_of_movement()
-        #make movement
         make_movement()
-        #remove target block from list
         remove_target_block()
 
 def mark_obstacle():
+    global world_map
+    print("Entering mark_obstacle")
     for orientation in range(len(block_direction)):
         if(block_direction[orientation] == obstacle):
             #Orientation: 
@@ -157,6 +169,10 @@ def mark_obstacle():
     return
         
 def check_target_location():
+    global target_location_is_safe
+    global target_locatoin_is_obstacle
+    print("Entering check_target_location: ", end = '')
+    print(target_location)
     if(world_map[target_location[X]][target_location[Y]] == obstacle_present):
         target_location_is_safe = no
         target_location_obstacle = yes
@@ -165,49 +181,71 @@ def check_target_location():
         target_location_obstacle = no
 
 def list_of_movement():
+    global move_direction
+
+    print("Entering list_of_movement")
     move_direction[X] = target_location[X] - current_location[X]
-    move_direction[Y] = target_location[Y] - target_location[Y]
+    move_direction[Y] = target_location[Y] - current_location[Y]
+    print("move_direction:", end = '')
+    print(move_direction)
     #This is not considering the possibilities of obstacles
 
 def make_movement():
-    while(move_direction[X] != 0 and move_direction[Y] != 0):
+    print("Entering make_movement")
+    while(move_direction[X] != 0 or move_direction[Y] != 0):
         if move_direction[X] > 0: #Positive X differences
             move_east()
-        if move_direction[X] < 0:
+        elif move_direction[X] < 0:
             move_west()
-        if move_direction[Y] > 0:
+        elif move_direction[Y] > 0:
             move_north()
-        if move_direction[Y] < 0:
+        elif move_direction[Y] < 0:
             move_south()
+        list_of_movement()
 
 def display_capacitor_reading():
-    lightmatrix_update_simple(current_location[X], current_location[Y], /
+    print("Entering display_capacitor_reading")
+    lightmatrix_update_simple(current_location[X], current_location[Y], \
     max_capacitor_index)
 
     return
     
 
 def remove_target_block():
+    global default_path
+    print("Entering remove_target_block")
     default_path.pop(0)
 
 def move_north():
+    print("North")
     move_y(pos_direction)
+    current_location[Y] += 1
     return
 def move_south():
+    print("South")
     move_y(neg_direction)
+    current_location[Y] += -1
     return
 def move_east():
+    print("East")
     move_x(pos_direction)
+    current_location[X] += 1
     return
 def move_west():
+    print("West")
     move_x(neg_direction)
+    current_location[X] += -1
     return
 
-def get_sensor(location):
+def get_sensor():
+    print("Entering get_sensor")
     global block_direction
+    global max_capacitor_index
+
     block_direction = us_sensor()
+    print("Ultrasonic Readings: ", end = '')
     print(block_direction)
-    current_capacitor_block_array = capacitor_block_multiple(3)
+    current_capacitor_block_array = capacitor_block_multiple(2)
 
     print("List Received from Function:")
     print(current_capacitor_block_array)
@@ -223,7 +261,25 @@ def get_sensor(location):
     #0-> tunnel
     #1-> dead_ends
     #2-> Insulation
-    max_capacitor_index = current_capacitor_block_array.index(max(current_block_array))
+    max_capacitor_index = current_capacitor_block_array.index(max(current_capacitor_block_array))
+
+    left_y = (current_location[X] != 0 and current_location[Y] > 0 and \
+    current_location[Y] < 6)
+    right_y = (current_location[X] != 6 and current_location[Y] > 0 and \
+    current_location[Y] < 6)
+    bottom_x = (current_location[Y] != 0 and current_location[X] > 0 and \
+    current_location[X] < 6)
+    top_x = (current_location[Y] != 6 and current_location[X] > 0 and \
+    current_location[X] < 6)
+
+    if(left_y or right_y or bottom_x or top_x):
+        if(max_capacitor_index == wire and max(block_direction) >= 10):
+            print("Recalibrating from reference block: wire")
+            capacitor_constant_rewrite(wire)
+        if(max_capacitor_index == insulation and max(block_direction) >= 10):
+            print("Recalibrating from reference block: insulated")
+            capacitor_constant_rewrite(insulation)
+
     print("max_index: {A}".format(A = max_capacitor_index))
 
     return

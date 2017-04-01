@@ -40,63 +40,68 @@ def follow():
     #TODO
     #blocked_vals = {-1}
     global blocked_vals
-    blocked_vals= np.array([99999])  # this is a list of the possible blocked values for default_Pathfinding purposes
+    blocked_vals= np.array([-1])  # this is a list of the possible blocked values for default_Pathfinding purposes
     global my_location
     my_location = (0,0) # first val for vert, second for horiz (row, col)
     global default_Path
     default_Path = np.array([
         [0,0],
         [0,1],
-        [0,2],
-        [0,3],
-        [0,4],
-        [0,5],
-        [0,6],
-        [1,6],
-        [1,5],
-        [1,4],
-        [1,3],
-        [1,2],
-        [1,1],
-        [1,0],
-        [2,0],
-        [2,1],
-        [2,2],
-        [2,3],
-        [2,4],
-        [2,5],
-        [2,6],
-        [3,6],
-        [3,5],
-        [3,4],
-        [3,3],
-        [3,2],
-        [3,1],
-        [3,0],
-        [4,0],
-        [4,1],
-        [4,2],
-        [4,3],
-        [4,4],
-        [4,5],
-        [4,6],
-        [5,6],
-        [5,5],
-        [5,4],
-        [5,3],
-        [5,2],
-        [5,1],
-        [5,0],
-        [6,0],
-        [6,1],
-        [6,2],
-        [6,3],
-        [6,4],
-        [6,5],
-        [6,6]])
+        [0,0]
+    ])
+    # default_Path = np.array([
+    #     [0,0],
+    #     [0,1],
+    #     [0,2],
+    #     [0,3],
+    #     [0,4],
+    #     [0,5],
+    #     [0,6],
+    #     [1,6],
+    #     [1,5],
+    #     [1,4],
+    #     [1,3],
+    #     [1,2],
+    #     [1,1],
+    #     [1,0],
+    #     [2,0],
+    #     [2,1],
+    #     [2,2],
+    #     [2,3],
+    #     [2,4],
+    #     [2,5],
+    #     [2,6],
+    #     [3,6],
+    #     [3,5],
+    #     [3,4],
+    #     [3,3],
+    #     [3,2],
+    #     [3,1],
+    #     [3,0],
+    #     [4,0],
+    #     [4,1],
+    #     [4,2],
+    #     [4,3],
+    #     [4,4],
+    #     [4,5],
+    #     [4,6],
+    #     [5,6],
+    #     [5,5],
+    #     [5,4],
+    #     [5,3],
+    #     [5,2],
+    #     [5,1],
+    #     [5,0],
+    #     [6,0],
+    #     [6,1],
+    #     [6,2],
+    #     [6,3],
+    #     [6,4],
+    #     [6,5],
+    #     [6,6]])
 
     global world_map
-    world_map = np.full((world_size,world_size), 8, dtype=np.int)
+    world_map = np.full((world_size,world_size), 80, dtype=np.int)
     print (world_map)
     # unexplored blocks will have a travel cost value of 8.
     # this travel cost will be reduced to 1 when the robot explores that region.
@@ -110,7 +115,7 @@ def follow():
     neg_direction = 1
 
     while len(default_Path) > 0:
-        print ("Current Target: (x:" + str(default_Path[0][0]) + ", y: "+str(default_Path[0][1]) + ")")
+        # print ("Current Target: (x:" + str(default_Path[0][0]) + ", y: "+str(default_Path[0][1]) + ")")
         if np.all(my_location == default_Path[0]):
             default_Path = np.delete(default_Path,0, 0)  # if we have reached the next location, remove it from the default_Path.
 
@@ -121,22 +126,23 @@ def follow():
         #TODO
 		#error inside if statement
         get_sensors(my_location) # update surrounding nodes
-        print("default_Path[0]: ")
-        print(default_Path[0])
-        print("default_Path[1]: ")
-        print(default_Path[1])
-        print(world_map[default_Path[0][0]][default_Path[0][1]])
-        print(blocked_vals)
+        # print("default_Path[0]: ")
+        # print(default_Path[0])
+        # print("default_Path[1]: ")
+        # print(default_Path[1])
+        # print(world_map[default_Path[0][0]][default_Path[0][1]])
+        # print(blocked_vals)
 
-        if world_map[default_Path[0][0]][default_Path[0][1]] in blocked_vals:
-            default_Path = np.delete(default_Path,0, 0) # if my next point is blocked, move on to the next point in the default_Path.
+        while world_map[default_Path[0][0]][default_Path[0][1]] in blocked_vals:
+            default_Path = np.delete(default_Path, 0, 0) # if my next point is blocked, move on to the next point in the default_Path.
 
         # update the map here
         #TODO LATER
         #When actually competing change function
         #to lightmatrix_update_simple
-        lightmatrix_update_simple(my_location[0],my_location[1], \
-        world_map[my_location[0]][my_location[1]])
+        if(my_location[0] != 0 or my_location[1] != 0):
+            lightmatrix_update_simple(my_location[0],my_location[1], \
+            world_map[my_location[0]][my_location[1]])
 
 
         flow_map = flowField(world_map, default_Path[0])
@@ -145,27 +151,28 @@ def follow():
         print("World Map: \n" + str(world_map))
         travel_direction = flow_map[my_location[0],my_location[1]]
         print("Travel Direction: " +str(travel_direction))
-        input("Press Enter to continue...")
-        if travel_direction[0] > 0: # if we need to move north
+        # input("Press Enter to continue...")
+        if travel_direction[1] > 0: # if we need to move north
             move_north()
-        elif travel_direction[0] < 0: # if we need to move south
+        elif travel_direction[1] < 0: # if we need to move south
             move_south()
-        elif travel_direction[1] < 0: # if we need to move west
+        elif travel_direction[0] < 0: # if we need to move west
             move_west()
         else:   # else move east
             move_east()
 
-def you_are_here(): #for debug purposes
-    view_map = world_map
-    view_map[my_location[0]][my_location[1]] = 'X'
-    print(view_map)
+# def you_are_here(): #for debug purposes
+#     view_map = world_map
+#     view_map[my_location[0]][my_location[1]] = 'X'
+#     print(view_map)
 
-def dist(a, b):
-    return ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) **.5
+# def dist(a, b):
+#     return ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) **.5
 
 def flowField(world, almost_target):
     global cost_map
-    cost_map = np.full((world_size,world_size), 0,dtype = np.int)
+    cost_map = np.full((world_size,world_size), -1,dtype = np.int)
+
     target = (almost_target[0],almost_target[1]) #casting the numpy array into a tuple
     output_field = np.zeros((world_size,world_size,2), dtype=np.int)
     neighbor_dirs = ((0,1),(0,-1),(1,0),(-1,0))
@@ -178,6 +185,7 @@ def flowField(world, almost_target):
             g_score[(x,y)] = 99999
     open_set = set() # list of nodes to be explored
     g_score[target] = 0
+    cost_map[target[0]][target[1]] = 0
 
     open_set.add(target)
 
@@ -197,7 +205,7 @@ def flowField(world, almost_target):
             # print("Node Loc: ("+str(neighbor[0])+","+str(neighbor[1])+" )")
             if 0 <= neighbor[0] and neighbor [0]<  world.shape[0] and 0 <= neighbor[1] and neighbor[1] < world.shape[1] :
                 # print ("Location in world!")
-                # print(world[neighbor[0]][neighbor[1]])
+                print(world[neighbor[0]][neighbor[1]])
                 if world[neighbor[0]][neighbor[1]] not in blocked_vals:
                     # print("Not blocked!")
                     # print("My G Score: " + str(g_score[my_loc]))
@@ -228,13 +236,12 @@ def flowField(world, almost_target):
                     bot_bounded = True
                 else:
                     bot = g_score[(x,y-1)]
-                y_dir = top - bot
+                y_dir = bot-top
                 if top_bounded :
-                    y_dir = max(y_dir, 0)
-                if bot_bounded :
                     y_dir = min(y_dir, 0)
-                if y_dir != 0 :
-                    y_dir = y_dir/abs(y_dir) # normalize the vector.
+                if bot_bounded :
+                    y_dir = max(y_dir, 0)
+
 
                 top_bounded = False
                 bot_bounded = False
@@ -251,26 +258,42 @@ def flowField(world, almost_target):
                 else:
                     bot = g_score[(x-1,y)]
                     # x_dir = max(g_score[(x-1,y)]-g_score[(x,y)],0)
-                x_dir = top - bot
+                x_dir = bot-top
                 if top_bounded :
-                    y_dir = max(y_dir, 0)
+                    x_dir = min(x_dir, 0)
                 if bot_bounded :
-                    y_dir = min(y_dir, 0)
-                if(x_dir != 0):
+                    x_dir = max(x_dir, 0)
+                if(abs(x_dir) > abs(y_dir)):
+                    y_dir = 0
+                else:
+                    x_dir = 0
+                if y_dir != 0 :
+                    y_dir = y_dir/abs(y_dir) # normalize the vector.
+                if x_dir != 0 :
                     x_dir = x_dir/abs(x_dir) # normalize the vector.
                 output_field[x][y]=(x_dir,y_dir)
+            else:
+                output_field[x][y] = (-5,-5)
     return output_field
 
 def move_north():
+    global my_location
+    my_location = (my_location[0], my_location[1] + 1)
     move_y(pos_direction)
     return
 def move_south():
+    global my_location
+    my_location = (my_location[0], my_location[1] - 1)
     move_y(neg_direction)
     return
 def move_east():
+    global my_location
+    my_location = (my_location[0]+1, my_location[1])
     move_x(pos_direction)
     return
 def move_west():
+    global my_location
+    my_location = (my_location[0]-1, my_location[1])
     move_x(neg_direction)
     return
 def get_sensors(location):
@@ -278,8 +301,8 @@ def get_sensors(location):
     print(block_direction)
     current_block_array = capacitor_block_multiple(3)
 
-    print("List Received from Function:")
-    print(current_block_array)
+    # print("List Received from Function:")
+    # print(current_block_array)
     #Ultrasonic function return values
     #0: no near by block
     # North 1000
@@ -293,18 +316,28 @@ def get_sensors(location):
     #1-> dead_ends
     #2-> Insulation
     max_index = current_block_array.index(max(current_block_array))
-    
-    print("max_index: {A}".format(A = max_index))
-    world_map[my_location[0]][my_location[1]] = max_index
+
+    # print("max_index: {A}".format(A = max_index))
+    if world_map[my_location[0]][my_location[1]] == 80:
+        world_map[my_location[0]][my_location[1]] = world_map[my_location[0]][my_location[1]] + max_index
 
     if(block_direction[0] == 1):#North
-        world_map[my_location[0]+1][my_location[1]] = -1
-    elif(block_direction[1] == 1):#South
-        world_map[my_location[0]-1][my_location[1]] = -1
-    elif(block_direction[2] == 1):#East
-        world_map[my_location[0]][my_location[1]+1] = -1
-    elif(block_direction[3] == 1):#West
-        world_map[my_location[0]][my_location[1]-1] = -1
+        if(my_location[1] < world_size-1):
+            world_map[my_location[0]][my_location[1]+1] = -1
+            lightmatrix_update_simple(my_location[0],my_location[1]+1,-1)
+    if(block_direction[1] == 1):#South
+        if my_location[1] > 1:
+            world_map[my_location[0]][my_location[1]-1] = -1
+            lightmatrix_update_simple(my_location[0],my_location[1]-1,-1)
+
+    if(block_direction[2] == 1):#East
+        if my_location[0] < world_size-1:
+            world_map[my_location[0]+1][my_location[1]] = -1
+            lightmatrix_update_simple(my_location[0]+1,my_location[1],-1)
+    if(block_direction[3] == 1):#West
+        if my_location[0] > 1:
+            lightmatrix_update_simple(my_location[0]-1,my_location[1],-1)
+            world_map[my_location[0]-1][my_location[1]] = -1
     return
 """
 follow()
