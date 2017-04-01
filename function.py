@@ -531,7 +531,7 @@ def us_sensor():
 		#Sometime max can be misread when the sensor might be too close to a wall
 		for i in range(4):
 			if(sensor_collect[i] == 0):
-				sensor_collect[i] = 0
+				sensor_collect[i] = 100
 
 
 		sensor_total[0] += sensor_collect[0]
